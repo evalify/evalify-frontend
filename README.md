@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Evalify Frontend
 
-## Getting Started
+Evalify Frontend is the user interface for **Evalify**, a comprehensive online evaluation platform. It provides an intuitive and robust experience for administrators and students to conduct, manage, and participate in assessments effectively.
 
-First, run the development server:
+## ✨ Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **User-Friendly Interface:** Intuitive and clean design for both administrators and students.
+- **Exam Creation & Management:** Tools for creating, scheduling, and managing exams.
+- **Secure Assessment Environment:** Measures in place to ensure exam integrity.
+- **Real-time Proctoring (Planned):** Features to monitor students during exams.
+- **Automated & Manual Grading:** Supports various question types and grading workflows.
+- **Result Analysis & Reporting:** Insightful dashboards and reports to track student performance.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework:** [Next.js](https://nextjs.org/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **UI Library:** [React](https://reactjs.org/)
+- **Component Library:** [shadcn/ui](https://ui.shadcn.com/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Linting & Formatting:** [ESLint](https://eslint.org/), [Prettier](https://prettier.io/)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Getting Started
 
-## Learn More
+Follow these steps to run the project locally for development and testing purposes.
 
-To learn more about Next.js, take a look at the following resources:
+### Prerequisites
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Node.js (version 16 or higher)
+- npm or yarn
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Installation
 
-## Deploy on Vercel
+1. **Clone the repository:**
+    ```bash
+    git clone https://github.com/evalify/evalify-frontend.git
+    cd evalify-frontend
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Run the development server:**
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    ```
+
+    Open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's fixing a bug, improving documentation, or suggesting new features, your input is appreciated.
+
+Please read our [CONTRIBUTING.md](https://github.com/evalify/evalify-frontend/blob/main/CONTRIBUTING.md) for details on our code of conduct and contribution process.
+
+## 📜 Code of Conduct
+
+We are committed to fostering an open and inclusive environment. Please review our [CODE_OF_CONDUCT.md](https://github.com/evalify/evalify-frontend/blob/main/CODE_OF_CONDUCT.md) to understand the standards of behavior expected from all contributors.
+
+---
+
+Built with ❤️ by the Evalify team.

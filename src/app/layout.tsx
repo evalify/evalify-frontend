@@ -28,6 +28,8 @@ export const dynamic = "force-dynamic";
  *
  * @param children - The page content to be rendered within the layout.
  */
+        
+// export const runtime = 'edge';
 
 export default function RootLayout({
   children,

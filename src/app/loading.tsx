@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
  *
  * The component features a spinning multicolored circle with a fading "E" logo, animated "Evalify" title, dynamic loading text that cycles through dots, a looping progress bar, and a footer message. All elements are styled for both light and dark modes and use smooth entrance and looping animations.
  */
+
 export default function Loading() {
   const [loadingText, setLoadingText] = useState("Loading");
 

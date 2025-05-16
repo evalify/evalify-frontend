@@ -17,6 +17,8 @@ const fetchData = () => {
 /**
  * Renders the main content of the home page after loading completes.
  */
+// Main content component that will load after data is ready
+
 function HomeContent() {
   return (
     <div className="container mx-auto p-8">
