@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Providers } from "@/components/ui/provider";
+import "katex/dist/katex.min.css"; // Import KaTeX CSS
+import "@/components/rich-text-editor/css/latex.css"; // Import custom LaTeX CSS
+import "@/components/rich-text-editor/css/preview.css"; // Import preview styles
+import { Providers } from "@/lib/provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

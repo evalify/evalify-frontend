@@ -1,0 +1,116 @@
+/* Custom styles for content preview to match the editor */
+.prose img {
+  margin: 0;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+/* Image alignment styles */
+.prose .image-wrapper {
+  display: block;
+  margin: 1em 0;
+  position: relative;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.prose .image-wrapper[data-align="left"] {
+  float: left;
+  margin-right: 1em;
+  margin-bottom: 1em;
+}
+
+.prose .image-wrapper[data-align="right"] {
+  float: right;
+  margin-left: 1em;
+  margin-bottom: 1em;
+}
+
+.prose .image-wrapper[data-align="center"] {
+  text-align: center;
+  margin: 1.5em auto;
+}
+
+/* Add paragraph break after images */
+.prose .image-break {
+  display: block;
+  clear: both;
+  content: "";
+  width: 100%;
+}
+
+/* Special styling for text following images */
+.prose .image-wrapper + * {
+  margin-top: 1em;
+}
+
+.prose pre {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.prose code:not(pre code) {
+  background-color: var(--accent);
+  border-radius: 0.375rem;
+  padding: 0.25rem;
+}
+.prose blockquote {
+  border-left: 4px solid var(--border);
+  padding-left: 1rem;
+  margin-left: 0;
+  color: var(--muted-foreground);
+}
+
+.prose hr {
+  margin: 0.5rem 0;
+  border-color: var(--border);
+}
+
+.prose ul.list-disc {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.prose ol.list-decimal {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.prose h1.tiptap-heading,
+.prose h2.tiptap-heading,
+.prose h3.tiptap-heading,
+.prose h4.tiptap-heading {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 700;
+}
+
+.latex-inline,
+.inline-latex {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.15em;
+}
+
+.latex-block,
+.block-latex {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+}
+
+/* Ensure spacing in the preview matches the editor */
+.prose > *:first-child {
+  margin-top: 0;
+}
+
+.prose > *:last-child {
+  margin-bottom: 0;
+}

@@ -1,0 +1,74 @@
+/* Custom styles for LaTeX equations */
+.latex-inline,
+.latex-block {
+  position: relative;
+  cursor: pointer;
+}
+
+.latex-inline .katex,
+.latex-block .katex {
+  font-size: 1.15em;
+}
+
+.latex-inline {
+  display: inline-block;
+  margin: 0 0.15em;
+  vertical-align: middle;
+  padding: 2px 0;
+}
+
+.latex-block {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+  padding: 0.5em 0;
+}
+
+/* Improved styling for editor */
+[data-latex] {
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+[data-latex]:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark [data-latex]:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Adding a subtle background to better highlight LaTeX blocks */
+[data-type="block"] {
+  background-color: rgba(0, 0, 0, 0.02);
+  padding: 0.5em;
+  border-radius: 4px;
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+}
+
+/* Node view styling */
+.inline-node {
+  display: inline;
+}
+
+.block-node {
+  display: block;
+  margin: 1em 0;
+}
+
+.inline-latex {
+  display: inline;
+  vertical-align: middle;
+}
+
+.block-latex {
+  display: block;
+  text-align: center;
+}
+
+.dark [data-type="block"] {
+  background-color: rgba(255, 255, 255, 0.03);
+}
