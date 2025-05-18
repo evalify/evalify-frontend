@@ -44,8 +44,27 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-highlight-red: var(----highlight-red);
+  --color-highlight-pink: var(----highlight-pink);
+  --color-highlight-purple: var(----highlight-purple);
+  --color-highlight-blue: var(----highlight-blue);
+  --color-highlight-green: var(----highlight-green);
+  --color-highlight-yellow: var(----highlight-yellow);
+  --color-highlight-orange: var(----highlight-orange);
+  --color-highlight-brown: var(----highlight-brown);
+  --color-highlight-gray: var(----highlight-gray);
+  --color-highlight-default: var(----highlight-default);
+  --color-text-red: var(----text-red);
+  --color-text-pink: var(----text-pink);
+  --color-text-purple: var(----text-purple);
+  --color-text-blue: var(----text-blue);
+  --color-text-green: var(----text-green);
+  --color-text-yellow: var(----text-yellow);
+  --color-text-orange: var(----text-orange);
+  --color-text-brown: var(----text-brown);
+  --color-text-gray: var(----text-gray);
+  --color-text-default: var(----text-default);
 }
-
 
 :root {
   --radius: 0.625rem;
@@ -80,6 +99,34 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.21 0.006 285.885);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+  --text-default: #000000;
+  --text-gray: #6b7280;
+  --text-brown: #92400e;
+  --text-orange: #ea580c;
+  --text-yellow: #ca8a04;
+  --text-green: #16a34a;
+  --text-blue: #2563eb;
+  --text-purple: #9333ea;
+  --text-pink: #db2777;
+  --text-red: #dc2626;
+  --highlight-default: #ffffff;
+  --highlight-gray: #f3f4f6;
+  --highlight-brown: #fef3c7;
+  --highlight-orange: #ffedd5;
+  --highlight-yellow: #fef9c3;
+  --highlight-green: #dcfce7;
+  --highlight-blue: #dbeafe;
+  --highlight-purple: #f3e8ff;
+  --highlight-pink: #fce7f3;
+  --highlight-red: #fee2e2;
 }
 
 .dark {
@@ -114,8 +161,28 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+  --text-default: #ffffff;
+  --text-gray: #9ca3af;
+  --text-brown: #d97706;
+  --text-orange: #f97316;
+  --text-yellow: #eab308;
+  --text-green: #22c55e;
+  --text-blue: #3b82f6;
+  --text-purple: #a855f7;
+  --text-pink: #ec4899;
+  --text-red: #ef4444;
+  --highlight-default: #1f2937;
+  --highlight-gray: #374151;
+  --highlight-brown: #78350f;
+  --highlight-orange: #9a3412;
+  --highlight-yellow: #854d0e;
+  --highlight-green: #166534;
+  --highlight-blue: #1e40af;
+  --highlight-purple: #6b21a8;
+  --highlight-pink: #9d174d;
+  --highlight-red: #991b1b;
 }
-
 
 @layer base {
   * {
@@ -123,5 +190,53 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  .ProseMirror {
+    @apply px-4 pt-2;
+    outline: none !important;
+  }
+
+  h1.tiptap-heading {
+    @apply mb-6 mt-8 text-4xl font-bold;
+  }
+
+  h2.tiptap-heading {
+    @apply mb-4 mt-6 text-3xl font-bold;
+  }
+
+  h3.tiptap-heading {
+    @apply mb-3 mt-4 text-xl font-bold;
+  }
+
+  h1.tiptap-heading:first-child,
+  h2.tiptap-heading:first-child,
+  h3.tiptap-heading:first-child {
+    margin-top: 0;
+  }
+
+  h1.tiptap-heading + h2.tiptap-heading,
+  h1.tiptap-heading + h3.tiptap-heading,
+  h2.tiptap-heading + h1.tiptap-heading,
+  h2.tiptap-heading + h3.tiptap-heading,
+  h3.tiptap-heading + h1.tiptap-heading,
+  h3.tiptap-heading + h2.tiptap-heading {
+    margin-top: 0;
+  }
+
+  .tiptap p.is-editor-empty:first-child::before {
+    @apply pointer-events-none float-left h-0 text-accent-foreground;
+    content: attr(data-placeholder);
+  }
+
+  .tiptap ul,
+  .tiptap ol {
+    padding: 0 1rem;
+  }
+
+  .tiptap blockquote {
+    border-left: 3px solid gray;
+    margin: 1.5rem 0;
+    padding-left: 1rem;
   }
 }
