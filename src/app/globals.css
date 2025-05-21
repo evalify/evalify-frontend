@@ -44,26 +44,26 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --color-highlight-red: var(----highlight-red);
-  --color-highlight-pink: var(----highlight-pink);
-  --color-highlight-purple: var(----highlight-purple);
-  --color-highlight-blue: var(----highlight-blue);
-  --color-highlight-green: var(----highlight-green);
-  --color-highlight-yellow: var(----highlight-yellow);
-  --color-highlight-orange: var(----highlight-orange);
-  --color-highlight-brown: var(----highlight-brown);
-  --color-highlight-gray: var(----highlight-gray);
-  --color-highlight-default: var(----highlight-default);
-  --color-text-red: var(----text-red);
-  --color-text-pink: var(----text-pink);
-  --color-text-purple: var(----text-purple);
-  --color-text-blue: var(----text-blue);
-  --color-text-green: var(----text-green);
-  --color-text-yellow: var(----text-yellow);
-  --color-text-orange: var(----text-orange);
-  --color-text-brown: var(----text-brown);
-  --color-text-gray: var(----text-gray);
-  --color-text-default: var(----text-default);
+  --color-highlight-red: var(--highlight-red);
+  --color-highlight-pink: var(--highlight-pink);
+  --color-highlight-purple: var(--highlight-purple);
+  --color-highlight-blue: var(--highlight-blue);
+  --color-highlight-green: var(--highlight-green);
+  --color-highlight-yellow: var(--highlight-yellow);
+  --color-highlight-orange: var(--highlight-orange);
+  --color-highlight-brown: var(--highlight-brown);
+  --color-highlight-gray: var(--highlight-gray);
+  --color-highlight-default: var(--highlight-default);
+  --color-text-red: var(--text-red);
+  --color-text-pink: var(--text-pink);
+  --color-text-purple: var(--text-purple);
+  --color-text-blue: var(--text-blue);
+  --color-text-green: var(--text-green);
+  --color-text-yellow: var(--text-yellow);
+  --color-text-orange: var(--text-orange);
+  --color-text-brown: var(--text-brown);
+  --color-text-gray: var(--text-gray);
+  --color-text-default: var(--text-default);
 }
 
 :root {

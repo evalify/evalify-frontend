@@ -7,6 +7,7 @@ import {
   enhancePreviewImages,
   applyTiptapStyling,
 } from "@/lib/preview-helpers";
+import DOMPurify from "dompurify";
 
 interface ContentPreviewProps {
   content: string;
@@ -18,7 +19,7 @@ export function ContentPreview({ content, className }: ContentPreviewProps) {
   useEffect(() => {
     if (previewRef.current && content) {
       // Set the HTML content
-      previewRef.current.innerHTML = content;
+      previewRef.current.innerHTML = DOMPurify.sanitize(content);
 
       // Process any LaTeX elements
       renderLatexContent(previewRef.current);

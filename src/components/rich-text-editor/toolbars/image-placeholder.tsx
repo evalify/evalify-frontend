@@ -65,7 +65,13 @@ export const ImagePlaceholder = Node.create<ImagePlaceholderOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes)];
+    return [
+      "div",
+      mergeAttributes(
+        { "data-type": "image-placeholder" }, // ensure round-tripping
+        HTMLAttributes
+      ),
+    ];
   },
 
   addNodeView() {
@@ -279,9 +285,11 @@ function ImagePlaceholderComponent(props: NodeViewProps) {
               >
                 <input
                   type="file"
-                  accept={Object.keys(
+                  accept={Object.values(
                     extension.options.allowedMimeTypes || {}
-                  ).join(",")}
+                  )
+                    .flat()
+                    .join(",")}
                   multiple={extension.options.maxFiles !== 1}
                   onChange={handleFileInputChange}
                   className="hidden"
@@ -332,8 +340,7 @@ function ImagePlaceholderComponent(props: NodeViewProps) {
                   </p>
                 )}
                 <Button
-                  onClick={handleInsertEmbed}
-                  type="button"
+                  type="submit"
                   size="sm"
                   className="my-2 h-8 w-full p-2 text-xs"
                   disabled={isUploading || !url}

@@ -7,6 +7,7 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
+import React from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -46,7 +47,7 @@ export const ImageExtension = Image.extend({
         },
       },
       alt: {
-        default: null,
+        default: "",
       },
       title: {
         default: null,
@@ -182,27 +183,31 @@ function TiptapImage(props: NodeViewProps) {
     ]
   );
 
-  const handleTouchEnd = useCallback(() => {
-    setResizing(false);
-    setResizeInitialMouseX(0);
-    setResizeInitialWidth(0);
-  }, []);
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    // Mouse events
-    window.addEventListener("mousemove", resize);
-    window.addEventListener("mouseup", endResize);
-    // Touch events
-    window.addEventListener("touchmove", handleTouchMove);
-    window.addEventListener("touchend", handleTouchEnd);
-    return () => {
-      window.removeEventListener("mousemove", resize);
-      window.removeEventListener("mouseup", endResize);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
+    if (!resizing) return;
+
+    const handleMove = (e: MouseEvent) => {
+      resize(e);
     };
-  }, [resize, endResize, handleTouchMove, handleTouchEnd]);
+
+    const handleTouchMoveEvent = (e: TouchEvent) => {
+      handleTouchMove(e);
+    };
+
+    const handleUp = () => endResize();
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    window.addEventListener("touchmove", handleTouchMoveEvent);
+    window.addEventListener("touchend", handleUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      window.removeEventListener("touchmove", handleTouchMoveEvent);
+      window.removeEventListener("touchend", handleUp);
+    };
+  }, [resizing, resize, handleTouchMove, endResize]);
 
   return (
     <NodeViewWrapper

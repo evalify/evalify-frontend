@@ -17,7 +17,10 @@ export function LatexPreview({
 }: LatexPreviewProps) {
   const renderLatexPart = (latex: string) => {
     try {
-      const decodedLatex = decodeLatex(latex.slice(1, -1));
+      const isBlock = latex.startsWith("$$") && latex.endsWith("$$");
+      const decodedLatex = decodeLatex(
+        isBlock ? latex.slice(2, -2) : latex.slice(1, -1)
+      );
       if (variant === "block") {
         return <BlockMath math={decodedLatex} />;
       }
@@ -27,8 +30,7 @@ export function LatexPreview({
       return <span className="text-destructive">Invalid LaTeX</span>;
     }
   };
-
-  // Using a more compatible regex pattern without 's' flag
+  
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[^\$]*?\$)/);
 
   return (
@@ -37,7 +39,7 @@ export function LatexPreview({
         if (part.startsWith("$$") && part.endsWith("$$")) {
           return (
             <span key={index} className="block my-2">
-              {renderLatexPart(part.slice(1, -1))}
+              {renderLatexPart(part)}
             </span>
           );
         }

@@ -5,19 +5,24 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import { InlineMath, BlockMath } from "react-katex";
 import React, { useCallback, useState } from "react";
 import { decodeLatex } from "@/lib/latex";
+import { LatexDialog } from "@/components/rich-text-editor/latex-dialog";
 
-// Simple LatexComponent that properly wraps with NodeViewWrapper
 const LatexComponent = (props: NodeViewProps) => {
-  const { node } = props;
+  const { node, updateAttributes } = props;
   const { inline, formula } = node.attrs;
   const [showSource, setShowSource] = useState(false);
+  const [showLatexDialog, setShowLatexDialog] = useState(false);
 
-  const handleDoubleClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      setShowSource(!showSource);
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowLatexDialog(true);
+  }, []);
+
+  const handleLatexUpdate = useCallback(
+    (newFormula: string) => {
+      updateAttributes({ formula: newFormula });
     },
-    [showSource]
+    [updateAttributes]
   );
 
   React.useEffect(() => {
@@ -68,6 +73,14 @@ const LatexComponent = (props: NodeViewProps) => {
             <BlockMath math={decodedFormula} />
           )}
         </span>
+
+        <LatexDialog
+          open={showLatexDialog}
+          onOpenChange={setShowLatexDialog}
+          onInsert={handleLatexUpdate}
+          isInline={inline}
+          initialValue={formula}
+        />
       </NodeViewWrapper>
     );
   } catch (err) {
@@ -80,6 +93,14 @@ const LatexComponent = (props: NodeViewProps) => {
         <span className="text-destructive" onDoubleClick={handleDoubleClick}>
           Invalid LaTeX
         </span>
+
+        <LatexDialog
+          open={showLatexDialog}
+          onOpenChange={setShowLatexDialog}
+          onInsert={handleLatexUpdate}
+          isInline={inline}
+          initialValue={formula}
+        />
       </NodeViewWrapper>
     );
   }

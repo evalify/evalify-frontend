@@ -58,10 +58,14 @@ export function renderLatexContent(element: HTMLElement): void {
       // Replace the original content with the rendered formula
       latexElement.innerHTML = "";
       latexElement.appendChild(wrapper);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error rendering LaTeX:", error);
       // Show error indication
-      latexElement.innerHTML = '<span style="color: red;">Invalid LaTeX</span>';
+      const errorSpan = document.createElement("span");
+      errorSpan.className = "latex-error";
+      errorSpan.textContent = "Invalid LaTeX";
+      latexElement.innerHTML = "";
+      latexElement.appendChild(errorSpan);
     }
   });
 }
