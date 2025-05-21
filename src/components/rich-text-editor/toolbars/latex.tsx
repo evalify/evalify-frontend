@@ -4,6 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToolbar } from "./toolbar-provider";
 import { LatexDialog } from "@/components/rich-text-editor/latex-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function Latex() {
   const { editor } = useToolbar();
@@ -36,29 +41,42 @@ export function Latex() {
   };
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          setIsInline(true);
-          setShowLatexDialog(true);
-        }}
-        title="Insert Inline LaTeX"
-      >
-        <span className="font-serif">LaTeX</span>
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          setIsInline(false);
-          setShowLatexDialog(true);
-        }}
-        title="Insert Block LaTeX"
-      >
-        <span className="font-serif">LaTeX Block</span>
-      </Button>
+      <div className="flex items-center gap-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-7 px-1 text-xs"
+              onClick={() => {
+                setIsInline(true);
+                setShowLatexDialog(true);
+              }}
+            >
+              <span className="font-serif">LaTeX</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>Insert Inline LaTeX</span>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-7 px-1 text-xs"
+              onClick={() => {
+                setIsInline(false);
+                setShowLatexDialog(true);
+              }}
+            >
+              <span className="font-serif">LaTeX Block</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>Insert Block LaTeX</span>
+          </TooltipContent>
+        </Tooltip>
+      </div>
 
       <LatexDialog
         open={showLatexDialog}

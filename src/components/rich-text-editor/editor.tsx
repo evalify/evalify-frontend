@@ -15,6 +15,7 @@ import {
 } from "@/components/rich-text-editor/toolbars/latex-extension";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
+import DOMPurify from "isomorphic-dompurify";
 
 interface EditorProps {
   className?: string;
@@ -24,9 +25,13 @@ interface EditorProps {
 
 export function TiptapEditor({
   className,
-  initialContent = '<h2 class="tiptap-heading" style="text-align: center">Hello world 🌍</h2>',
+  initialContent = "",
   onUpdate,
 }: EditorProps) {
+  // Use the sanitize method properly
+  const sanitizedContent = initialContent
+    ? DOMPurify.sanitize(initialContent)
+    : "";
   const extensions = [
     StarterKit.configure({
       orderedList: {
@@ -77,19 +82,27 @@ export function TiptapEditor({
       maxFiles: 1,
       maxSize: 5 * 1024 * 1024, // 5MB
       onDrop: (files) => {
-        console.log("Files dropped:", files);
+        console.log(`Successfully uploaded ${files.length} image(s)`);
       },
       onDropRejected: (files) => {
-        console.log("Files rejected:", files);
+        const reasons = [];
+        for (const file of files) {
+          if (file.size > 5 * 1024 * 1024) {
+            reasons.push(`File "${file.name}" exceeds the 5MB size limit`);
+          } else {
+            reasons.push(`File "${file.name}" has an unsupported format`);
+          }
+        }
+        console.error("Image upload failed:", reasons.join(", "));
       },
       onEmbed: (url) => {
-        console.log("URL embedded:", url);
+        console.log(`Image embedded from URL: ${url}`);
       },
     }),
   ];
   const editor = useEditor({
     extensions,
-    content: initialContent,
+    content: sanitizedContent,
     editorProps: {
       attributes: {
         class:
@@ -98,19 +111,17 @@ export function TiptapEditor({
     },
     onUpdate: ({ editor }) => {
       if (onUpdate) {
-        // Get HTML content and ensure it includes all images
         const html = editor.getHTML();
         onUpdate(html);
       }
     },
     immediatelyRender: false,
   });
-
-  // Update content when initialContent changes (for switching between notes)
   useEffect(() => {
     if (editor && initialContent) {
-      if (editor.getHTML() !== initialContent) {
-        editor.commands.setContent(initialContent);
+      const clean = initialContent ? DOMPurify.sanitize(initialContent) : "";
+      if (editor.getHTML() !== clean) {
+        editor.commands.setContent(clean);
       }
     }
   }, [editor, initialContent]);

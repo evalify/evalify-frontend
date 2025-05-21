@@ -34,10 +34,10 @@
 }
 
 /* Add paragraph break after images */
-.prose .image-break {
+.prose .image-break::after {
+  content: "";
   display: block;
   clear: both;
-  content: "";
   width: 100%;
 }
 

@@ -91,11 +91,13 @@ export const ColorHighlightToolbar = () => {
   };
 
   const handleSetHighlight = (color: string) => {
-    editor
-      ?.chain()
-      .focus()
-      .setHighlight(color === currentHighlight ? { color: "" } : { color })
-      .run();
+    if (color === currentHighlight) {
+      // Remove the highlight completely when clicking the active color
+      editor?.chain().focus().unsetHighlight().run();
+    } else {
+      // Set the highlight to the selected color
+      editor?.chain().focus().setHighlight({ color }).run();
+    }
   };
 
   const isDisabled =
