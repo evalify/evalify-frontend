@@ -1,17 +1,24 @@
-import { ArrowRight } from "lucide-react"
-import { useQuiz } from "./quiz-context"
+import { ArrowRight } from "lucide-react";
+import { useQuiz } from "./quiz-context";
+import { Button } from "../ui/button";
+
 interface NavigationButtonsProps {
-  currentIndex: number
-  totalQuestions: number
-  onPrevious: () => void
-  onNext: () => void
+  currentIndex: number;
+  totalQuestions: number;
+  onPrevious: () => void;
+  onNext: () => void;
 }
 
-export default function NavigationButtons({ currentIndex, totalQuestions, onPrevious, onNext }: NavigationButtonsProps) {
+export default function NavigationButtons({
+  currentIndex,
+  totalQuestions,
+  onPrevious,
+  onNext,
+}: NavigationButtonsProps) {
   const { currentQuestionId, markQuestionForReview } = useQuiz();
   const isFirstQuestion = currentIndex === 0;
   const isLastQuestion = currentIndex === totalQuestions - 1;
-  
+
   const handleMarkForReview = () => {
     markQuestionForReview(currentQuestionId);
     if (!isLastQuestion) {
@@ -20,30 +27,37 @@ export default function NavigationButtons({ currentIndex, totalQuestions, onPrev
   };
 
   return (
-    <div className="flex justify-between mt-6">
-      <button 
-        className={`bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg text-lg ${isFirstQuestion ? 'opacity-50 cursor-not-allowed' : ''}`}
+    <div className="flex justify-between mt-4 w-full">
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onPrevious}
         disabled={isFirstQuestion}
+        className="h-9 px-3 text-sm"
       >
         Previous
-      </button>
+      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-9 px-3 text-sm bg-yellow-500/90 hover:bg-yellow-600 text-white dark:bg-yellow-600/90 dark:hover:bg-yellow-700"
+          onClick={handleMarkForReview}
+        >
+          Mark & Next
+        </Button>
 
-      <button 
-        className="bg-yellow-800 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-lg"
-        onClick={handleMarkForReview}
-      >
-        Mark for review & Next
-      </button>
-
-      <button 
-        className={`bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg text-lg flex items-center gap-2 ${isLastQuestion ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onClick={onNext}
-        disabled={isLastQuestion}
-      >
-        Next
-        <ArrowRight className="h-5 w-5" />
-      </button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onNext}
+          disabled={isLastQuestion}
+          className="flex h-9 items-center gap-1 px-3 text-sm"
+        >
+          Next
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
-  )
+  );
 }
