@@ -1,59 +1,77 @@
-import React from 'react'
-import { MCQQuestion, MCQAnswer } from '../types/types'
-import { useEffect, useRef, useState } from 'react'
-import { useQuiz } from '../quiz-context'
+"use client";
 
-type MCQProps = {
-  question: MCQQuestion
+import React, { useState, useEffect } from "react";
+import * as RadioGroup from "@radix-ui/react-radio-group";
+import { MCQQuestion } from "@/components/quiz/types/types";
+import { useQuiz } from "../quiz-context";
+import { Card, CardContent } from "@/components/ui/card";
+
+interface Props {
+  question: MCQQuestion;
 }
 
-function MCQ({ question }: MCQProps) {
-    const { markQuestionAttempted, mcqAnswers, setMCQAnswers } = useQuiz();
-    const [selectedOption, setSelectedOption] = useState<number | null>(
-      // Initialize from stored answers if available
-      mcqAnswers[String(question.id)]?.selectedOption ?? null
-    );
-    const lastAttemptedRef = useRef<string | null>(null);
-    
-    // Remove this effect that was resetting the answer when switching questions
-    // useEffect(() => {
-    //   setSelectedOption(null);
-    // }, [question.id]);
+function MCQ({ question }: Props) {
+  const { mcqAnswers, setMCQAnswers } = useQuiz();
+  const [selectedOption, setSelectedOption] = useState<string | undefined>(
+    mcqAnswers[question.id]?.selectedOption?.toString(),
+  );
 
-    useEffect(() => {
-        // Only mark as attempted if an option is actually selected
-        if (selectedOption !== null) {
-          const currentSelectionKey = `${question.id}-${selectedOption}`;
-          
-          if (currentSelectionKey !== lastAttemptedRef.current) {
-            // Store the answer in context
-            setMCQAnswers(question.id, { selectedOption });
-            markQuestionAttempted(question.id);
-            lastAttemptedRef.current = currentSelectionKey;
-          }
-        }
-    }, [selectedOption, question.id, markQuestionAttempted, setMCQAnswers]);
+  // Initialize from context when component mounts or question changes
+  useEffect(() => {
+    if (mcqAnswers[question.id]) {
+      setSelectedOption(mcqAnswers[question.id].selectedOption.toString());
+    }
+  }, [question.id, mcqAnswers]);
+
+  const handleOptionChange = (value: string) => {
+    setSelectedOption(value);
+    setMCQAnswers(question.id, { selectedOption: parseInt(value) });
+  };
+
   return (
-    <div className="mt-4 space-y-4">
-      {question.options.map((option, index) => (
-        <label
-          key={index}
-          className={`p-4 rounded-lg cursor-pointer flex items-center ${
-            selectedOption === index ? "bg-blue-900 border border-blue-500" : "bg-gray-900 border border-gray-700"
-          }`}
-        >
-          <input
-            type="radio"
-            name={`question-${question.id}`}
-            checked={selectedOption === index}
-            onChange={() => setSelectedOption(index)}
-            className="mr-3 h-4 w-4"
-          />
-          <span>{option.text}</span>
-        </label>
-      ))}
-    </div>
-  )
+    <Card className="mt-6">
+      <CardContent className="p-6">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-6 break-words text-pretty">
+          {question.question}
+        </h2>
+        <div className="max-h-[55vh] overflow-y-auto pr-2">
+          <RadioGroup.Root
+            onValueChange={handleOptionChange}
+            value={selectedOption}
+          >
+            <div className="space-y-4">
+              {question.options.map((opt, index) => (
+                <div
+                  key={index}
+                  className={`flex items-start p-4 rounded-lg border transition-colors duration-200 ease-in-out cursor-pointer
+                                        ${
+                                          selectedOption === index.toString()
+                                            ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
+                                            : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600"
+                                        }`}
+                  onClick={() => handleOptionChange(index.toString())}
+                >
+                  <RadioGroup.Item
+                    value={index.toString()}
+                    id={`${question.id}-${index}`}
+                    className="w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-500 flex items-center justify-center mr-4 mt-1 flex-shrink-0"
+                  >
+                    <RadioGroup.Indicator className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
+                  </RadioGroup.Item>
+                  <label
+                    htmlFor={`${question.id}-${index}`}
+                    className="text-base sm:text-lg cursor-pointer flex-grow break-words text-pretty"
+                  >
+                    {opt.text}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </RadioGroup.Root>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
-export default MCQ
+export default MCQ;

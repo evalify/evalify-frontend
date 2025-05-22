@@ -62,3 +62,24 @@ export function processImageUrl(imageUrl: string): string {
 
   return imageUrl;
 }
+
+// Language options for code editors
+export const languages = [
+  { id: "python", name: "Python" },
+  { id: "javascript", name: "JavaScript" },
+  { id: "typescript", name: "TypeScript" },
+  { id: "java", name: "Java" },
+  { id: "c", name: "C" },
+  { id: "cpp", name: "C++" },
+  { id: "csharp", name: "C#" },
+  { id: "html", name: "HTML" },
+  { id: "css", name: "CSS" },
+  { id: "sql", name: "SQL" },
+  { id: "ruby", name: "Ruby" },
+  { id: "go", name: "Go" },
+  { id: "php", name: "PHP" },
+  { id: "matlab", name: "MATLAB" },
+  { id: "json", name: "JSON" },
+  { id: "xml", name: "XML" },
+  { id: "yaml", name: "YAML" },
+];
