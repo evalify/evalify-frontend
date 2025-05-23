@@ -306,7 +306,11 @@ export default function CodeEditor({
   const editorRef = React.useRef(null);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
 
-  const activeFile = files.find((file) => file.id === activeFileId) || files[0];
+  // Safely assign activeFile with fallback for empty files array
+  const activeFile =
+    files.length > 0
+      ? files.find((file) => file.id === activeFileId) || files[0]
+      : null;
 
   React.useEffect(() => {
     setMounted(true);
@@ -336,6 +340,17 @@ export default function CodeEditor({
         builtin: functions,
       });
     });
+
+    // Add event listener for fullscreen changes
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
   }, [functions]);
 
   // Accept monaco as unknown and cast to any for type safety
@@ -384,6 +399,12 @@ export default function CodeEditor({
   };
 
   const runCode = async () => {
+    if (!activeFile) {
+      setOutput("No file selected");
+      setShowOutput(true);
+      return;
+    }
+
     try {
       const response = await fetch("/api/code", {
         method: "POST",
@@ -473,7 +494,7 @@ export default function CodeEditor({
           onClear={handleClear}
           isVertical={isVertical}
           onToggleOrientation={toggleOrientation}
-          language={activeFile.language}
+          language={activeFile?.language || "javascript"}
           onLanguageChange={handleLanguageChange}
         />
 
@@ -484,40 +505,46 @@ export default function CodeEditor({
             className="flex-1 border-t"
           >
             <ResizablePanel defaultSize={75} minSize={30}>
-              <Editor
-                height="100%"
-                language={activeFile.language}
-                value={activeFile.content}
-                onChange={(value) => {
-                  onFileChange(
-                    files.map((file) =>
-                      file.id === activeFileId
-                        ? { ...file, content: value || "" }
-                        : file,
-                    ),
-                  );
-                }}
-                theme={getMonacoTheme()}
-                options={{
-                  fontSize: 16,
-                  fontFamily: "JetBrains Mono",
-                  minimap: { enabled: false },
-                  wordWrap: "on",
-                  scrollBeyondLastLine: false,
-                  lineNumbers: "on",
-                  automaticLayout: true,
-                  padding: { top: 16 },
-                  suggest: {
-                    showKeywords: true,
-                  },
-                }}
-                onMount={handleEditorDidMount}
-                loading={
-                  <div className="flex h-full items-center justify-center">
-                    Loading...
-                  </div>
-                }
-              />
+              {activeFile ? (
+                <Editor
+                  height="100%"
+                  language={activeFile.language}
+                  value={activeFile.content}
+                  onChange={(value) => {
+                    onFileChange(
+                      files.map((file) =>
+                        file.id === activeFileId
+                          ? { ...file, content: value || "" }
+                          : file,
+                      ),
+                    );
+                  }}
+                  theme={getMonacoTheme()}
+                  options={{
+                    fontSize: 16,
+                    fontFamily: "JetBrains Mono",
+                    minimap: { enabled: false },
+                    wordWrap: "on",
+                    scrollBeyondLastLine: false,
+                    lineNumbers: "on",
+                    automaticLayout: true,
+                    padding: { top: 16 },
+                    suggest: {
+                      showKeywords: true,
+                    },
+                  }}
+                  onMount={handleEditorDidMount}
+                  loading={
+                    <div className="flex h-full items-center justify-center">
+                      Loading...
+                    </div>
+                  }
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  No files available. Please add a file to start coding.
+                </div>
+              )}
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={25} minSize={20}>

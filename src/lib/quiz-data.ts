@@ -1,7 +1,16 @@
-import { QuizData } from "@/components/quiz/types/types";
+import { QuizData, ServerOption, Option } from "@/components/quiz/types/types";
 
 // This file would contain functions to fetch quiz data from API
 // For now, we'll export the mock data
+
+// Helper function to transform server options to client options
+// This removes the 'correct' property to prevent leaking answers to the client
+function transformOptions(options: ServerOption[]): Option[] {
+  return options.map((option, index) => ({
+    text: option.text,
+    id: option.id || `option-${index}`,
+  }));
+}
 
 export async function getQuizData(
   quizId: string,
@@ -171,9 +180,20 @@ export function processQuizData(
     0,
   );
 
+  // Process questions to transform ServerOption to Option
+  const processedQuestions = rawData.questions.map((question) => {
+    if (question.type === "MCQ" || question.type === "MULTI_SELECT") {
+      return {
+        ...question,
+        options: transformOptions(question.options as ServerOption[]),
+      };
+    }
+    return question;
+  });
+
   // Calculate section-specific totals
   const sectionsWithTotals = rawData.sections.map((section) => {
-    const sectionQuestions = rawData.questions.filter(
+    const sectionQuestions = processedQuestions.filter(
       (q) => q.sectionId === section.id,
     );
     return {
@@ -185,6 +205,7 @@ export function processQuizData(
 
   return {
     ...rawData,
+    questions: processedQuestions,
     sections: sectionsWithTotals,
     totalMarks,
     totalQuestions: rawData.questions.length,

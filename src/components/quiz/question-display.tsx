@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuiz } from "./quiz-context";
-import { Question } from "@/components/quiz/types/types";
+import { Question, MCQQuestion } from "@/components/quiz/types/types";
+
 type QuestionDisplayProps = {
   question: Question;
 };
@@ -49,27 +50,29 @@ export default function QuestionDisplay({ question }: QuestionDisplayProps) {
 
         {isMultipleChoice && "options" in question ? (
           <div className="mt-4 space-y-3">
-            {(
-              question as { options: { text: string; correct: boolean }[] }
-            ).options.map((option, index) => (
-              <label
-                key={index}
-                className={`p-3 rounded-md cursor-pointer flex items-center hover:bg-muted/20 transition-colors ${
-                  selectedOption === index
-                    ? "bg-primary/15 border border-primary/70"
-                    : "bg-background border border-muted/50"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={`question-${question.id}`}
-                  checked={selectedOption === index}
-                  onChange={() => setSelectedOption(index)}
-                  className="mr-3 h-5 w-5"
-                />
-                <span className="text-base font-medium">{option.text}</span>
-              </label>
-            ))}
+            {(() => {
+              // Properly narrow the type with type guard
+              const mcqQuestion = question as MCQQuestion;
+              return mcqQuestion.options.map((option, index) => (
+                <label
+                  key={index}
+                  className={`p-3 rounded-md cursor-pointer flex items-center hover:bg-muted/20 transition-colors ${
+                    selectedOption === index
+                      ? "bg-primary/15 border border-primary/70"
+                      : "bg-background border border-muted/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={`question-${question.id}`}
+                    checked={selectedOption === index}
+                    onChange={() => setSelectedOption(index)}
+                    className="mr-3 h-5 w-5"
+                  />
+                  <span className="text-base font-medium">{option.text}</span>
+                </label>
+              ));
+            })()}
           </div>
         ) : (
           <div className="mt-4">

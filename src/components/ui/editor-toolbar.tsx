@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { languages } from "@/lib/utils";
-import { Maximize2, LayoutGridIcon } from "lucide-react";
+import { Maximize2, LayoutGridIcon, Layout } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -61,7 +61,7 @@ export function EditorToolbar({
           {isVertical ? (
             <LayoutGridIcon className="h-4 w-4" />
           ) : (
-            <LayoutGridIcon className="h-4 w-4" />
+            <Layout className="h-4 w-4" />
           )}
         </Button>
         <Button variant="ghost" onClick={onClear}>

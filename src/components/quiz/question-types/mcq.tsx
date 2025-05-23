@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import * as RadioGroup from "@radix-ui/react-radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MCQQuestion } from "@/components/quiz/types/types";
 import { useQuiz } from "../quiz-context";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,39 +35,36 @@ function MCQ({ question }: Props) {
           {question.question}
         </h2>
         <div className="max-h-[55vh] overflow-y-auto pr-2">
-          <RadioGroup.Root
+          <RadioGroup
             onValueChange={handleOptionChange}
             value={selectedOption}
+            className="space-y-4"
           >
-            <div className="space-y-4">
-              {question.options.map((opt, index) => (
-                <div
-                  key={index}
-                  className={`flex items-start p-4 rounded-lg border transition-colors duration-200 ease-in-out cursor-pointer
-                                        ${
-                                          selectedOption === index.toString()
-                                            ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
-                                            : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600"
-                                        }`}
-                  onClick={() => handleOptionChange(index.toString())}
+            {question.options.map((opt, index) => (
+              <div
+                key={index}
+                className={`flex items-start p-4 rounded-lg border transition-colors duration-200 ease-in-out cursor-pointer
+                                      ${
+                                        selectedOption === index.toString()
+                                          ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
+                                          : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600"
+                                      }`}
+                onClick={() => handleOptionChange(index.toString())}
+              >
+                <RadioGroupItem
+                  value={index.toString()}
+                  id={`${question.id}-${index}`}
+                  className="w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-500 flex items-center justify-center mr-4 mt-1 flex-shrink-0"
+                />
+                <label
+                  htmlFor={`${question.id}-${index}`}
+                  className="text-base sm:text-lg cursor-pointer flex-grow break-words text-pretty"
                 >
-                  <RadioGroup.Item
-                    value={index.toString()}
-                    id={`${question.id}-${index}`}
-                    className="w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-500 flex items-center justify-center mr-4 mt-1 flex-shrink-0"
-                  >
-                    <RadioGroup.Indicator className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
-                  </RadioGroup.Item>
-                  <label
-                    htmlFor={`${question.id}-${index}`}
-                    className="text-base sm:text-lg cursor-pointer flex-grow break-words text-pretty"
-                  >
-                    {opt.text}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </RadioGroup.Root>
+                  {opt.text}
+                </label>
+              </div>
+            ))}
+          </RadioGroup>
         </div>
       </CardContent>
     </Card>

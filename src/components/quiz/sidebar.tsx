@@ -10,12 +10,14 @@ interface SidebarProps {
   data: QuizData;
   quizId?: string;
   onQuestionChange?: (questionId: number | string) => void;
+  onSubmit?: () => void;
 }
 
 export default function Sidebar({
   data,
   quizId = "1",
   onQuestionChange,
+  onSubmit,
 }: SidebarProps) {
   return (
     <Card className="flex flex-col h-full border-0 shadow-none bg-transparent">
@@ -37,6 +39,7 @@ export default function Sidebar({
           variant="secondary"
           size="sm"
           className="w-full h-10 text-base font-medium"
+          onClick={onSubmit}
         >
           Submit
         </Button>
