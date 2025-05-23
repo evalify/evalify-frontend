@@ -16,15 +16,20 @@ import {
   MCQAnswer,
   CodingAnswer,
   MultipleSelectAnswer,
+  Question,
 } from "@/components/quiz/types/types";
+
+// Define enum for question statuses
+export enum QuestionStatus {
+  NotViewed = 0,
+  Attempted = 1,
+  Viewed = 2,
+  ForReview = 4,
+}
 
 interface QuizProviderProps {
   children: React.ReactNode;
-  questions: {
-    id: string | number;
-    sectionId: number;
-    type: string;
-  }[];
+  questions: Question[];
   initialQuestionId?: number;
 }
 
@@ -35,15 +40,15 @@ export function QuizProvider({
   questions,
   initialQuestionId,
 }: QuizProviderProps) {
-  const [questionStatus, setQuestionStatus] = useState<Record<string, number>>(
-    () => {
-      const initialStatus: Record<string, number> = {};
-      questions.forEach((q) => {
-        initialStatus[String(q.id)] = 0;
-      });
-      return initialStatus;
-    },
-  );
+  const [questionStatus, setQuestionStatus] = useState<
+    Record<string, QuestionStatus>
+  >(() => {
+    const initialStatus: Record<string, QuestionStatus> = {};
+    questions.forEach((q) => {
+      initialStatus[String(q.id)] = QuestionStatus.NotViewed;
+    });
+    return initialStatus;
+  });
 
   // Use initialQuestionId if provided, otherwise use the first question
   const firstQuestionId = initialQuestionId || questions[0]?.id || 0;
@@ -89,7 +94,7 @@ export function QuizProvider({
   const markQuestionAttempted = useCallback((id: string | number) => {
     setQuestionStatus((prev) => ({
       ...prev,
-      [String(id)]: 1,
+      [String(id)]: QuestionStatus.Attempted,
     }));
   }, []);
 
@@ -97,14 +102,14 @@ export function QuizProvider({
   const markQuestionViewed = useCallback((id: string | number) => {
     setQuestionStatus((prev) => ({
       ...prev,
-      [String(id)]: 2,
+      [String(id)]: QuestionStatus.Viewed,
     }));
   }, []);
 
   const markQuestionForReview = useCallback((id: string | number) => {
     setQuestionStatus((prev) => ({
       ...prev,
-      [String(id)]: 4,
+      [String(id)]: QuestionStatus.ForReview,
     }));
   }, []);
 
@@ -210,9 +215,9 @@ export function QuizProvider({
         const updatedStatus = { ...prev };
         if (
           currentQuestionId &&
-          updatedStatus[String(currentQuestionId)] === 0
+          updatedStatus[String(currentQuestionId)] === QuestionStatus.NotViewed
         ) {
-          updatedStatus[String(currentQuestionId)] = 2;
+          updatedStatus[String(currentQuestionId)] = QuestionStatus.Viewed;
         }
         return updatedStatus;
       });
@@ -234,10 +239,10 @@ export function QuizProvider({
     };
 
     Object.entries(questionStatus).forEach(([, status]) => {
-      if (status === 0) newStats.notViewed++;
-      else if (status === 1) newStats.attempted++;
-      else if (status === 2) newStats.viewed++;
-      else if (status === 4) newStats.forReview++;
+      if (status === QuestionStatus.NotViewed) newStats.notViewed++;
+      else if (status === QuestionStatus.Attempted) newStats.attempted++;
+      else if (status === QuestionStatus.Viewed) newStats.viewed++;
+      else if (status === QuestionStatus.ForReview) newStats.forReview++;
     });
 
     setStats(newStats);

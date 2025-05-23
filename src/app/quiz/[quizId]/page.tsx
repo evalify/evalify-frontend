@@ -21,6 +21,7 @@ export default function QuizPage() {
 
   const [data, setData] = useState<QuizData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const initialQuestionId = parseInt(questionId);
 
@@ -28,12 +29,14 @@ export default function QuizPage() {
   useEffect(() => {
     async function loadQuizData() {
       setLoading(true);
+      setError(null);
       try {
         const quizData = await getQuizData(quizId as string);
         const processedData = processQuizData(quizData);
         setData(processedData);
       } catch (error) {
         console.error("Failed to load quiz data:", error);
+        setError("Failed to load quiz data. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -50,7 +53,8 @@ export default function QuizPage() {
     router.replace(url.pathname + url.search);
   };
 
-  if (loading || !data) {
+  // Display loading state
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-lg">Loading quiz...</p>
@@ -58,15 +62,33 @@ export default function QuizPage() {
     );
   }
 
+  // Display error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-lg text-red-500">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  // Display no data state (fallback)
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg">No quiz data found.</p>
+      </div>
+    );
+  }
+
   return (
     <QuizProvider
-      questions={
-        data.questions as unknown as {
-          id: string | number;
-          sectionId: number;
-          type: string;
-        }[]
-      }
+      questions={data.questions}
       initialQuestionId={initialQuestionId}
     >
       <div className="flex flex-col min-h-screen">

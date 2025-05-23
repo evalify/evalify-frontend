@@ -129,48 +129,52 @@ export default function MatchTheFollowingQuestion({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeText, setActiveText] = useState<string>("");
 
-  // Add CSS for custom scrollbar
+  // Add CSS for custom scrollbar only once
   useEffect(() => {
-    const style = document.createElement("style");
-    style.innerHTML = `
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 8px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: rgba(156, 163, 175, 0.5);
-        border-radius: 9999px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(156, 163, 175, 0.7);
-      }
-      
-      /* For Firefox */
-      .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-      }
-      
-      /* For dark mode */
-      @media (prefers-color-scheme: dark) {
+    // Check if the style is already added to avoid duplicates
+    const styleId = "match-following-scrollbar-style";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.innerHTML = `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: rgba(75, 85, 99, 0.5);
+          background-color: rgba(156, 163, 175, 0.5);
+          border-radius: 9999px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: rgba(75, 85, 99, 0.7);
+          background-color: rgba(156, 163, 175, 0.7);
         }
+        
+        /* For Firefox */
         .custom-scrollbar {
-          scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
         }
-      }
-    `;
-    document.head.appendChild(style);
+        
+        /* For dark mode */
+        @media (prefers-color-scheme: dark) {
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(75, 85, 99, 0.5);
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(75, 85, 99, 0.7);
+          }
+          .custom-scrollbar {
+            scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+          }
+        }
+      `;
+      document.head.appendChild(style);
 
-    return () => {
-      document.head.removeChild(style);
-    };
+      // No need to remove the style on unmount as it's shared
+      // We'll keep it in the DOM for reuse
+    }
   }, []);
 
   useEffect(() => {
@@ -213,28 +217,29 @@ export default function MatchTheFollowingQuestion({
     const { active, over } = event;
     setActiveId(null);
 
-    if (over && active.id !== over.id) {
-      const draggedOptionId = active.id as string;
-      const targetKeyId = over.id as string;
+    const draggedOptionId = active.id as string;
+    const newAnswers = { ...answers };
 
+    // First, remove the dragged option from any existing assignment
+    Object.keys(newAnswers).forEach((key) => {
+      if (newAnswers[key] === draggedOptionId) {
+        delete newAnswers[key];
+      }
+    });
+
+    // If dropped over a valid key target, create a new assignment
+    if (over) {
+      const targetKeyId = over.id as string;
       const isTargetKey = question.key.some((k) => k.id === targetKeyId);
 
       if (isTargetKey) {
-        const newAnswers = { ...answers };
-
-        Object.keys(newAnswers).forEach((key) => {
-          if (newAnswers[key] === draggedOptionId) {
-            delete newAnswers[key];
-          }
-        });
-
         newAnswers[targetKeyId] = draggedOptionId;
-
-        setAnswers(newAnswers);
-
-        setMatchAnswers(question.id, [newAnswers as MatchTheFollowingAnswer]);
       }
     }
+
+    // Update the state regardless of where the item was dropped
+    setAnswers(newAnswers);
+    setMatchAnswers(question.id, [newAnswers as MatchTheFollowingAnswer]);
   };
 
   const handleClearSelections = () => {

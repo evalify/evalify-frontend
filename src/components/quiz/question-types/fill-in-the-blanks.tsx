@@ -61,7 +61,9 @@ function FillInTheBlanks({ question }: FillInTheBlanksProps) {
                       className="inline-block min-w-[100px] w-auto px-3 py-1 h-10 border-b-2 focus:border-primary 
                         border-0 border-b-primary/50 bg-primary/5 rounded-md text-center font-medium shadow-sm
                         focus-visible:ring-0 focus-visible:ring-offset-0"
-                      value={blanksAnswers[question.id]?.blanks[index] || ""}
+                      value={
+                        (blanksAnswers[question.id]?.blanks || [])[index] || ""
+                      }
                       onChange={(e) => handleInputChange(index, e.target.value)}
                       placeholder="_______"
                       spellCheck={false}

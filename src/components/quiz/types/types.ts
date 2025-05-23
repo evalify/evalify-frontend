@@ -8,11 +8,11 @@ export interface BaseQuestion {
 }
 export interface MCQQuestion extends BaseQuestion {
   type: "MCQ";
-  options: Option[];
+  options: Option[] | ServerOption[];
 }
 export interface MultipleSelectQuestion extends BaseQuestion {
   type: "MULTI_SELECT";
-  options: Option[];
+  options: Option[] | ServerOption[];
 }
 export interface CodingQuestion extends BaseQuestion {
   type: "CODING";
@@ -47,8 +47,7 @@ export type Question =
   | CodingQuestion
   | MatchtheFollowingQuestion
   | FillInTheBlanksQuestion
-  | DescriptiveQuestion
-  | BaseQuestion;
+  | DescriptiveQuestion;
 
 export interface MatchTheFollowingAnswer {
   [key_id: string]: string;
@@ -84,7 +83,16 @@ export interface CodingAnswer {
 
 export interface Option {
   text: string;
+  // Remove 'correct' property from client-side interface
+  // This property should only exist on the server
+  id?: string; // Add an id property for reference instead
+}
+
+// Server-side option type for quiz data
+export interface ServerOption {
+  text: string;
   correct: boolean;
+  id?: string;
 }
 
 export interface Section {
