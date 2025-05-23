@@ -1,5 +1,6 @@
 # Staging dockerfile
-FROM node:20.9.0-bullseye-slim AS builder
+FROM node:slim AS builder
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -8,7 +9,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20.9.0-bullseye-slim AS runner
+FROM node:slim AS runner
 
 WORKDIR /app
 
@@ -27,4 +28,3 @@ HEALTHCHECK --interval=60s --timeout=3s \
     CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-7070}/api/health || exit 1
 
 CMD ["npm", "start"]
-
