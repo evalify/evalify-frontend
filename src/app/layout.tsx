@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css"; // Import KaTeX CSS
 import "@/components/rich-text-editor/css/latex.css"; // Import custom LaTeX CSS
 import "@/components/rich-text-editor/css/preview.css"; // Import preview styles
 import { Providers } from "@/lib/provider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Evalify - Online Exam Platform",
@@ -23,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 // This enables the loading.tsx to be automatically used during navigation
-export const dynamic = "force-dynamic";
+// export const dynamic = "force-dynamic";
 // export const runtime = 'edge';
 
 export default function RootLayout({
@@ -33,10 +23,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Providers>{children}</Providers>
+      <body className={`antialiased`}>
+        <Providers>
+          {children}
+          <Toaster
+            position="bottom-right"
+            richColors
+            closeButton
+            expand={false}
+            visibleToasts={9}
+          />
+        </Providers>
       </body>
     </html>
   );

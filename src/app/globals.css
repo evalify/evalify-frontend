@@ -92,21 +92,12 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
+
+  /* Dynamic theming variables */
+  --primary-hue: 221;
+  --base-font-size: 16px;
+  --layout-density: 1;
+  --animation-duration: 0.2s;
   --text-default: #000000;
   --text-gray: #6b7280;
   --text-brown: #92400e;
@@ -127,6 +118,14 @@
   --highlight-purple: #f3e8ff;
   --highlight-pink: #fce7f3;
   --highlight-red: #fee2e2;
+  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-primary: oklch(0.208 0.042 265.755);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.968 0.007 247.896);
+  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.704 0.04 256.788);
 }
 
 .dark {
@@ -153,15 +152,7 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+
   --text-default: #ffffff;
   --text-gray: #9ca3af;
   --text-brown: #d97706;
@@ -182,6 +173,14 @@
   --highlight-purple: #6b21a8;
   --highlight-pink: #9d174d;
   --highlight-red: #991b1b;
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
 @layer base {
@@ -190,6 +189,78 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: var(--base-font-size);
+    transition: font-size var(--animation-duration) ease;
+  }
+
+  /* Dynamic font sizing */
+  html {
+    font-size: var(--base-font-size);
+  }
+
+  /* Layout density classes */
+  .layout-compact {
+    --layout-density: 0.75;
+  }
+
+  .layout-comfortable {
+    --layout-density: 1;
+  }
+
+  .layout-spacious {
+    --layout-density: 1.25;
+  }
+
+  /* Apply density to spacing */
+  .space-y-1 > * + * {
+    margin-top: calc(0.25rem * var(--layout-density));
+  }
+
+  .space-y-2 > * + * {
+    margin-top: calc(0.5rem * var(--layout-density));
+  }
+
+  .space-y-3 > * + * {
+    margin-top: calc(0.75rem * var(--layout-density));
+  }
+
+  .space-y-4 > * + * {
+    margin-top: calc(1rem * var(--layout-density));
+  }
+
+  .space-y-6 > * + * {
+    margin-top: calc(1.5rem * var(--layout-density));
+  }
+
+  /* High contrast mode */
+  .high-contrast {
+    --ring: oklch(0 0 0);
+    --border: oklch(0 0 0);
+  }
+
+  .dark.high-contrast {
+    --ring: oklch(1 0 0);
+    --border: oklch(1 0 0);
+  }
+  
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  .reduce-motion {
+    --animation-duration: 0s;
+  }
+  
+  .reduce-motion *, 
+  .reduce-motion *::before, 
+  .reduce-motion *::after {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
   }
 
   .ProseMirror {

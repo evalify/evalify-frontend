@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import Loading from "./loading";
+import Loading from "@/app/loading";
 import { useRouter } from "next/navigation";
 
 // This simulates a data fetching function that takes time
