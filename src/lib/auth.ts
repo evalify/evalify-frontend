@@ -13,6 +13,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
     signIn: "/auth/login",
   },
+  session: {
+    strategy: "jwt",
+    maxAge: 5 * 60 * 60,
+  },
+  trustHost: true,
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, account }) {
       if (account?.access_token) {
