@@ -20,7 +20,7 @@ export function decodeLatex(latex: string): string {
 export function renderLatexContent(element: HTMLElement): void {
   // Find all LaTeX elements (both inline and block)
   const latexElements = element.querySelectorAll(
-    "span[data-latex], .inline-latex, .block-latex"
+    "span[data-latex], .inline-latex, .block-latex",
   );
 
   latexElements.forEach((latexElement) => {

@@ -46,7 +46,7 @@ const mainNavItems = [
   },
 ];
 
-const assessmentItems = [
+const academicsItems = [
   {
     title: "Quiz",
     url: "/quiz",
@@ -175,10 +175,10 @@ export function AppSidebar() {
         <SidebarSeparator />
 
         <SidebarGroup>
-          <SidebarGroupLabel>Assessment</SidebarGroupLabel>
+          <SidebarGroupLabel>Academics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {assessmentItems.map((item) => (
+              {academicsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

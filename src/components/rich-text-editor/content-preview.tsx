@@ -2,11 +2,11 @@
 
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
-import { renderLatexContent } from "@/lib/latex";
+import { renderLatexContent } from "@/lib/latex/latex";
 import {
   enhancePreviewImages,
   applyTiptapStyling,
-} from "@/lib/preview-helpers";
+} from "@/lib/latex/preview-helpers";
 import DOMPurify from "dompurify";
 
 interface ContentPreviewProps {
@@ -50,7 +50,7 @@ export function ContentPreview({ content, className }: ContentPreviewProps) {
         ref={previewRef}
         className={cn(
           "prose dark:prose-invert max-w-none min-h-[300px] p-4 overflow-auto",
-          className
+          className,
         )}
       />
     </div>
