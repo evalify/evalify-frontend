@@ -9,7 +9,7 @@ export default function RedirectToQuiz() {
 
   useEffect(() => {
     // Redirect to quiz 1, question 1
-    router.replace("/quiz/1?questionId=1");
+    router.replace("/exam/quiz/1?questionId=1");
   }, [router]);
 
   return (

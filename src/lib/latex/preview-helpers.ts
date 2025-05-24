@@ -98,7 +98,7 @@ export function applyTiptapStyling(element: HTMLElement): void {
       "p-2",
       "text-sm",
       "rounded-md",
-      "p-1"
+      "p-1",
     );
   });
 

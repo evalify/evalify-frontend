@@ -2,7 +2,7 @@
 
 import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
-import { decodeLatex } from "@/lib/latex";
+import { decodeLatex } from "@/lib/latex/latex";
 
 interface LatexPreviewProps {
   content: string;
@@ -19,7 +19,7 @@ export function LatexPreview({
     try {
       const isBlock = latex.startsWith("$$") && latex.endsWith("$$");
       const decodedLatex = decodeLatex(
-        isBlock ? latex.slice(2, -2) : latex.slice(1, -1)
+        isBlock ? latex.slice(2, -2) : latex.slice(1, -1),
       );
       if (variant === "block") {
         return <BlockMath math={decodedLatex} />;
@@ -30,7 +30,7 @@ export function LatexPreview({
       return <span className="text-destructive">Invalid LaTeX</span>;
     }
   };
-  
+
   const parts = content.split(/(\$\$[\s\S]*?\$\$|\$[^\$]*?\$)/);
 
   return (

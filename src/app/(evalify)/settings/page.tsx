@@ -28,27 +28,9 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("account");
   const [fontSize, setFontSize] = useState([16]);
-  const [colorScheme, setColorScheme] = useState("blue");
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
-  };
-
-  const applyColorScheme = (scheme: string) => {
-    setColorScheme(scheme);
-    // In a real app, this would update CSS custom properties
-    document.documentElement.style.setProperty(
-      "--primary-hue",
-      scheme === "blue"
-        ? "221"
-        : scheme === "green"
-          ? "142"
-          : scheme === "purple"
-            ? "262"
-            : scheme === "orange"
-              ? "25"
-              : "221",
-    );
   };
 
   const applyFontSize = (size: number[]) => {
@@ -75,7 +57,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Sidebar - User Profile Card */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 pt-10">
+            <Card className="sticky top-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 pt-10 pb-10">
               <CardContent className="p-6">
                 <div className="text-center space-y-4">
                   <div className="relative inline-block">
@@ -229,37 +211,6 @@ export default function SettingsPage() {
                               )}
                               <span className="capitalize text-sm font-medium">
                                 {themeOption}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <Label>Color Scheme</Label>
-                      <div className="grid grid-cols-4 gap-3">
-                        {[
-                          { name: "blue", color: "bg-blue-500" },
-                          { name: "green", color: "bg-green-500" },
-                          { name: "purple", color: "bg-purple-500" },
-                          { name: "orange", color: "bg-orange-500" },
-                        ].map((color) => (
-                          <div
-                            key={color.name}
-                            className={`relative cursor-pointer rounded-lg border-2 p-3 ${
-                              colorScheme === color.name
-                                ? "border-primary"
-                                : "border-slate-200 dark:border-slate-700"
-                            }`}
-                            onClick={() => applyColorScheme(color.name)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`h-4 w-4 rounded-full ${color.color}`}
-                              />
-                              <span className="capitalize text-sm">
-                                {color.name}
                               </span>
                             </div>
                           </div>

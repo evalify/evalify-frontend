@@ -4,7 +4,7 @@ import { Extension, Node, NodeViewProps } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import { InlineMath, BlockMath } from "react-katex";
 import React, { useCallback, useState } from "react";
-import { decodeLatex } from "@/lib/latex";
+import { decodeLatex } from "@/lib/latex/latex";
 import { LatexDialog } from "@/components/rich-text-editor/latex-dialog";
 
 const LatexComponent = (props: NodeViewProps) => {
@@ -22,7 +22,7 @@ const LatexComponent = (props: NodeViewProps) => {
     (newFormula: string) => {
       updateAttributes({ formula: newFormula });
     },
-    [updateAttributes]
+    [updateAttributes],
   );
 
   React.useEffect(() => {
