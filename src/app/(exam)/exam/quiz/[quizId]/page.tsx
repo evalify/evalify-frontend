@@ -9,6 +9,9 @@ import { QuizProvider } from "@/components/quiz/quiz-context";
 import { getQuizData, processQuizData } from "@/lib/quiz-data";
 import { useState } from "react";
 import { QuizData } from "@/components/quiz/types/types";
+import { useFullScreenEnforcement } from "@/hooks/use-fullscreen-enforcement";
+import { FullScreenModal } from "@/components/quiz/fullscreen-modal";
+import { ViolationsTracker } from "@/components/quiz/violations-tracker";
 
 export default function QuizPage() {
   const params = useParams();
@@ -23,7 +26,15 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const initialQuestionId = parseInt(questionId);
+  const initialQuestionId = parseInt(questionId); // Initialize full-screen enforcement if required
+  const {
+    isFullScreen,
+    violations,
+    violationCount,
+    requestFullScreen,
+    showFullScreenModal,
+    isFullScreenSupported,
+  } = useFullScreenEnforcement(data?.fullScreenRequired || false);
 
   // Fetch quiz data based on quizId
   useEffect(() => {
@@ -85,31 +96,65 @@ export default function QuizPage() {
       </div>
     );
   }
-
   return (
-    <QuizProvider
-      questions={data.questions}
-      initialQuestionId={initialQuestionId}
-    >
-      <div className="flex flex-col min-h-screen">
-        <TestHeader />
-        <div className="flex flex-col md:flex-row flex-1">
-          <div className="flex-1 border-r border-gray-700">
-            <TestContent
-              data={data}
-              quizId={quizId as string}
-              onQuestionChange={updateQuestionInUrl}
-            />
-          </div>
-          <div className="w-full md:w-96 border-l border-gray-700">
-            <Sidebar
-              data={data}
-              quizId={quizId as string}
-              onQuestionChange={updateQuestionInUrl}
-            />
+    <>
+      {" "}
+      {/* Full-screen modal */}
+      {showFullScreenModal && data?.fullScreenRequired && (
+        <FullScreenModal
+          isOpen={showFullScreenModal}
+          onRequestFullScreen={requestFullScreen}
+          isFullScreenSupported={isFullScreenSupported}
+          isRequired={data?.fullScreenRequired || false}
+        />
+      )}
+      <QuizProvider
+        questions={data.questions}
+        initialQuestionId={initialQuestionId}
+      >
+        {" "}
+        <div
+          className={`flex flex-col min-h-screen h-screen ${isFullScreen ? "fullscreen-quiz" : ""}`}
+        >
+          <TestHeader />
+          <div className="flex flex-row flex-1 h-full overflow-hidden">
+            {" "}
+            <div className="flex-1 border-r border-gray-700 relative overflow-auto">
+              {/* Blur overlay when full-screen is required but not active */}
+              {data?.fullScreenRequired && !isFullScreen && (
+                <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-40 pointer-events-none" />
+              )}
+
+              <TestContent
+                data={data}
+                quizId={quizId as string}
+                onQuestionChange={updateQuestionInUrl}
+              />
+            </div>
+            <div
+              className={`${isFullScreen ? "w-80" : "w-96"} border-l border-gray-700 flex flex-col h-full min-h-0 sidebar-container`}
+            >
+              <div className="flex-1 overflow-auto">
+                <Sidebar
+                  data={data}
+                  quizId={quizId as string}
+                  onQuestionChange={updateQuestionInUrl}
+                />
+              </div>
+
+              {/* Violations tracker */}
+              {data?.fullScreenRequired && (
+                <div className="border-t border-gray-700 p-4 flex-shrink-0">
+                  <ViolationsTracker
+                    violations={violations}
+                    violationCount={violationCount}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </QuizProvider>
+      </QuizProvider>
+    </>
   );
 }

@@ -114,6 +114,7 @@ export interface QuizData {
   instructions: string;
   startTime: string;
   questions: Question[];
+  fullScreenRequired?: boolean;
 }
 
 export interface QuizStats {

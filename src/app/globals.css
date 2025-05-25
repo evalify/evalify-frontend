@@ -242,22 +242,24 @@
     --ring: oklch(1 0 0);
     --border: oklch(1 0 0);
   }
-  
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
-  
+
   .reduce-motion {
     --animation-duration: 0s;
   }
-  
-  .reduce-motion *, 
-  .reduce-motion *::before, 
+
+  .reduce-motion *,
+  .reduce-motion *::before,
   .reduce-motion *::after {
     animation-duration: 0s !important;
     transition-duration: 0s !important;
@@ -309,5 +311,37 @@
     border-left: 3px solid gray;
     margin: 1.5rem 0;
     padding-left: 1rem;
+  }
+}
+
+/* Full-screen quiz mode styles */
+.fullscreen-quiz {
+  height: 100vh !important;
+  overflow: hidden;
+}
+
+.fullscreen-quiz ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fullscreen-quiz ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fullscreen-quiz ::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.fullscreen-quiz ::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Ensure sidebar is always visible in full-screen mode */
+@media (max-width: 768px) {
+  .fullscreen-quiz .sidebar-container {
+    display: flex !important;
+    width: 280px !important;
+    min-width: 280px !important;
   }
 }
