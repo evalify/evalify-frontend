@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +50,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -59,9 +70,13 @@ import {
   BookOpen,
   Calendar,
   GraduationCap,
+  Trash2,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 interface Semester {
   id: string;
@@ -95,6 +110,18 @@ const AddSemesterDialog = () => {
   const [selectedSemesterType, setSelectedSemesterType] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
 
+  const semesterTypeOptions = [
+    { value: "odd", label: "Odd Semester" },
+    { value: "even", label: "Even Semester" },
+  ];
+
+  const managerOptions = [
+    { value: "manager1", label: "Dr. Sarah Wilson" },
+    { value: "manager2", label: "Prof. Robert Chen" },
+    { value: "manager3", label: "Dr. Emily Davis" },
+    { value: "manager4", label: "Prof. Michael Brown" },
+  ];
+
   const getSemesterName = () => {
     if (selectedSemesterType && selectedYear) {
       return `${selectedSemesterType.charAt(0).toUpperCase() + selectedSemesterType.slice(1)} Semester ${selectedYear}`;
@@ -121,18 +148,12 @@ const AddSemesterDialog = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="semester-type">Semester Type</Label>
-              <Select
+              <SearchableSelect
+                options={semesterTypeOptions}
                 value={selectedSemesterType}
                 onValueChange={setSelectedSemesterType}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="odd">Odd Semester</SelectItem>
-                  <SelectItem value="even">Even Semester</SelectItem>
-                </SelectContent>
-              </Select>
+                placeholder="Select semester"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="year">Year</Label>
@@ -160,17 +181,12 @@ const AddSemesterDialog = () => {
 
           <div className="space-y-2">
             <Label>Assign Managers</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Select managers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="manager1">Dr. Sarah Wilson</SelectItem>
-                <SelectItem value="manager2">Prof. Robert Chen</SelectItem>
-                <SelectItem value="manager3">Dr. Emily Davis</SelectItem>
-                <SelectItem value="manager4">Prof. Michael Brown</SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={managerOptions}
+              value=""
+              onValueChange={() => {}}
+              placeholder="Select managers"
+            />
           </div>
 
           <div className="flex items-center space-x-2">
@@ -198,6 +214,29 @@ export default function SemesterPage() {
   const [sortField, setSortField] = useState<keyof Semester>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Bulk selection state
+  const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<
+    "activate" | "deactivate" | "delete" | null
+  >(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
+  const { toast } = useToast();
+
+  const sortOptions = [
+    { value: "name-asc", label: "Name (A-Z)" },
+    { value: "name-desc", label: "Name (Z-A)" },
+    { value: "year-desc", label: "Year (Newest)" },
+    { value: "year-asc", label: "Year (Oldest)" },
+    { value: "courseCount-desc", label: "Most Courses" },
+    { value: "courseCount-asc", label: "Least Courses" },
+    { value: "createdAt-desc", label: "Recently Created" },
+    { value: "createdAt-asc", label: "Oldest Created" },
+  ];
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -276,6 +315,95 @@ export default function SemesterPage() {
       };
     },
   });
+
+  // Bulk action handlers
+  const handleSelectAll = () => {
+    if (!data?.semesters) return;
+
+    if (selectAll) {
+      setSelectedSemesters([]);
+    } else {
+      const currentPageSemesterIds = data.semesters.map(
+        (semester) => semester.id,
+      );
+      setSelectedSemesters((prev) => {
+        const otherPageSelected = prev.filter(
+          (id) => !currentPageSemesterIds.includes(id),
+        );
+        return [...otherPageSelected, ...currentPageSemesterIds];
+      });
+    }
+  };
+
+  const handleSelectSemester = (semesterId: string) => {
+    setSelectedSemesters((prev) => {
+      if (prev.includes(semesterId)) {
+        return prev.filter((id) => id !== semesterId);
+      } else {
+        return [...prev, semesterId];
+      }
+    });
+  };
+
+  const handleBulkAction = (action: "activate" | "deactivate" | "delete") => {
+    setBulkActionType(action);
+    setShowBulkConfirm(true);
+  };
+
+  const executeBulkAction = async () => {
+    setIsBulkProcessing(true);
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const actionText =
+        bulkActionType === "activate"
+          ? "activated"
+          : bulkActionType === "deactivate"
+            ? "deactivated"
+            : "deleted";
+
+      toast(
+        `Successfully ${actionText} ${selectedSemesters.length} semester(s)`,
+        {
+          style: { background: "#10B981", color: "white" },
+        },
+      );
+
+      setSelectedSemesters([]);
+      setShowBulkConfirm(false);
+      setBulkActionType(null);
+    } catch (error) {
+      toast("Failed to perform bulk action", {
+        style: { background: "#EF4444", color: "white" },
+      });
+      console.log(error);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  // Effect to manage bulk actions visibility
+  React.useEffect(() => {
+    setShowBulkActions(selectedSemesters.length > 0);
+  }, [selectedSemesters]);
+
+  // Effect to manage select all state
+  React.useEffect(() => {
+    if (data?.semesters) {
+      const currentPageSemesterIds = data.semesters.map(
+        (semester) => semester.id,
+      );
+      const selectedOnCurrentPage = selectedSemesters.filter((id) =>
+        currentPageSemesterIds.includes(id),
+      );
+      setSelectAll(
+        selectedOnCurrentPage.length === currentPageSemesterIds.length &&
+          currentPageSemesterIds.length > 0,
+      );
+    }
+  }, [data?.semesters, selectedSemesters]);
 
   const handleSort = (field: keyof Semester) => {
     if (field === sortField) {
@@ -371,7 +499,8 @@ export default function SemesterPage() {
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <Select
+                <SearchableSelect
+                  options={sortOptions}
                   value={`${sortField}-${sortDirection}`}
                   onValueChange={(value) => {
                     const [field, direction] = value.split("-") as [
@@ -381,29 +510,9 @@ export default function SemesterPage() {
                     setSortField(field);
                     setSortDirection(direction);
                   }}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Sort by..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                    <SelectItem value="year-desc">Year (Newest)</SelectItem>
-                    <SelectItem value="year-asc">Year (Oldest)</SelectItem>
-                    <SelectItem value="courseCount-desc">
-                      Most Courses
-                    </SelectItem>
-                    <SelectItem value="courseCount-asc">
-                      Least Courses
-                    </SelectItem>
-                    <SelectItem value="createdAt-desc">
-                      Recently Created
-                    </SelectItem>
-                    <SelectItem value="createdAt-asc">
-                      Oldest Created
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Sort by..."
+                  className="w-[160px]"
+                />
                 <Select
                   value={pageSize.toString()}
                   onValueChange={(value) => setPageSize(parseInt(value))}
@@ -430,24 +539,21 @@ export default function SemesterPage() {
                   >
                     Year:
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={yearFilter || "all"}
                     onValueChange={(value) =>
                       setYearFilter(value === "all" ? null : value)
                     }
-                  >
-                    <SelectTrigger id="year-filter" className="w-[120px]">
-                      <SelectValue placeholder="All years" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Years</SelectItem>
-                      {uniqueYears.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="All years"
+                    options={[
+                      { value: "all", label: "All Years" },
+                      ...uniqueYears.map((year) => ({
+                        value: year.toString(),
+                        label: year.toString(),
+                      })),
+                    ]}
+                    className="w-[120px]"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label
@@ -456,21 +562,19 @@ export default function SemesterPage() {
                   >
                     Status:
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={statusFilter || "all"}
                     onValueChange={(value) =>
                       setStatusFilter(value === "all" ? null : value)
                     }
-                  >
-                    <SelectTrigger id="status-filter" className="w-[120px]">
-                      <SelectValue placeholder="All status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    placeholder="All status"
+                    options={[
+                      { value: "all", label: "All Status" },
+                      { value: "active", label: "Active" },
+                      { value: "inactive", label: "Inactive" },
+                    ]}
+                    className="w-[120px]"
+                  />
                 </div>
                 <Button
                   variant="secondary"
@@ -486,10 +590,68 @@ export default function SemesterPage() {
               </div>
             )}
 
+            {/* Bulk Actions Bar */}
+            {showBulkActions && (
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {selectedSemesters.length} semester(s) selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("activate")}
+                    className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/50"
+                  >
+                    <UserCheck size={16} />
+                    Activate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("deactivate")}
+                    className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950/50"
+                  >
+                    <UserX size={16} />
+                    Deactivate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("delete")}
+                    className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50"
+                  >
+                    <Trash2 size={16} />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedSemesters([]);
+                      setSelectAll(false);
+                    }}
+                    className="hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="rounded-md border relative">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={selectAll}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all semesters"
+                      />
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("name")}
@@ -529,6 +691,9 @@ export default function SemesterPage() {
                     Array.from({ length: pageSize }).map((_, index) => (
                       <TableRow key={`loading-${index}`}>
                         <TableCell>
+                          <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </TableCell>
+                        <TableCell>
                           <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
                         <TableCell>
@@ -553,13 +718,22 @@ export default function SemesterPage() {
                     ))
                   ) : data?.semesters.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={8} className="h-24 text-center">
                         No semesters found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     data?.semesters.map((semester) => (
                       <TableRow key={semester.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedSemesters.includes(semester.id)}
+                            onCheckedChange={() =>
+                              handleSelectSemester(semester.id)
+                            }
+                            aria-label={`Select ${semester.name}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {semester.name}
                         </TableCell>
@@ -709,6 +883,40 @@ export default function SemesterPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <AlertDialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkActionType === "delete"
+                ? "Delete Semesters"
+                : bulkActionType === "activate"
+                  ? "Activate Semesters"
+                  : "Deactivate Semesters"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkActionType === "delete"
+                ? `Are you sure you want to delete ${selectedSemesters.length} semester(s)? This action cannot be undone.`
+                : `Are you sure you want to ${bulkActionType} ${selectedSemesters.length} semester(s)?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkProcessing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              disabled={isBulkProcessing}
+              className={
+                bulkActionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""
+              }
+            >
+              {isBulkProcessing ? "Processing..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

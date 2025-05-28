@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +50,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -60,9 +71,15 @@ import {
   BookOpen,
   GraduationCap,
   Calendar,
+  Trash2,
+  UserCheck,
+  UserX,
+  CheckSquare,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 enum CourseType {
   CORE = "CORE",
@@ -231,6 +248,18 @@ export default function CoursePage() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterOpen, setFilterOpen] = useState(false);
 
+  // Bulk operations state
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<
+    "activate" | "deactivate" | "delete" | null
+  >(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
+  const toast = useToast();
+
   const { data, isLoading } = useQuery({
     queryKey: [
       "courses",
@@ -379,6 +408,96 @@ export default function CoursePage() {
     new Set(mockCourses.map((c) => c.semester)),
   ).sort((a, b) => a - b);
 
+  const uniqueTypes = [
+    { value: CourseType.CORE, label: "Core" },
+    { value: CourseType.ELECTIVE, label: "Elective" },
+    { value: CourseType.MICRO_CREDENTIAL, label: "Micro Credential" },
+  ];
+
+  const semesterOptions = uniqueSemesters.map((semester) => ({
+    value: semester.toString(),
+    label: `Semester ${semester}`,
+  }));
+
+  const statusOptions = [
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
+  ];
+
+  // Bulk operations handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const currentPageCourseIds =
+        data?.courses.map((course) => course.id) || [];
+      setSelectedCourses(currentPageCourseIds);
+      setSelectAll(true);
+    } else {
+      setSelectedCourses([]);
+      setSelectAll(false);
+    }
+  };
+
+  const handleSelectCourse = (courseId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCourses((prev) => [...prev, courseId]);
+    } else {
+      setSelectedCourses((prev) => prev.filter((id) => id !== courseId));
+    }
+  };
+
+  const handleBulkAction = (action: "activate" | "deactivate" | "delete") => {
+    setBulkActionType(action);
+    setShowBulkConfirm(true);
+  };
+
+  const executeBulkAction = async () => {
+    if (!bulkActionType || selectedCourses.length === 0) return;
+
+    setIsBulkProcessing(true);
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const actionText =
+        bulkActionType === "activate"
+          ? "activated"
+          : bulkActionType === "deactivate"
+            ? "deactivated"
+            : "deleted";
+
+      toast.success(
+        `${selectedCourses.length} course(s) ${actionText} successfully.`,
+      );
+
+      // Reset selections
+      setSelectedCourses([]);
+      setSelectAll(false);
+      setShowBulkConfirm(false);
+      setBulkActionType(null);
+    } catch (error) {
+      toast.error(`Failed to ${bulkActionType} courses. Please try again.`);
+      console.log(error);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  // Effects for bulk operations
+  useEffect(() => {
+    setShowBulkActions(selectedCourses.length > 0);
+  }, [selectedCourses]);
+
+  useEffect(() => {
+    if (data?.courses) {
+      const currentPageCourseIds = data.courses.map((course) => course.id);
+      const allSelected =
+        currentPageCourseIds.length > 0 &&
+        currentPageCourseIds.every((id) => selectedCourses.includes(id));
+      setSelectAll(allSelected);
+    }
+  }, [selectedCourses, data?.courses]);
+
   return (
     <div className="container mx-auto py-6">
       <Card>
@@ -461,7 +580,6 @@ export default function CoursePage() {
                 </Select>
               </div>
             </div>
-
             {filterOpen && (
               <div className="flex items-center gap-4 p-4 border rounded-md bg-muted/20 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -471,26 +589,13 @@ export default function CoursePage() {
                   >
                     Type:
                   </Label>
-                  <Select
-                    value={typeFilter || "all"}
-                    onValueChange={(value) =>
-                      setTypeFilter(value === "all" ? null : value)
-                    }
-                  >
-                    <SelectTrigger id="type-filter" className="w-[140px]">
-                      <SelectValue placeholder="All types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value={CourseType.CORE}>Core</SelectItem>
-                      <SelectItem value={CourseType.ELECTIVE}>
-                        Elective
-                      </SelectItem>
-                      <SelectItem value={CourseType.MICRO_CREDENTIAL}>
-                        Micro Credential
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={uniqueTypes}
+                    value={typeFilter || ""}
+                    onValueChange={(value) => setTypeFilter(value || null)}
+                    placeholder="All types"
+                    className="w-[140px]"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label
@@ -499,24 +604,13 @@ export default function CoursePage() {
                   >
                     Semester:
                   </Label>
-                  <Select
-                    value={semesterFilter || "all"}
-                    onValueChange={(value) =>
-                      setSemesterFilter(value === "all" ? null : value)
-                    }
-                  >
-                    <SelectTrigger id="semester-filter" className="w-[120px]">
-                      <SelectValue placeholder="All semesters" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Semesters</SelectItem>
-                      {uniqueSemesters.map((semester) => (
-                        <SelectItem key={semester} value={semester.toString()}>
-                          Semester {semester}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={semesterOptions}
+                    value={semesterFilter || ""}
+                    onValueChange={(value) => setSemesterFilter(value || null)}
+                    placeholder="All semesters"
+                    className="w-[120px]"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label
@@ -525,21 +619,13 @@ export default function CoursePage() {
                   >
                     Status:
                   </Label>
-                  <Select
-                    value={statusFilter || "all"}
-                    onValueChange={(value) =>
-                      setStatusFilter(value === "all" ? null : value)
-                    }
-                  >
-                    <SelectTrigger id="status-filter" className="w-[120px]">
-                      <SelectValue placeholder="All status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={statusOptions}
+                    value={statusFilter || ""}
+                    onValueChange={(value) => setStatusFilter(value || null)}
+                    placeholder="All status"
+                    className="w-[120px]"
+                  />
                 </div>
                 <Button
                   variant="secondary"
@@ -555,11 +641,70 @@ export default function CoursePage() {
                 </Button>
               </div>
             )}
-
+            {showBulkActions && (
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">
+                    {selectedCourses.length} course(s) selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("activate")}
+                    disabled={isBulkProcessing}
+                    className="gap-2 text-green-600 border-green-300 hover:bg-green-50"
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    Activate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("deactivate")}
+                    disabled={isBulkProcessing}
+                    className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+                  >
+                    <UserX className="h-4 w-4" />
+                    Deactivate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("delete")}
+                    disabled={isBulkProcessing}
+                    className="gap-2 text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCourses([]);
+                      setSelectAll(false);
+                    }}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="rounded-md border relative">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <div className="flex items-center h-full">
+                        <Checkbox
+                          checked={selectAll}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </div>
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("name")}
@@ -597,6 +742,9 @@ export default function CoursePage() {
                     Array.from({ length: pageSize }).map((_, index) => (
                       <TableRow key={`loading-${index}`}>
                         <TableCell>
+                          <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </TableCell>
+                        <TableCell>
                           <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
                         <TableCell>
@@ -630,13 +778,26 @@ export default function CoursePage() {
                     ))
                   ) : data?.courses.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="h-24 text-center">
+                      <TableCell colSpan={11} className="h-24 text-center">
                         No courses found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     data?.courses.map((course) => (
                       <TableRow key={course.id}>
+                        <TableCell>
+                          <div className="flex items-center h-full">
+                            <Checkbox
+                              checked={selectedCourses.includes(course.id)}
+                              onCheckedChange={(checked) =>
+                                handleSelectCourse(
+                                  course.id,
+                                  checked as boolean,
+                                )
+                              }
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="max-w-[200px]">
                             <div className="font-medium truncate">
@@ -757,7 +918,6 @@ export default function CoursePage() {
                 </TableBody>
               </Table>
             </div>
-
             <div className="flex items-center justify-between py-4">
               <div className="text-sm text-muted-foreground">
                 Showing{" "}
@@ -821,6 +981,42 @@ export default function CoursePage() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Confirm {bulkActionType} courses
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to{" "}
+              {bulkActionType === "delete"
+                ? "delete these courses? This action cannot be undone."
+                : bulkActionType === "activate"
+                  ? "activate these courses?"
+                  : "deactivate these courses?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              disabled={isBulkProcessing}
+              className={
+                bulkActionType === "delete"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : bulkActionType === "activate"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-orange-600 hover:bg-orange-700"
+              }
+            >
+              {isBulkProcessing
+                ? `${bulkActionType}ing...`
+                : `Yes, ${bulkActionType} courses`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
