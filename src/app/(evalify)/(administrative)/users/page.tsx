@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,12 +50,32 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal, Plus, Search, SlidersHorizontal } from "lucide-react";
+import {
+  MoreHorizontal,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  UserCheck,
+  UserX,
+  CheckSquare,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 enum Role {
   ADMIN = "ADMIN",
@@ -95,6 +116,85 @@ const mockUsers: User[] = Array.from({ length: 50 }, (_, i) => ({
 const AddUserDialog = () => {
   const [open, setOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phoneNumber: "",
+    profileId: "",
+    isActive: true,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { success, error } = useToast();
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Email is invalid";
+    }
+
+    if (!selectedRole) {
+      newErrors.role = "Role is required";
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    }
+
+    if (!formData.profileId.trim()) {
+      newErrors.profileId = "Profile ID is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      success("User created successfully", {
+        description: `${formData.name} has been added to the system.`,
+      });
+
+      // Reset form and close dialog
+      setFormData({
+        name: "",
+        email: "",
+        phoneNumber: "",
+        profileId: "",
+        isActive: true,
+      });
+      setSelectedRole("");
+      setErrors({});
+      setOpen(false);
+    } catch (err) {
+      error("Error creating user", {
+        description: "There was an error creating the user. Please try again.",
+      });
+      console.log(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -115,7 +215,16 @@ const AddUserDialog = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" placeholder="John Doe" />
+              <Input
+                id="name"
+                placeholder="John Doe"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className={errors.name ? "border-red-500" : ""}
+              />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -123,44 +232,89 @@ const AddUserDialog = () => {
                 id="email"
                 type="email"
                 placeholder="john.doe@example.com"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                className={errors.email ? "border-red-500" : ""}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(Role).map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={Object.values(Role).map((role) => ({
+                  value: role,
+                  label: role,
+                }))}
+                value={selectedRole}
+                onValueChange={(value) => {
+                  setSelectedRole(value);
+                  if (errors.role) {
+                    setErrors((prev) => ({ ...prev, role: "" }));
+                  }
+                }}
+                placeholder="Select role"
+                searchPlaceholder="Search roles..."
+                className={errors.role ? "border-red-500" : ""}
+              />
+              {errors.role && (
+                <p className="text-sm text-red-500">{errors.role}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" placeholder="+1 (555) 123-4567" />
+              <Input
+                id="phone"
+                placeholder="+1 (555) 123-4567"
+                value={formData.phoneNumber}
+                onChange={(e) =>
+                  handleInputChange("phoneNumber", e.target.value)
+                }
+                className={errors.phoneNumber ? "border-red-500" : ""}
+              />
+              {errors.phoneNumber && (
+                <p className="text-sm text-red-500">{errors.phoneNumber}</p>
+              )}
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="profileId">Profile ID</Label>
-            <Input id="profileId" placeholder="profile-123" />
+            <Input
+              id="profileId"
+              placeholder="profile-123"
+              value={formData.profileId}
+              onChange={(e) => handleInputChange("profileId", e.target.value)}
+              className={errors.profileId ? "border-red-500" : ""}
+            />
+            {errors.profileId && (
+              <p className="text-sm text-red-500">{errors.profileId}</p>
+            )}
           </div>
           <div className="flex items-center space-x-2">
-            <Checkbox id="active" defaultChecked />
+            <Checkbox
+              id="active"
+              checked={formData.isActive}
+              onCheckedChange={(checked) =>
+                handleInputChange("isActive", checked as boolean)
+              }
+            />
             <Label htmlFor="active">Active Account</Label>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button onClick={() => setOpen(false)}>Create User</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create User"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -176,6 +330,20 @@ export default function UsersPage() {
   const [sortField, setSortField] = useState<keyof User>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Multiple selection state
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+
+  // Bulk operation states
+  const [bulkActionType, setBulkActionType] = useState<
+    "activate" | "deactivate" | "delete" | null
+  >(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
+  const { success, error: showError } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -267,6 +435,85 @@ export default function UsersPage() {
     if (field !== sortField) return null;
     return sortDirection === "asc" ? " ↑" : " ↓";
   };
+
+  // Bulk action handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allUserIds = data?.users.map((user) => user.id) || [];
+      setSelectedUsers(allUserIds);
+      setSelectAll(true);
+    } else {
+      setSelectedUsers([]);
+      setSelectAll(false);
+    }
+  };
+
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers((prev) => [...prev, userId]);
+    } else {
+      setSelectedUsers((prev) => prev.filter((id) => id !== userId));
+      setSelectAll(false);
+    }
+  };
+
+  const handleBulkAction = (action: "activate" | "deactivate" | "delete") => {
+    setBulkActionType(action);
+    setShowBulkConfirm(true);
+  };
+
+  const executeBulkAction = async () => {
+    if (!bulkActionType || selectedUsers.length === 0) return;
+
+    setIsBulkProcessing(true);
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const actionText = {
+        activate: "activated",
+        deactivate: "deactivated",
+        delete: "deleted",
+      }[bulkActionType];
+
+      success("Bulk action completed", {
+        description: `${selectedUsers.length} users have been ${actionText}.`,
+      });
+
+      // Reset selections
+      setSelectedUsers([]);
+      setSelectAll(false);
+      setShowBulkConfirm(false);
+      setBulkActionType(null);
+    } catch (error) {
+      showError("Error", {
+        description: "There was an error processing the bulk action.",
+      });
+      console.log(error);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  // Update showBulkActions based on selected users
+  React.useEffect(() => {
+    setShowBulkActions(selectedUsers.length > 0);
+  }, [selectedUsers]);
+
+  // Update selectAll state based on current page selections
+  React.useEffect(() => {
+    if (data?.users) {
+      const currentPageUserIds = data.users.map((user) => user.id);
+      const selectedOnCurrentPage = selectedUsers.filter((id) =>
+        currentPageUserIds.includes(id),
+      );
+      setSelectAll(
+        selectedOnCurrentPage.length === currentPageUserIds.length &&
+          currentPageUserIds.length > 0,
+      );
+    }
+  }, [data?.users, selectedUsers]);
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
@@ -323,6 +570,58 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
+            {/* Bulk Actions Bar */}
+            {showBulkActions && (
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">
+                    {selectedUsers.length} user
+                    {selectedUsers.length !== 1 ? "s" : ""} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("activate")}
+                    className="gap-2 text-green-600 border-green-300 hover:bg-green-50"
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    Activate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("deactivate")}
+                    className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+                  >
+                    <UserX className="h-4 w-4" />
+                    Deactivate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("delete")}
+                    className="gap-2 text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedUsers([]);
+                      setSelectAll(false);
+                    }}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between items-center">
               <div className="flex gap-2 w-full max-w-sm items-center">
                 <div className="relative flex-1">
@@ -397,24 +696,22 @@ export default function UsersPage() {
                   >
                     Role:
                   </Label>
-                  <Select
+                  <SearchableSelect
+                    options={[
+                      { value: "all", label: "All Roles" },
+                      ...Object.values(Role).map((role) => ({
+                        value: role,
+                        label: role,
+                      })),
+                    ]}
                     value={roleFilter || "all"}
                     onValueChange={(value) =>
                       setRoleFilter(value === "all" ? null : value)
                     }
-                  >
-                    <SelectTrigger id="role-filter" className="w-[140px]">
-                      <SelectValue placeholder="All roles" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Roles</SelectItem>
-                      {Object.values(Role).map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="All roles"
+                    searchPlaceholder="Search roles..."
+                    className="w-[140px]"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label
@@ -423,21 +720,20 @@ export default function UsersPage() {
                   >
                     Status:
                   </Label>
-                  <Select
+                  <SearchableSelect
+                    options={[
+                      { value: "all", label: "All Status" },
+                      { value: "active", label: "Active" },
+                      { value: "inactive", label: "Inactive" },
+                    ]}
                     value={statusFilter || "all"}
                     onValueChange={(value) =>
                       setStatusFilter(value === "all" ? null : value)
                     }
-                  >
-                    <SelectTrigger id="status-filter" className="w-[120px]">
-                      <SelectValue placeholder="All status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    placeholder="All status"
+                    searchPlaceholder="Search status..."
+                    className="w-[120px]"
+                  />
                 </div>
                 <Button
                   variant="secondary"
@@ -456,6 +752,13 @@ export default function UsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={selectAll}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all users"
+                      />
+                    </TableHead>
                     <TableHead className="w-[50px]">
                       <span className="sr-only">Avatar</span>
                     </TableHead>
@@ -498,6 +801,9 @@ export default function UsersPage() {
                     Array.from({ length: pageSize }).map((_, index) => (
                       <TableRow key={`loading-${index}`}>
                         <TableCell>
+                          <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center space-x-3">
                             <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
                             <div className="space-y-2">
@@ -531,13 +837,22 @@ export default function UsersPage() {
                     ))
                   ) : data?.users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                         No users found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     data?.users.map((user) => (
                       <TableRow key={user.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUsers.includes(user.id)}
+                            onCheckedChange={(checked) =>
+                              handleSelectUser(user.id, checked as boolean)
+                            }
+                            aria-label={`Select ${user.name}`}
+                          />
+                        </TableCell>
                         <TableCell>
                           <Avatar>
                             <AvatarImage src={user.image || undefined} />
@@ -671,6 +986,44 @@ export default function UsersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <AlertDialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Action</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkActionType === "delete" ? (
+                <>
+                  Are you sure you want to delete {selectedUsers.length} user
+                  {selectedUsers.length !== 1 ? "s" : ""}? This action cannot be
+                  undone.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to {bulkActionType}{" "}
+                  {selectedUsers.length} user
+                  {selectedUsers.length !== 1 ? "s" : ""}?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkProcessing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              disabled={isBulkProcessing}
+              className={
+                bulkActionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""
+              }
+            >
+              {isBulkProcessing ? "Processing..." : `Yes, ${bulkActionType}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
