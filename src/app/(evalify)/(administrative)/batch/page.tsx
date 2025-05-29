@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +50,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -59,10 +70,15 @@ import {
   Users,
   BookOpen,
   Calendar,
+  Trash2,
+  UserCheck,
+  UserX,
+  CheckSquare,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 interface Batch {
   id: string;
@@ -101,18 +117,35 @@ const mockBatches: Batch[] = Array.from({ length: 25 }, (_, i) => ({
   batch: 2020 + (i % 5),
   department: departments[i % departments.length],
   section: sections[i % sections.length],
-  isActive: i % 6 !== 0,
-  studentCount: Math.floor(Math.random() * 50) + 20,
+  isActive: i % 8 !== 0,
+  studentCount: Math.floor(Math.random() * 45) + 15,
   managerCount: Math.floor(Math.random() * 3) + 1,
   semesterCount: Math.floor(Math.random() * 8) + 1,
-  quizCount: Math.floor(Math.random() * 15) + 5,
-  bankCount: Math.floor(Math.random() * 10) + 2,
+  quizCount: Math.floor(Math.random() * 20) + 5,
+  bankCount: Math.floor(Math.random() * 8) + 2,
 }));
 
 const AddBatchDialog = () => {
   const [open, setOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [selectedSection, setSelectedSection] = useState<string>("");
+  const [selectedManager, setSelectedManager] = useState<string>("");
+
+  const departmentOptions = departments.map((dept) => ({
+    value: dept,
+    label: dept,
+  }));
+
+  const sectionOptions = sections.map((section) => ({
+    value: section,
+    label: `Section ${section}`,
+  }));
+
+  const managerOptions = [
+    { value: "manager1", label: "Dr. John Smith" },
+    { value: "manager2", label: "Prof. Jane Doe" },
+    { value: "manager3", label: "Dr. Mike Johnson" },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -122,19 +155,16 @@ const AddBatchDialog = () => {
           Add Batch
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Batch</DialogTitle>
           <DialogDescription>
-            Create a new batch with department and section details.
+            Create a new batch and assign students to specific semester and
+            section.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="batch-name">Batch Name</Label>
-              <Input id="batch-name" placeholder="Batch 2024-CS-A" />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="batch-year">Batch Year</Label>
               <Input
@@ -145,56 +175,50 @@ const AddBatchDialog = () => {
                 max="2030"
               />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
-              <Select
+              <SearchableSelect
+                options={departmentOptions}
                 value={selectedDepartment}
                 onValueChange={setSelectedDepartment}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="section">Section</Label>
-              <Select
-                value={selectedSection}
-                onValueChange={setSelectedSection}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map((section) => (
-                    <SelectItem key={section} value={section}>
-                      Section {section}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select department"
+              />
             </div>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
+            <Label htmlFor="section">Section</Label>
+            <SearchableSelect
+              options={sectionOptions}
+              value={selectedSection}
+              onValueChange={setSelectedSection}
+              placeholder="Select section"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              placeholder="Batch description..."
+              placeholder="Additional batch information..."
               className="min-h-[80px]"
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox id="active" defaultChecked />
-            <Label htmlFor="active">Active Batch</Label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Assign Manager</Label>
+              <SearchableSelect
+                options={managerOptions}
+                value={selectedManager}
+                onValueChange={(value) => setSelectedManager(value)}
+                placeholder="Select manager"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Initial Semester</Label>
+              <Input type="number" placeholder="1" min="1" max="8" />
+            </div>
           </div>
         </div>
         <DialogFooter>
@@ -213,11 +237,24 @@ export default function BatchPage() {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
-  const [yearFilter, setYearFilter] = useState<string | null>(null);
+  const [sectionFilter, setSectionFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [batchYearFilter, setBatchYearFilter] = useState<string | null>(null);
   const [sortField, setSortField] = useState<keyof Batch>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Bulk operations state
+  const [selectedBatches, setSelectedBatches] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<
+    "activate" | "deactivate" | "delete" | null
+  >(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
+  const { success, error } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -226,13 +263,14 @@ export default function BatchPage() {
       pageSize,
       searchTerm,
       departmentFilter,
-      yearFilter,
+      sectionFilter,
       statusFilter,
+      batchYearFilter,
       sortField,
       sortDirection,
     ],
     queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
       let filteredBatches = [...mockBatches];
 
@@ -240,8 +278,7 @@ export default function BatchPage() {
         filteredBatches = filteredBatches.filter(
           (batch) =>
             batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            batch.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            batch.section.toLowerCase().includes(searchTerm.toLowerCase()),
+            batch.department.toLowerCase().includes(searchTerm.toLowerCase()),
         );
       }
 
@@ -251,9 +288,9 @@ export default function BatchPage() {
         );
       }
 
-      if (yearFilter) {
+      if (sectionFilter) {
         filteredBatches = filteredBatches.filter(
-          (batch) => batch.batch.toString() === yearFilter,
+          (batch) => batch.section === sectionFilter,
         );
       }
 
@@ -261,6 +298,12 @@ export default function BatchPage() {
         const isActive = statusFilter === "active";
         filteredBatches = filteredBatches.filter(
           (batch) => batch.isActive === isActive,
+        );
+      }
+
+      if (batchYearFilter) {
+        filteredBatches = filteredBatches.filter(
+          (batch) => batch.batch.toString() === batchYearFilter,
         );
       }
 
@@ -351,9 +394,108 @@ export default function BatchPage() {
     return pages;
   };
 
-  const uniqueYears = Array.from(new Set(mockBatches.map((b) => b.batch))).sort(
-    (a, b) => b - a,
-  );
+  const uniqueDepartments = departments.map((dept) => ({
+    value: dept,
+    label: dept,
+  }));
+
+  const uniqueSections = sections.map((section) => ({
+    value: section,
+    label: `Section ${section}`,
+  }));
+
+  const uniqueBatchYears = Array.from(new Set(mockBatches.map((b) => b.batch)))
+    .sort((a, b) => b - a)
+    .map((year) => ({
+      value: year.toString(),
+      label: year.toString(),
+    }));
+
+  const statusOptions = [
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
+  ];
+
+  const sortOptions = [
+    { value: "name-asc", label: "Name (A-Z)" },
+    { value: "name-desc", label: "Name (Z-A)" },
+    { value: "batch-desc", label: "Newest First" },
+    { value: "batch-asc", label: "Oldest First" },
+    { value: "studentCount-desc", label: "Most Students" },
+    { value: "studentCount-asc", label: "Least Students" },
+  ];
+
+  // Bulk operations handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const currentPageBatchIds = data?.batches.map((batch) => batch.id) || [];
+      setSelectedBatches(currentPageBatchIds);
+      setSelectAll(true);
+    } else {
+      setSelectedBatches([]);
+      setSelectAll(false);
+    }
+  };
+
+  const handleSelectBatch = (batchId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBatches((prev) => [...prev, batchId]);
+    } else {
+      setSelectedBatches((prev) => prev.filter((id) => id !== batchId));
+    }
+  };
+
+  const handleBulkAction = (action: "activate" | "deactivate" | "delete") => {
+    setBulkActionType(action);
+    setShowBulkConfirm(true);
+  };
+
+  const executeBulkAction = async () => {
+    if (!bulkActionType || selectedBatches.length === 0) return;
+
+    setIsBulkProcessing(true);
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const actionText =
+        bulkActionType === "activate"
+          ? "activated"
+          : bulkActionType === "deactivate"
+            ? "deactivated"
+            : "deleted";
+
+      success(
+        `${selectedBatches.length} batch(es) ${actionText} successfully.`,
+      );
+      // Reset selections
+      setSelectedBatches([]);
+      setSelectAll(false);
+      setShowBulkConfirm(false);
+      setBulkActionType(null);
+    } catch (e) {
+      error(`Failed to ${bulkActionType} batches. Please try again.`);
+      console.log(e);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  // Effects for bulk operations
+  useEffect(() => {
+    setShowBulkActions(selectedBatches.length > 0);
+  }, [selectedBatches]);
+
+  useEffect(() => {
+    if (data?.batches) {
+      const currentPageBatchIds = data.batches.map((batch) => batch.id);
+      const allSelected =
+        currentPageBatchIds.length > 0 &&
+        currentPageBatchIds.every((id) => selectedBatches.includes(id));
+      setSelectAll(allSelected);
+    }
+  }, [selectedBatches, data?.batches]);
 
   return (
     <div className="container mx-auto py-6">
@@ -364,7 +506,7 @@ export default function BatchPage() {
               Batch Management
             </CardTitle>
             <CardDescription>
-              Manage academic batches, departments, and sections
+              Manage student batches, sections, and enrollment
             </CardDescription>
           </div>
           <AddBatchDialog />
@@ -392,7 +534,8 @@ export default function BatchPage() {
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <Select
+                <SearchableSelect
+                  options={sortOptions}
                   value={`${sortField}-${sortDirection}`}
                   onValueChange={(value) => {
                     const [field, direction] = value.split("-") as [
@@ -402,29 +545,9 @@ export default function BatchPage() {
                     setSortField(field);
                     setSortDirection(direction);
                   }}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Sort by..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                    <SelectItem value="department-asc">
-                      Department (A-Z)
-                    </SelectItem>
-                    <SelectItem value="department-desc">
-                      Department (Z-A)
-                    </SelectItem>
-                    <SelectItem value="batch-desc">Year (Newest)</SelectItem>
-                    <SelectItem value="batch-asc">Year (Oldest)</SelectItem>
-                    <SelectItem value="studentCount-desc">
-                      Most Students
-                    </SelectItem>
-                    <SelectItem value="studentCount-asc">
-                      Least Students
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Sort by..."
+                  className="w-[160px]"
+                />
                 <Select
                   value={pageSize.toString()}
                   onValueChange={(value) => setPageSize(parseInt(value))}
@@ -441,34 +564,39 @@ export default function BatchPage() {
                 </Select>
               </div>
             </div>
-
             {filterOpen && (
               <div className="flex items-center gap-4 p-4 border rounded-md bg-muted/20 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Label
-                    htmlFor="dept-filter"
+                    htmlFor="department-filter"
                     className="text-sm font-medium whitespace-nowrap"
                   >
                     Department:
                   </Label>
-                  <Select
-                    value={departmentFilter || "all"}
+                  <SearchableSelect
+                    options={uniqueDepartments}
+                    value={departmentFilter || ""}
                     onValueChange={(value) =>
-                      setDepartmentFilter(value === "all" ? null : value)
+                      setDepartmentFilter(value || null)
                     }
+                    placeholder="All departments"
+                    className="w-[180px]"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label
+                    htmlFor="section-filter"
+                    className="text-sm font-medium whitespace-nowrap"
                   >
-                    <SelectTrigger id="dept-filter" className="w-[180px]">
-                      <SelectValue placeholder="All departments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Departments</SelectItem>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    Section:
+                  </Label>
+                  <SearchableSelect
+                    options={uniqueSections}
+                    value={sectionFilter || ""}
+                    onValueChange={(value) => setSectionFilter(value || null)}
+                    placeholder="All sections"
+                    className="w-[120px]"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label
@@ -477,24 +605,13 @@ export default function BatchPage() {
                   >
                     Year:
                   </Label>
-                  <Select
-                    value={yearFilter || "all"}
-                    onValueChange={(value) =>
-                      setYearFilter(value === "all" ? null : value)
-                    }
-                  >
-                    <SelectTrigger id="year-filter" className="w-[120px]">
-                      <SelectValue placeholder="All years" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Years</SelectItem>
-                      {uniqueYears.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={uniqueBatchYears}
+                    value={batchYearFilter || ""}
+                    onValueChange={(value) => setBatchYearFilter(value || null)}
+                    placeholder="All years"
+                    className="w-[100px]"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label
@@ -503,28 +620,21 @@ export default function BatchPage() {
                   >
                     Status:
                   </Label>
-                  <Select
-                    value={statusFilter || "all"}
-                    onValueChange={(value) =>
-                      setStatusFilter(value === "all" ? null : value)
-                    }
-                  >
-                    <SelectTrigger id="status-filter" className="w-[120px]">
-                      <SelectValue placeholder="All status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={statusOptions}
+                    value={statusFilter || ""}
+                    onValueChange={(value) => setStatusFilter(value || null)}
+                    placeholder="All status"
+                    className="w-[120px]"
+                  />
                 </div>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => {
                     setDepartmentFilter(null);
-                    setYearFilter(null);
+                    setSectionFilter(null);
+                    setBatchYearFilter(null);
                     setStatusFilter(null);
                     setSearchTerm("");
                   }}
@@ -533,11 +643,70 @@ export default function BatchPage() {
                 </Button>
               </div>
             )}
-
+            {showBulkActions && (
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium">
+                    {selectedBatches.length} batch(es) selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("activate")}
+                    disabled={isBulkProcessing}
+                    className="gap-2 text-green-600 border-green-300 hover:bg-green-50"
+                  >
+                    <UserCheck className="h-4 w-4" />
+                    Activate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("deactivate")}
+                    disabled={isBulkProcessing}
+                    className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+                  >
+                    <UserX className="h-4 w-4" />
+                    Deactivate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("delete")}
+                    disabled={isBulkProcessing}
+                    className="gap-2 text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedBatches([]);
+                      setSelectAll(false);
+                    }}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="rounded-md border relative">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <div className="flex items-center h-full">
+                        <Checkbox
+                          checked={selectAll}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </div>
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("name")}
@@ -546,17 +715,16 @@ export default function BatchPage() {
                     </TableHead>
                     <TableHead
                       className="cursor-pointer"
-                      onClick={() => handleSort("batch")}
-                    >
-                      Year{getSortIndicator("batch")}
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
                       onClick={() => handleSort("department")}
                     >
                       Department{getSortIndicator("department")}
                     </TableHead>
-                    <TableHead>Section</TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("section")}
+                    >
+                      Section{getSortIndicator("section")}
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("studentCount")}
@@ -566,12 +734,8 @@ export default function BatchPage() {
                     <TableHead>Managers</TableHead>
                     <TableHead>Semesters</TableHead>
                     <TableHead>Quizzes</TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("isActive")}
-                    >
-                      Status{getSortIndicator("isActive")}
-                    </TableHead>
+                    <TableHead>Banks</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="w-[70px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -580,16 +744,19 @@ export default function BatchPage() {
                     Array.from({ length: pageSize }).map((_, index) => (
                       <TableRow key={`loading-${index}`}>
                         <TableCell>
-                          <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
                         <TableCell>
-                          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
                         <TableCell>
                           <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
                         <TableCell>
-                          <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
                         <TableCell>
                           <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -613,27 +780,39 @@ export default function BatchPage() {
                     ))
                   ) : data?.batches.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="h-24 text-center">
+                      <TableCell colSpan={11} className="h-24 text-center">
                         No batches found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     data?.batches.map((batch) => (
                       <TableRow key={batch.id}>
-                        <TableCell className="font-medium">
-                          {batch.name}
+                        <TableCell>
+                          <div className="flex items-center h-full">
+                            <Checkbox
+                              checked={selectedBatches.includes(batch.id)}
+                              onCheckedChange={(checked) =>
+                                handleSelectBatch(batch.id, checked as boolean)
+                              }
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{batch.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Batch {batch.batch}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{batch.department}</div>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className="bg-blue-50 text-blue-700 border-blue-200"
+                            className="bg-indigo-50 text-indigo-700 border-indigo-200"
                           >
-                            {batch.batch}
+                            Section {batch.section}
                           </Badge>
-                        </TableCell>
-                        <TableCell>{batch.department}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{batch.section}</Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
@@ -672,6 +851,15 @@ export default function BatchPage() {
                           </div>
                         </TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-1">
+                            <BookOpen
+                              size={14}
+                              className="text-muted-foreground"
+                            />
+                            {batch.bankCount}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <Badge
                             variant={batch.isActive ? "default" : "secondary"}
                           >
@@ -695,10 +883,11 @@ export default function BatchPage() {
                               <DropdownMenuItem>
                                 Manage Managers
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                View Semesters
-                              </DropdownMenuItem>
+                              <DropdownMenuItem>View Courses</DropdownMenuItem>
                               <DropdownMenuItem>View Quizzes</DropdownMenuItem>
+                              <DropdownMenuItem>
+                                Question Banks
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className={
                                   batch.isActive
@@ -717,7 +906,6 @@ export default function BatchPage() {
                 </TableBody>
               </Table>
             </div>
-
             <div className="flex items-center justify-between py-4">
               <div className="text-sm text-muted-foreground">
                 Showing{" "}
@@ -781,6 +969,42 @@ export default function BatchPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Confirm {bulkActionType} batches
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to{" "}
+              {bulkActionType === "delete"
+                ? "delete these batches? This action cannot be undone."
+                : bulkActionType === "activate"
+                  ? "activate these batches?"
+                  : "deactivate these batches?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              disabled={isBulkProcessing}
+              className={
+                bulkActionType === "delete"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : bulkActionType === "activate"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-orange-600 hover:bg-orange-700"
+              }
+            >
+              {isBulkProcessing
+                ? `${bulkActionType}ing...`
+                : `Yes, ${bulkActionType} batches`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

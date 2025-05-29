@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +50,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -61,8 +72,13 @@ import {
   Monitor,
   Network,
   Building,
+  Trash2,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 
 interface Lab {
   id: string;
@@ -127,6 +143,23 @@ const AddLabDialog = () => {
   const [open, setOpen] = useState(false);
   const [selectedBlock, setSelectedBlock] = useState<string>("");
 
+  const blockOptions = [
+    { value: "A", label: "Block A" },
+    { value: "B", label: "Block B" },
+    { value: "C", label: "Block C" },
+    { value: "D", label: "Block D" },
+    { value: "E", label: "Block E" },
+    { value: "F", label: "Block F" },
+  ];
+
+  const assistantOptions = [
+    { value: "assistant1", label: "John Smith" },
+    { value: "assistant2", label: "Sarah Davis" },
+    { value: "assistant3", label: "Mike Johnson" },
+    { value: "assistant4", label: "Emily Wilson" },
+    { value: "assistant5", label: "David Brown" },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -150,19 +183,12 @@ const AddLabDialog = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="block">Block</Label>
-              <Select value={selectedBlock} onValueChange={setSelectedBlock}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select block" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="A">Block A</SelectItem>
-                  <SelectItem value="B">Block B</SelectItem>
-                  <SelectItem value="C">Block C</SelectItem>
-                  <SelectItem value="D">Block D</SelectItem>
-                  <SelectItem value="E">Block E</SelectItem>
-                  <SelectItem value="F">Block F</SelectItem>
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={blockOptions}
+                value={selectedBlock}
+                onValueChange={setSelectedBlock}
+                placeholder="Select block"
+              />
             </div>
           </div>
 
@@ -189,18 +215,12 @@ const AddLabDialog = () => {
 
           <div className="space-y-2">
             <Label>Assign Lab Assistants</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Select lab assistants" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="assistant1">John Smith</SelectItem>
-                <SelectItem value="assistant2">Sarah Davis</SelectItem>
-                <SelectItem value="assistant3">Mike Johnson</SelectItem>
-                <SelectItem value="assistant4">Emily Wilson</SelectItem>
-                <SelectItem value="assistant5">David Brown</SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={assistantOptions}
+              value=""
+              onValueChange={() => {}}
+              placeholder="Select lab assistants"
+            />
           </div>
 
           <div className="space-y-2">
@@ -222,6 +242,17 @@ const AddLabDialog = () => {
   );
 };
 
+const sortOptions = [
+  { value: "name-asc", label: "Name (A-Z)" },
+  { value: "name-desc", label: "Name (Z-A)" },
+  { value: "block-asc", label: "Block (A-Z)" },
+  { value: "block-desc", label: "Block (Z-A)" },
+  { value: "capacity-desc", label: "Largest Capacity" },
+  { value: "capacity-asc", label: "Smallest Capacity" },
+  { value: "quizCount-desc", label: "Most Quizzes" },
+  { value: "quizCount-asc", label: "Least Quizzes" },
+];
+
 export default function LabPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -231,6 +262,18 @@ export default function LabPage() {
   const [sortField, setSortField] = useState<keyof Lab>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Bulk selection state
+  const [selectedLabs, setSelectedLabs] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<
+    "activate" | "deactivate" | "delete" | null
+  >(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+
+  const { success, error } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -323,6 +366,84 @@ export default function LabPage() {
     return sortDirection === "asc" ? " ↑" : " ↓";
   };
 
+  // Bulk action handlers
+  const handleSelectAll = () => {
+    if (!data?.labs) return;
+
+    if (selectAll) {
+      setSelectedLabs([]);
+    } else {
+      const currentPageLabIds = data.labs.map((lab) => lab.id);
+      setSelectedLabs((prev) => {
+        const otherPageSelected = prev.filter(
+          (id) => !currentPageLabIds.includes(id),
+        );
+        return [...otherPageSelected, ...currentPageLabIds];
+      });
+    }
+  };
+
+  const handleSelectLab = (labId: string) => {
+    setSelectedLabs((prev) => {
+      if (prev.includes(labId)) {
+        return prev.filter((id) => id !== labId);
+      } else {
+        return [...prev, labId];
+      }
+    });
+  };
+
+  const handleBulkAction = (action: "activate" | "deactivate" | "delete") => {
+    setBulkActionType(action);
+    setShowBulkConfirm(true);
+  };
+
+  const executeBulkAction = async () => {
+    setIsBulkProcessing(true);
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const actionText =
+        bulkActionType === "activate"
+          ? "activated"
+          : bulkActionType === "deactivate"
+            ? "deactivated"
+            : "deleted";
+
+      success(`Successfully ${actionText} ${selectedLabs.length} lab(s)`);
+
+      setSelectedLabs([]);
+      setShowBulkConfirm(false);
+      setBulkActionType(null);
+    } catch (e) {
+      error(`Failed to ${bulkActionType} labs. Please try again.`);
+      console.log(e);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  // Effect to manage bulk actions visibility
+  React.useEffect(() => {
+    setShowBulkActions(selectedLabs.length > 0);
+  }, [selectedLabs]);
+
+  // Effect to manage select all state
+  React.useEffect(() => {
+    if (data?.labs) {
+      const currentPageLabIds = data.labs.map((lab) => lab.id);
+      const selectedOnCurrentPage = selectedLabs.filter((id) =>
+        currentPageLabIds.includes(id),
+      );
+      setSelectAll(
+        selectedOnCurrentPage.length === currentPageLabIds.length &&
+          currentPageLabIds.length > 0,
+      );
+    }
+  }, [data?.labs, selectedLabs]);
+
   const generatePageNumbers = () => {
     const pages = [];
     const totalPages = data?.totalPages || 0;
@@ -395,7 +516,8 @@ export default function LabPage() {
                 </Button>
               </div>
               <div className="flex items-center gap-2">
-                <Select
+                <SearchableSelect
+                  options={sortOptions}
                   value={`${sortField}-${sortDirection}`}
                   onValueChange={(value) => {
                     const [field, direction] = value.split("-") as [
@@ -405,25 +527,9 @@ export default function LabPage() {
                     setSortField(field);
                     setSortDirection(direction);
                   }}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Sort by..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                    <SelectItem value="block-asc">Block (A-Z)</SelectItem>
-                    <SelectItem value="block-desc">Block (Z-A)</SelectItem>
-                    <SelectItem value="capacity-desc">
-                      Largest Capacity
-                    </SelectItem>
-                    <SelectItem value="capacity-asc">
-                      Smallest Capacity
-                    </SelectItem>
-                    <SelectItem value="quizCount-desc">Most Quizzes</SelectItem>
-                    <SelectItem value="quizCount-asc">Least Quizzes</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Sort by..."
+                  className="w-[160px]"
+                />
                 <Select
                   value={pageSize.toString()}
                   onValueChange={(value) => setPageSize(parseInt(value))}
@@ -450,24 +556,21 @@ export default function LabPage() {
                   >
                     Block:
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={blockFilter || "all"}
                     onValueChange={(value) =>
                       setBlockFilter(value === "all" ? null : value)
                     }
-                  >
-                    <SelectTrigger id="block-filter" className="w-[120px]">
-                      <SelectValue placeholder="All blocks" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Blocks</SelectItem>
-                      {uniqueBlocks.map((block) => (
-                        <SelectItem key={block} value={block}>
-                          Block {block}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="All blocks"
+                    options={[
+                      { value: "all", label: "All Blocks" },
+                      ...uniqueBlocks.map((block) => ({
+                        value: block,
+                        label: `Block ${block}`,
+                      })),
+                    ]}
+                    className="w-[120px]"
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label
@@ -476,21 +579,19 @@ export default function LabPage() {
                   >
                     Status:
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={statusFilter || "all"}
                     onValueChange={(value) =>
                       setStatusFilter(value === "all" ? null : value)
                     }
-                  >
-                    <SelectTrigger id="status-filter" className="w-[120px]">
-                      <SelectValue placeholder="All status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    placeholder="All status"
+                    options={[
+                      { value: "all", label: "All Status" },
+                      { value: "active", label: "Active" },
+                      { value: "inactive", label: "Inactive" },
+                    ]}
+                    className="w-[120px]"
+                  />
                 </div>
                 <Button
                   variant="secondary"
@@ -506,10 +607,68 @@ export default function LabPage() {
               </div>
             )}
 
+            {/* Bulk Actions Bar */}
+            {showBulkActions && (
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {selectedLabs.length} lab(s) selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("activate")}
+                    className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/50"
+                  >
+                    <UserCheck size={16} />
+                    Activate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("deactivate")}
+                    className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800 dark:hover:bg-orange-950/50"
+                  >
+                    <UserX size={16} />
+                    Deactivate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("delete")}
+                    className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/50"
+                  >
+                    <Trash2 size={16} />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedLabs([]);
+                      setSelectAll(false);
+                    }}
+                    className="hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="rounded-md border relative">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={selectAll}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all labs"
+                      />
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("name")}
@@ -540,6 +699,9 @@ export default function LabPage() {
                     Array.from({ length: pageSize }).map((_, index) => (
                       <TableRow key={`loading-${index}`}>
                         <TableCell>
+                          <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </TableCell>
+                        <TableCell>
                           <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
                         <TableCell>
@@ -567,13 +729,20 @@ export default function LabPage() {
                     ))
                   ) : data?.labs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                         No labs found.
                       </TableCell>
                     </TableRow>
                   ) : (
                     data?.labs.map((lab) => (
                       <TableRow key={lab.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedLabs.includes(lab.id)}
+                            onCheckedChange={() => handleSelectLab(lab.id)}
+                            aria-label={`Select ${lab.name}`}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Monitor
@@ -734,6 +903,40 @@ export default function LabPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <AlertDialog open={showBulkConfirm} onOpenChange={setShowBulkConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkActionType === "delete"
+                ? "Delete Labs"
+                : bulkActionType === "activate"
+                  ? "Activate Labs"
+                  : "Deactivate Labs"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkActionType === "delete"
+                ? `Are you sure you want to delete ${selectedLabs.length} lab(s)? This action cannot be undone.`
+                : `Are you sure you want to ${bulkActionType} ${selectedLabs.length} lab(s)?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkProcessing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeBulkAction}
+              disabled={isBulkProcessing}
+              className={
+                bulkActionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""
+              }
+            >
+              {isBulkProcessing ? "Processing..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
