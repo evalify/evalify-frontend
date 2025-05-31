@@ -168,8 +168,8 @@ export function QuizCreationTabs() {
     // TODO: Implement API call to save quiz data
   };
   return (
-    <div className="w-full min-h-screen bg-background">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full h-full flex flex-col bg-background">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 flex-shrink-0">
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             Create Quiz
@@ -183,9 +183,9 @@ export function QuizCreationTabs() {
         <Tabs
           value={currentTab}
           onValueChange={handleTabChange}
-          className="space-y-6"
+          className="space-y-6 h-full flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto p-1 gap-1 sm:gap-0">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto p-1 gap-1 sm:gap-0 flex-shrink-0">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -206,55 +206,66 @@ export function QuizCreationTabs() {
                 </TabsTrigger>
               );
             })}
-          </TabsList>{" "}
-          <TabsContent value="metadata" className="space-y-6">
-            <QuizMetadata
-              data={quizData.metadata}
-              updateData={updateMetadata}
-            />
-          </TabsContent>
-          <TabsContent value="scoring" className="space-y-6">
-            <Card className="w-full">
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Calculator className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Scoring Method
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Define how questions will be scored and whether to apply
-                  penalties for wrong answers.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6">
-                <ScoringMethod
-                  data={quizData.scoring}
-                  updateData={updateScoring}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="publishing" className="space-y-6">
-            <Card className="w-full">
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Publishing Settings
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Set when and how your quiz will be published, including
-                  visibility and result settings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6">
-                <PublishingSettings
-                  data={quizData.publishing}
-                  updateData={updatePublishing}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>{" "}
+          </TabsList>
+          <div className="flex-1 overflow-hidden">
+            <TabsContent
+              value="metadata"
+              className="space-y-6 h-full overflow-y-auto"
+            >
+              <QuizMetadata
+                data={quizData.metadata}
+                updateData={updateMetadata}
+              />
+            </TabsContent>
+            <TabsContent
+              value="scoring"
+              className="space-y-6 h-full overflow-y-auto"
+            >
+              <Card className="w-full">
+                <CardHeader className="px-4 sm:px-6">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                    <Calculator className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Scoring Method
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Define how questions will be scored and whether to apply
+                    penalties for wrong answers.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-4 sm:px-6">
+                  <ScoringMethod
+                    data={quizData.scoring}
+                    updateData={updateScoring}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent
+              value="publishing"
+              className="space-y-6 h-full overflow-y-auto"
+            >
+              <Card className="w-full">
+                <CardHeader className="px-4 sm:px-6">
+                  <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                    <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Publishing Settings
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Set when and how your quiz will be published, including
+                    visibility and result settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-4 sm:px-6">
+                  <PublishingSettings
+                    data={quizData.publishing}
+                    updateData={updatePublishing}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
           {/* Action buttons */}
-          <div className="flex justify-end pt-6 border-t">
+          <div className="flex justify-end pt-6 border-t flex-shrink-0">
             <Button
               onClick={handleSave}
               className="flex items-center gap-2"
