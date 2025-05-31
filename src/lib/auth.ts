@@ -25,6 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const decoded = decode(account.access_token);
         if (decoded && typeof decoded === "object") {
           token.roles = decoded.realm_access?.roles || [];
+          token.access_token = account.access_token;
         }
       }
       return token;
@@ -33,6 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.sub as string;
         session.user.roles = token.roles as string[];
+        session.access_token = token.access_token as string;
       }
       return session;
     },
