@@ -48,6 +48,7 @@ export async function getQuizData(
     instructions:
       "Please read the questions carefully and select the correct answer.",
     startTime: "2023-10-01T10:00:00Z",
+    fullScreenRequired: true, // Enable full-screen mode for testing
 
     questions: [
       {
