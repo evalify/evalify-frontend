@@ -1,4 +1,4 @@
-import ThemeToggle from "./theme-toggle";
+import ThemeToggle from "../ui/theme-toggle";
 
 export default function TestHeader() {
   return (

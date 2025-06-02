@@ -9,7 +9,7 @@ export default function Page() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await axios.get("/api/course");
+        const response = await axios.get("/api/bank");
         console.log(response.data);
         setQuizData(response.data);
       } catch (error) {
