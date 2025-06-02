@@ -32,7 +32,7 @@ interface MatchItem {
 
 interface TestCase {
   id: string;
-  input: string;
+  inputs: Record<string, string>;
   expectedOutput: string;
   isHidden: boolean;
 }
@@ -162,7 +162,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           language: "python",
           starterCode: "",
           testCases: [
-            { id: "test-1", input: "", expectedOutput: "", isHidden: false },
+            { id: "test-1", inputs: {}, expectedOutput: "", isHidden: false },
           ],
           timeLimit: undefined,
           memoryLimit: undefined,

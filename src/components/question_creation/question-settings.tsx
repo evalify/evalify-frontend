@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Counter from "@/components/ui/counter";
 import SelectBox from "@/components/ui/select-box";
@@ -52,6 +52,7 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
   difficulty,
   bloomsTaxonomy,
   courseOutcome,
+  topics,
   onMarksChange,
   onDifficultyChange,
   onBloomsTaxonomyChange,
@@ -59,17 +60,21 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
   onTopicsChange,
 }) => {
   const [availableTopics, setAvailableTopics] = useState(initialTopics);
-  const [selectedTopics, setSelectedTopics] = useState<
-    { value: string; label: string }[]
-  >([]);
+  const [selectedTopics, setSelectedTopics] =
+    useState<{ value: string; label: string }[]>(topics);
 
-  const handleTopicSelect = (value: string) => {
-    const selectedTopic = availableTopics.find((t) => t.value === value);
-    if (selectedTopic && !selectedTopics.some((t) => t.value === value)) {
-      const newSelectedTopics = [...selectedTopics, selectedTopic];
-      setSelectedTopics(newSelectedTopics);
-      onTopicsChange(newSelectedTopics);
-    }
+  useEffect(() => {
+    setSelectedTopics(topics);
+  }, [topics]);
+
+  const handleTopicSelect = (value: string[]) => {
+    // For multiple selection, update selected topics directly
+    const selectedOptions = value.map(
+      (v) =>
+        availableTopics.find((t) => t.value === v) || { value: v, label: v },
+    );
+    setSelectedTopics(selectedOptions);
+    onTopicsChange(selectedOptions);
   };
 
   const handleAddCustomTopic = (newOption: {
@@ -80,17 +85,6 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
     setAvailableTopics([...availableTopics, newOption]);
     // Also add to selected topics
     const newSelectedTopics = [...selectedTopics, newOption];
-    setSelectedTopics(newSelectedTopics);
-    onTopicsChange(newSelectedTopics);
-  };
-
-  const handleRemoveTopic = (topicToRemove: {
-    value: string;
-    label: string;
-  }) => {
-    const newSelectedTopics = selectedTopics.filter(
-      (t) => t.value !== topicToRemove.value,
-    );
     setSelectedTopics(newSelectedTopics);
     onTopicsChange(newSelectedTopics);
   };
@@ -148,32 +142,12 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
             label=""
             placeholder="Select related topics"
             options={availableTopics}
+            value={selectedTopics.map((t) => t.value)}
             onValueChange={handleTopicSelect}
             allowMultiple={true}
             allowCustom={true}
             onAddCustomOption={handleAddCustomTopic}
           />
-          {selectedTopics.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-sm font-medium mb-2">Selected Topics:</h3>
-              <div className="flex flex-wrap gap-2">
-                {selectedTopics.map((topic) => (
-                  <div
-                    key={topic.value}
-                    className="flex items-center bg-secondary px-2 py-1 rounded-md text-sm"
-                  >
-                    <span>{topic.label}</span>
-                    <button
-                      className="ml-2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
-                      onClick={() => handleRemoveTopic(topic)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

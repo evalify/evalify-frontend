@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,18 +20,10 @@ import CodeEditor from "@/components/ui/code-editor";
 import { nanoid } from "nanoid";
 import {
   FunctionParameter,
-  TestCase as InternalTestCase,
+  TestCase,
   FunctionMetadata,
   SUPPORTED_LANGUAGES,
 } from "../types";
-
-// Interface for test cases expected by the question editor
-interface TestCase {
-  id: string;
-  input: string;
-  expectedOutput: string;
-  isHidden: boolean;
-}
 
 interface CodingQuestionProps {
   question: string;
@@ -56,23 +48,27 @@ const generateBoilerplateCode = (metadata: FunctionMetadata): string => {
   const { name, parameters, returnType, language } = metadata;
 
   switch (language) {
-    case "python":
+    case "python": {
       const pythonParams = parameters.map((p) => p.name).join(", ");
       return `def ${name}(${pythonParams}):\n    # TODO: Implement the function\n    pass`;
+    }
 
-    case "javascript":
+    case "javascript": {
       const jsParams = parameters.map((p) => p.name).join(", ");
       return `function ${name}(${jsParams}) {\n    // TODO: Implement the function\n    \n}`;
+    }
 
-    case "java":
+    case "java": {
       const javaParams = parameters
         .map((p) => `${p.type} ${p.name}`)
         .join(", ");
       return `public ${returnType} ${name}(${javaParams}) {\n    // TODO: Implement the function\n    \n}`;
+    }
 
-    case "cpp":
+    case "cpp": {
       const cppParams = parameters.map((p) => `${p.type} ${p.name}`).join(", ");
       return `${returnType} ${name}(${cppParams}) {\n    // TODO: Implement the function\n    \n}`;
+    }
 
     default:
       return `// Function: ${name}\n// TODO: Implement the function`;
@@ -83,7 +79,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
   question,
   language,
   starterCode = "",
-  // testCases prop is ignored, we manage internal state
+  testCases,
   explanation,
   showExplanation,
   functionName,
@@ -106,10 +102,11 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
     },
   );
 
-  const [codingTestCases, setCodingTestCases] = useState<InternalTestCase[]>(
-    [],
-  );
-  const [activeTab, setActiveTab] = useState("setup");
+  const [codingTestCases, setCodingTestCases] = useState<TestCase[]>(() => {
+    // Initialize from props if provided, otherwise start with empty array
+    return testCases && testCases.length > 0 ? [...testCases] : [];
+  });
+  const [activeTab, setActiveTab] = useState("question");
 
   // Initialize or update function metadata when language changes
   useEffect(() => {
@@ -117,7 +114,16 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
       ...prev,
       language: language || "python",
     }));
-  }, [language]); // Update function metadata callback when metadata changes
+  }, [language]);
+
+  // Update internal test cases when prop changes
+  useEffect(() => {
+    if (testCases && testCases.length > 0) {
+      setCodingTestCases([...testCases]);
+    }
+  }, [testCases]);
+
+  // Update function metadata callback when metadata changes
   const stableFunctionMetadataChangeRef = React.useRef(
     onFunctionMetadataChange,
   );
@@ -138,29 +144,20 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
         stableStarterCodeChangeRef.current(newBoilerplate);
       }
     }
-  }, [functionMetadata, starterCode]); // Convert internal test cases to the expected format for the question editor
-  const convertedTestCases = useMemo(() => {
-    return codingTestCases.map((tc) => ({
-      id: tc.id,
-      input: Object.entries(tc.inputs)
-        .map(([param, value]) => `${param}=${value}`)
-        .join(", "),
-      expectedOutput: tc.expectedOutput,
-      isHidden: tc.isHidden,
-    }));
-  }, [codingTestCases]);
+  }, [functionMetadata, starterCode]);
+
   // Use useEffect with a ref to prevent infinite loops
   const stableTestCasesChangeRef = React.useRef(onTestCasesChange);
   stableTestCasesChangeRef.current = onTestCasesChange;
-  const lastConvertedTestCasesRef = React.useRef<string>("");
+  const lastTestCasesRef = React.useRef<string>("");
 
   useEffect(() => {
-    const serialized = JSON.stringify(convertedTestCases);
-    if (serialized !== lastConvertedTestCasesRef.current) {
-      lastConvertedTestCasesRef.current = serialized;
-      stableTestCasesChangeRef.current(convertedTestCases);
+    const serialized = JSON.stringify(codingTestCases);
+    if (serialized !== lastTestCasesRef.current) {
+      lastTestCasesRef.current = serialized;
+      stableTestCasesChangeRef.current(codingTestCases);
     }
-  }, [convertedTestCases]);
+  }, [codingTestCases]);
   const addParameter = useCallback(() => {
     const newParam: FunctionParameter = {
       id: nanoid(),
@@ -192,7 +189,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
     }));
   }, []);
   const addTestCase = useCallback(() => {
-    const newTestCase: InternalTestCase = {
+    const newTestCase: TestCase = {
       id: nanoid(),
       inputs: {},
       expectedOutput: "",
@@ -208,7 +205,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
   }, [functionMetadata.parameters]);
 
   const updateTestCase = useCallback(
-    (id: string, field: keyof InternalTestCase, value: string | boolean) => {
+    (id: string, field: keyof TestCase, value: string | boolean) => {
       setCodingTestCases((prev) =>
         prev.map((tc) => (tc.id === id ? { ...tc, [field]: value } : tc)),
       );
@@ -246,11 +243,50 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
     <div className="space-y-6 p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="question">Question</TabsTrigger>
           <TabsTrigger value="setup">Function Setup</TabsTrigger>
           <TabsTrigger value="testcases">Test Cases</TabsTrigger>
           <TabsTrigger value="code">Code Preview</TabsTrigger>
-          <TabsTrigger value="question">Question</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="question">
+          <Card>
+            <CardHeader>
+              <CardTitle>Question Content</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="question-editor">Question Description</Label>
+                <TiptapEditor
+                  initialContent={question}
+                  onUpdate={onQuestionChange}
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="showExplanation"
+                  checked={showExplanation}
+                  onChange={(e) => onShowExplanationChange(e.target.checked)}
+                />
+                <Label htmlFor="showExplanation">Include explanation</Label>
+              </div>
+
+              {showExplanation && (
+                <div>
+                  <Label htmlFor="explanation-editor">Explanation</Label>
+                  <TiptapEditor
+                    initialContent={explanation || ""}
+                    onUpdate={onExplanationChange}
+                    className="mt-2"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="setup">
           <Card>
@@ -509,68 +545,54 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
         <TabsContent value="code">
           <Card>
             <CardHeader>
-              <CardTitle>Generated Boilerplate Code</CardTitle>
+              <CardTitle>Code Preview</CardTitle>
             </CardHeader>
-            <CardContent>
-              {functionMetadata.name &&
-              functionMetadata.parameters.length > 0 ? (
-                <CodeEditor
-                  files={codeFiles}
-                  activeFileId="main"
-                  onFileChange={(files) => {
-                    const mainFile = files.find((f) => f.id === "main");
-                    if (mainFile) {
-                      onStarterCodeChange(mainFile.content);
-                    }
-                  }}
-                  onActiveFileChange={() => {}}
-                  showConsole={false}
-                />
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Configure function name and parameters to see the generated
-                  boilerplate code.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="question">
-          <Card>
-            <CardHeader>
-              <CardTitle>Question Content</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Question Content Preview */}
               <div>
-                <Label htmlFor="question-editor">Question Description</Label>
-                <TiptapEditor
-                  initialContent={question}
-                  onUpdate={onQuestionChange}
-                  className="mt-2"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="showExplanation"
-                  checked={showExplanation}
-                  onChange={(e) => onShowExplanationChange(e.target.checked)}
-                />
-                <Label htmlFor="showExplanation">Include explanation</Label>
-              </div>
-
-              {showExplanation && (
-                <div>
-                  <Label htmlFor="explanation-editor">Explanation</Label>
-                  <TiptapEditor
-                    initialContent={explanation || ""}
-                    onUpdate={onExplanationChange}
-                    className="mt-2"
-                  />
+                <Label className="text-lg font-semibold">Question</Label>
+                <div className="mt-2 p-4 border rounded-lg bg-muted/50">
+                  {question ? (
+                    <div
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: question }}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground italic">
+                      No question content added yet.
+                    </span>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Boilerplate Code */}
+              <div>
+                <Label className="text-lg font-semibold">
+                  Generated Boilerplate Code
+                </Label>
+                <div className="mt-2">
+                  {functionMetadata.name &&
+                  functionMetadata.parameters.length > 0 ? (
+                    <CodeEditor
+                      files={codeFiles}
+                      activeFileId="main"
+                      onFileChange={(files) => {
+                        const mainFile = files.find((f) => f.id === "main");
+                        if (mainFile) {
+                          onStarterCodeChange(mainFile.content);
+                        }
+                      }}
+                      onActiveFileChange={() => {}}
+                      showConsole={false}
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                      Configure function name and parameters to see the
+                      generated boilerplate code.
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

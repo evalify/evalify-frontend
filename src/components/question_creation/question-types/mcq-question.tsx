@@ -142,12 +142,14 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
         );
       } else if (correctOptions.length === 0) {
         // No correct answers, select the first option by default
-        onOptionsChange(
-          options.map((option, index) => ({
-            ...option,
-            isCorrect: index === 0,
-          })),
-        );
+        if (options.length > 0) {
+          onOptionsChange(
+            options.map((option, index) => ({
+              ...option,
+              isCorrect: index === 0,
+            })),
+          );
+        }
       }
       // If exactly one correct answer exists, no changes needed
     }
@@ -249,7 +251,11 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
                   {options.map((option, index) => (
                     <div
                       key={option.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                        option.isCorrect
+                          ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
+                          : "border-border"
+                      }`}
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <Checkbox
@@ -305,7 +311,11 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
                   {options.map((option, index) => (
                     <div
                       key={option.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                        option.isCorrect
+                          ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
+                          : "border-border"
+                      }`}
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <RadioGroupItem value={option.id} />

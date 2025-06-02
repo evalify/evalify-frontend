@@ -1,7 +1,10 @@
 "use client";
 
 import React from "react";
-import { TiptapEditor } from "@/components/rich-text-editor/editor";
+import {
+  TiptapEditor,
+  TiptapEditorRef,
+} from "@/components/rich-text-editor/editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Info, Square } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface FillupBlank {
   id: string;
@@ -42,6 +46,10 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
   );
   // Add a ref to track if we're currently updating to prevent infinite loops
   const isUpdating = React.useRef(false);
+  // Add a ref to access the TiptapEditor instance
+  const editorRef = React.useRef<TiptapEditorRef>(null);
+  // Add toast for user feedback
+  const { error, warning } = useToast();
 
   // Function to detect blanks from question content and auto-create answer sections
   const detectAndUpdateBlanks = React.useCallback(
@@ -100,77 +108,75 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
     }
   }, [question, detectAndUpdateBlanks]); // Function to insert blank at cursor position
   const insertBlankAtCursor = () => {
-    // Get the specific editor element within the question card
-    const editorElement = document.querySelector(".ProseMirror") as HTMLElement;
-    if (!editorElement) return;
-
-    // Check if the editor is focused or if we should focus it first
-    const selection = window.getSelection();
-    const focusNode = selection?.focusNode;
-    const isEditorFocused = focusNode
-      ? editorElement.contains(focusNode)
-      : false;
-
-    if (!isEditorFocused) {
-      // Focus the editor first and place cursor at the end
-      editorElement.focus();
-      const range = document.createRange();
-      range.selectNodeContents(editorElement);
-      range.collapse(false); // Collapse to end
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+    // Check if editor ref is available
+    if (!editorRef.current) {
+      console.error(
+        "Editor ref not available - component may not be mounted yet",
+      );
+      error("Editor is not ready. Please try again.");
+      return;
     }
 
-    // Insert the blank (3 underscores with spaces) at the cursor position
-    const blank = " ___ ";
+    const editor = editorRef.current.editor;
+    if (!editor) {
+      console.error(
+        "Editor instance not available - editor may not be initialized",
+      );
+      error(
+        "Editor is not initialized. Please refresh the page and try again.",
+      );
+      return;
+    }
+
+    // Check if editor is destroyed or not ready
+    if (editor.isDestroyed) {
+      console.error("Cannot insert blank - editor has been destroyed");
+      error("Editor is no longer available. Please refresh the page.");
+      return;
+    }
+
+    // Set updating flag before triggering content update
+    isUpdating.current = true;
 
     try {
-      const currentSelection = window.getSelection();
-      if (currentSelection && currentSelection.rangeCount > 0) {
-        const range = currentSelection.getRangeAt(0);
+      // Insert the blank (3 underscores with spaces) at the cursor position
+      const blank = " ___ ";
 
-        // Ensure we're still within the editor
-        if (!editorElement.contains(range.commonAncestorContainer)) {
-          return;
-        }
+      // Use TiptapEditor API to insert content at cursor position
+      const success = editor.chain().focus().insertContent(blank).run();
 
-        // Create a text node with underscores
-        const textNode = document.createTextNode(blank);
-
-        // Insert the text node at cursor position
-        range.deleteContents(); // Clear any selected text first
-        range.insertNode(textNode);
-
-        // Move cursor after the inserted text
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        currentSelection.removeAllRanges();
-        currentSelection.addRange(range);
-
-        // Set updating flag before triggering content update
-        isUpdating.current = true;
-
-        // Force update to detect the new blank
-        setTimeout(() => {
-          const updatedContent = editorElement.innerHTML;
-          onQuestionChange(updatedContent);
-
-          // Reset flag after a short delay
-          setTimeout(() => {
-            isUpdating.current = false;
-          }, 0);
-        }, 10);
+      if (!success) {
+        console.warn(
+          "Failed to insert blank - editor command did not execute successfully",
+        );
+        warning(
+          "Could not insert blank at current cursor position. Please try clicking in the text area first.",
+        );
+        isUpdating.current = false;
+        return;
       }
+
+      // Reset flag after a short delay to allow React to process the update
+      setTimeout(() => {
+        isUpdating.current = false;
+      }, 10);
     } catch (e) {
-      console.error("Error inserting blank:", e);
-      // Fallback approach - only if we're in the editor
-      try {
-        if (editorElement.contains(document.activeElement)) {
-          document.execCommand("insertText", false, blank);
-        }
-      } catch (e2) {
-        console.error("Fallback insertion failed:", e2);
-      }
+      const blank = " ___ ";
+      console.error(
+        "Error inserting blank at cursor position:",
+        e instanceof Error ? e.message : e,
+      );
+      isUpdating.current = false;
+
+      // Additional error context for debugging
+      console.error("Editor state:", {
+        isDestroyed: editor.isDestroyed,
+        isFocused: editor.isFocused,
+        canInsertContent: editor.can().insertContent(blank),
+      });
+
+      // Show user-friendly error message
+      error("Failed to insert blank. Please try again or refresh the page.");
     }
   };
   // Removed addBlank function - blanks are now auto-detected from question content
@@ -252,6 +258,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
         </CardHeader>
         <CardContent>
           <TiptapEditor
+            ref={editorRef}
             initialContent={question}
             onUpdate={onQuestionChange}
             className="min-h-[200px]"

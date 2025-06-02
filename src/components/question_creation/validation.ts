@@ -1,6 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// filepath: d:\evalify-frontend\src\components\question_creation\validation.ts
 import { QuestionData } from "./question-editor";
+
+// Extract specific question data types from the discriminated union
+type MCQData = Extract<QuestionData, { type: "mcq" }>;
+type CodingData = Extract<QuestionData, { type: "coding" }>;
+type MatchFollowingData = Extract<QuestionData, { type: "match-following" }>;
+type FillupData = Extract<QuestionData, { type: "fillup" }>;
+type DescriptiveData = Extract<QuestionData, { type: "descriptive" }>;
+type TrueFalseData = Extract<QuestionData, { type: "true-false" }>;
+type FileUploadData = Extract<QuestionData, { type: "file-upload" }>;
 
 export interface ValidationError {
   field: string;
@@ -100,7 +107,7 @@ export function validateQuestionData(
 }
 
 function validateMCQQuestion(
-  questionData: any,
+  questionData: MCQData,
   errors: ValidationError[],
 ): void {
   const options = questionData.options || [];
@@ -114,7 +121,7 @@ function validateMCQQuestion(
   }
   // All options must have text
   const emptyOptions = options.filter(
-    (opt: any) => !opt.text || opt.text.trim() === "",
+    (opt) => !opt.text || opt.text.trim() === "",
   );
   if (emptyOptions.length > 0) {
     errors.push({
@@ -124,7 +131,7 @@ function validateMCQQuestion(
   }
 
   // At least one option must be marked as correct
-  const correctOptions = options.filter((opt: any) => opt.isCorrect);
+  const correctOptions = options.filter((opt) => opt.isCorrect);
   if (correctOptions.length === 0) {
     errors.push({
       field: "options",
@@ -143,7 +150,7 @@ function validateMCQQuestion(
 }
 
 function validateCodingQuestion(
-  questionData: any,
+  questionData: CodingData,
   errors: ValidationError[],
 ): void {
   // Function name validation - check if functionMetadata exists and has a valid name
@@ -178,7 +185,7 @@ function validateCodingQuestion(
       message: "At least one test case is required",
     });
   } else {
-    testCases.forEach((testCase: any, index: number) => {
+    testCases.forEach((testCase, index: number) => {
       // Check if expected output is provided
       if (!testCase.expectedOutput || testCase.expectedOutput.trim() === "") {
         errors.push({
@@ -187,12 +194,23 @@ function validateCodingQuestion(
         });
       }
 
-      // Check if input is provided (for the current format where input is a string)
-      if (!testCase.input || testCase.input.trim() === "") {
+      // Check if input is provided (inputs should have at least one value)
+      if (!testCase.inputs || Object.keys(testCase.inputs).length === 0) {
         errors.push({
           field: "testCases",
-          message: `Test case ${index + 1} input is required`,
+          message: `Test case ${index + 1} must have input parameters`,
         });
+      } else {
+        // Check if all input values are provided
+        const emptyInputs = Object.entries(testCase.inputs).filter(
+          ([, value]) => !value || value.trim() === "",
+        );
+        if (emptyInputs.length > 0) {
+          errors.push({
+            field: "testCases",
+            message: `Test case ${index + 1} has empty input parameters`,
+          });
+        }
       }
     });
   }
@@ -207,7 +225,7 @@ function validateCodingQuestion(
 }
 
 function validateMatchFollowingQuestion(
-  questionData: any,
+  questionData: MatchFollowingData,
   errors: ValidationError[],
 ): void {
   const matchItems = questionData.matchItems || [];
@@ -221,7 +239,7 @@ function validateMatchFollowingQuestion(
   }
 
   // All match items must have both left and right text
-  matchItems.forEach((item: any, index: number) => {
+  matchItems.forEach((item, index: number) => {
     if (!item.leftText || item.leftText.trim() === "") {
       errors.push({
         field: "matchItems",
@@ -238,19 +256,26 @@ function validateMatchFollowingQuestion(
 }
 
 function validateFillupQuestion(
-  questionData: any,
+  questionData: FillupData,
   errors: ValidationError[],
 ): void {
   const question = questionData.question || "";
   const blanks = questionData.blanks || [];
 
-  // Check if question contains blanks (three consecutive underscores)
-  const blankPattern = /_{3}/;
-  if (!blankPattern.test(question)) {
+  // Check if question contains blanks (exactly three consecutive underscores)
+  const blankPattern = /(?<!_)_{3}(?!_)/g;
+  const blankMatches = question.match(blankPattern);
+
+  if (!blankMatches || blankMatches.length === 0) {
     errors.push({
       field: "question",
       message:
         "Fill in the Blanks question must contain blanks marked with three underscores (___)",
+    });
+  } else if (blankMatches.length !== blanks.length) {
+    errors.push({
+      field: "blanks",
+      message: `Number of blanks in question (${blankMatches.length}) doesn't match the number of blank definitions (${blanks.length})`,
     });
   }
 
@@ -261,7 +286,7 @@ function validateFillupQuestion(
       message: "At least one blank with acceptable answers is required",
     });
   } else {
-    blanks.forEach((blank: any, index: number) => {
+    blanks.forEach((blank, index: number) => {
       const acceptedAnswers = blank.acceptedAnswers || [];
       if (acceptedAnswers.length === 0) {
         errors.push({
@@ -271,7 +296,7 @@ function validateFillupQuestion(
       } else {
         // Check if all answers have text
         const emptyAnswers = acceptedAnswers.filter(
-          (answer: string) => !answer || answer.trim() === "",
+          (answer) => !answer || answer.trim() === "",
         );
         if (emptyAnswers.length > 0) {
           errors.push({
@@ -285,7 +310,7 @@ function validateFillupQuestion(
 }
 
 function validateDescriptiveQuestion(
-  questionData: any,
+  questionData: DescriptiveData,
   errors: ValidationError[],
 ): void {
   // Only question text is required for descriptive questions
@@ -301,7 +326,7 @@ function validateDescriptiveQuestion(
 }
 
 function validateTrueFalseQuestion(
-  questionData: any,
+  questionData: TrueFalseData,
   errors: ValidationError[],
 ): void {
   // Must have a correct answer selected
@@ -317,7 +342,7 @@ function validateTrueFalseQuestion(
 }
 
 function validateFileUploadQuestion(
-  questionData: any,
+  questionData: FileUploadData,
   errors: ValidationError[],
 ): void {
   const allowedFileTypes = questionData.allowedFileTypes || [];
