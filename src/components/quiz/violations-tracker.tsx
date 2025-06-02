@@ -12,7 +12,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { Violation } from "@/hooks/use-fullscreen-enforcement";
+import { Violation } from "@/components/quiz/hooks/use-fullscreen-enforcement";
 
 interface ViolationsTrackerProps {
   violations: Violation[];
