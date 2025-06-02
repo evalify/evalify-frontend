@@ -7,6 +7,7 @@ import QuestionEditor, { QuestionData } from "./question-editor";
 import QuestionSettings from "./question-settings";
 import ValidationErrorModal from "./validation-error-modal";
 import { validateQuestionData, ValidationError } from "./validation";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuestionSettings {
   marks: number;
@@ -17,6 +18,9 @@ interface QuestionSettings {
 }
 
 const QuestionCreationPage: React.FC = () => {
+  // Initialize toast hook
+  const { info, success } = useToast();
+
   // Question type state
   const [selectedType, setSelectedType] = React.useState<QuestionType>("mcq");
 
@@ -58,8 +62,8 @@ const QuestionCreationPage: React.FC = () => {
       data: questionData,
       settings: questionSettings,
     });
-    // TODO: Implement preview functionality
-    alert("Preview functionality will be implemented soon!");
+    // Show info toast instead of alert
+    info("Preview functionality will be implemented soon!");
   }; // Handle save
   const handleSave = () => {
     // Comprehensive validation using the validation system
@@ -80,8 +84,8 @@ const QuestionCreationPage: React.FC = () => {
       settings: questionSettings,
     });
 
-    // TODO: Implement save functionality
-    alert("Question saved successfully!");
+    // Show success toast instead of alert
+    success("Question saved successfully!");
   };
 
   // Handle validation modal close

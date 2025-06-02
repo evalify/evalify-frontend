@@ -38,10 +38,19 @@ const Counter: React.FC<CounterProps> = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = Math.max(
-      min,
-      Math.min(max, parseInt(e.target.value) || min),
-    );
+    const inputValue = e.target.value;
+    if (inputValue === "") {
+      setValue(min);
+      onChange?.(min);
+      return;
+    }
+
+    const parsedValue = parseInt(inputValue, 10);
+    if (isNaN(parsedValue)) {
+      return; // Don't update state for invalid input
+    }
+
+    const newValue = Math.max(min, Math.min(max, parsedValue));
     setValue(newValue);
     onChange?.(newValue);
   };

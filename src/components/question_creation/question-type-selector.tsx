@@ -16,6 +16,7 @@ interface QuestionTypeSelectorProps {
   onTypeSelect: (type: QuestionType) => void;
   onPreview: () => void;
   onSave: () => void;
+  isLoading?: boolean;
 }
 
 const questionTypes: { type: QuestionType; label: string }[] = [
@@ -33,6 +34,7 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
   onTypeSelect,
   onPreview,
   onSave,
+  isLoading = false,
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
@@ -61,9 +63,13 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
           <Eye className="h-4 w-4" />
           Preview
         </Button>
-        <Button onClick={onSave} className="flex items-center gap-2">
+        <Button
+          onClick={onSave}
+          disabled={isLoading}
+          className="flex items-center gap-2"
+        >
           <Save className="h-4 w-4" />
-          Save Question
+          {isLoading ? "Saving..." : "Save Question"}
         </Button>
       </div>
     </div>

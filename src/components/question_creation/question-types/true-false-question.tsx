@@ -54,7 +54,13 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
             value={correctAnswer === null ? "" : correctAnswer.toString()}
             onValueChange={(value) => onCorrectAnswerChange(value === "true")}
           >
-            <div className="flex items-center space-x-2 p-3 border rounded-lg">
+            <div
+              className={`flex items-center space-x-2 p-3 border rounded-lg transition-colors ${
+                correctAnswer === true
+                  ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
+                  : "border-border"
+              }`}
+            >
               <RadioGroupItem value="true" id="true" />
               <Label
                 htmlFor="true"
@@ -63,7 +69,13 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
                 True
               </Label>
             </div>
-            <div className="flex items-center space-x-2 p-3 border rounded-lg">
+            <div
+              className={`flex items-center space-x-2 p-3 border rounded-lg transition-colors ${
+                correctAnswer === false
+                  ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
+                  : "border-border"
+              }`}
+            >
               <RadioGroupItem value="false" id="false" />
               <Label
                 htmlFor="false"

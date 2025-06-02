@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Moon, Sun, User, Plus } from "lucide-react";
+import { Moon, Sun, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
-import Link from "next/link";
 
 const TopBar: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Only render after mounting to prevent hydration mismatches
@@ -17,7 +16,8 @@ const TopBar: React.FC = () => {
   }, []);
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    const isDark = mounted ? resolvedTheme === "dark" : false;
+    setTheme(isDark ? "light" : "dark");
   };
 
   return (
@@ -25,16 +25,6 @@ const TopBar: React.FC = () => {
       {/* Left side - Evalify text and create button */}
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-bold text-foreground">Evalify</h1>
-        <Link href="/question/create">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Question
-          </Button>
-        </Link>
       </div>
 
       {/* Right side - Theme toggle and user avatar */}
@@ -47,7 +37,7 @@ const TopBar: React.FC = () => {
           className="h-9 w-9"
         >
           {mounted ? (
-            theme === "dark" ? (
+            resolvedTheme === "dark" ? (
               <Sun className="h-5 w-5" />
             ) : (
               <Moon className="h-5 w-5" />
