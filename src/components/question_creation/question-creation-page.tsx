@@ -96,8 +96,8 @@ const QuestionCreationPage: React.FC = () => {
         description: `Question ID: ${response.id}`,
       });
 
-      // TODO: Optionally reset the form after successful save
-      // TODO: Or redirect to questions list page
+      // Reset the form after successful save
+      resetForm();
     } catch (err) {
       console.error("Error saving question:", err);
 
