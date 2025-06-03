@@ -25,6 +25,27 @@ import {
   SUPPORTED_LANGUAGES,
 } from "../types";
 
+// Helper function to get default return values for different languages and types
+const getDefaultValue = (type: string, language: string): string => {
+  const defaults: Record<string, Record<string, string>> = {
+    java: {
+      int: "0",
+      float: "0.0f",
+      string: '""',
+      boolean: "false",
+      list: "new ArrayList<>()",
+    },
+    cpp: {
+      int: "0",
+      float: "0.0f",
+      string: '""',
+      boolean: "false",
+      list: "{}",
+    },
+  };
+  return defaults[language]?.[type] || (language === "java" ? "null" : "0");
+};
+
 interface CodingQuestionProps {
   question: string;
   language: string;
@@ -62,12 +83,20 @@ const generateBoilerplateCode = (metadata: FunctionMetadata): string => {
       const javaParams = parameters
         .map((p) => `${p.type} ${p.name}`)
         .join(", ");
-      return `public ${returnType} ${name}(${javaParams}) {\n    // TODO: Implement the function\n    \n}`;
+      const defaultReturn =
+        returnType === "void"
+          ? ""
+          : `\n    return ${getDefaultValue(returnType, "java")};`;
+      return `public ${returnType} ${name}(${javaParams}) {\n    // TODO: Implement the function${defaultReturn}\n}`;
     }
 
     case "cpp": {
       const cppParams = parameters.map((p) => `${p.type} ${p.name}`).join(", ");
-      return `${returnType} ${name}(${cppParams}) {\n    // TODO: Implement the function\n    \n}`;
+      const defaultReturn =
+        returnType === "void"
+          ? ""
+          : `\n    return ${getDefaultValue(returnType, "cpp")};`;
+      return `${returnType} ${name}(${cppParams}) {\n    // TODO: Implement the function${defaultReturn}\n}`;
     }
 
     default:
@@ -553,10 +582,14 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                 <Label className="text-lg font-semibold">Question</Label>
                 <div className="mt-2 p-4 border rounded-lg bg-muted/50">
                   {question ? (
-                    <div
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: question }}
-                    />
+                    <div className="prose prose-sm max-w-none">
+                      <TiptapEditor
+                        initialContent={question}
+                        onUpdate={() => {}}
+                        readOnly={true}
+                        className="border-0 p-0"
+                      />
+                    </div>
                   ) : (
                     <span className="text-muted-foreground italic">
                       No question content added yet.

@@ -440,9 +440,9 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                       const value = customTypeInputRef.current?.value
                         .trim()
                         .toLowerCase();
-                      if (value) {
+                      if (value && customTypeInputRef.current) {
                         addFileType(value);
-                        customTypeInputRef.current!.value = "";
+                        customTypeInputRef.current.value = "";
                       }
                     }
                   }}
@@ -453,9 +453,9 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
                     const value = customTypeInputRef.current?.value
                       .trim()
                       .toLowerCase();
-                    if (value) {
+                    if (value && customTypeInputRef.current) {
                       addFileType(value);
-                      customTypeInputRef.current!.value = "";
+                      customTypeInputRef.current.value = "";
                     }
                   }}
                 >

@@ -301,7 +301,6 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             <DescriptiveQuestion
               question={questionData.question}
               sampleAnswer={questionData.sampleAnswer}
-              wordLimit={questionData.wordLimit}
               gradingCriteria={questionData.gradingCriteria}
               explanation={questionData.explanation}
               showExplanation={questionData.showExplanation}
@@ -309,7 +308,6 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               onSampleAnswerChange={(sampleAnswer) =>
                 updateData({ sampleAnswer })
               }
-              onWordLimitChange={(wordLimit) => updateData({ wordLimit })}
               onGradingCriteriaChange={(gradingCriteria) =>
                 updateData({ gradingCriteria })
               }
