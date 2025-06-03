@@ -51,7 +51,10 @@ const TopBar: React.FC = () => {
 
         {/* User avatar */}
         <Avatar className="h-8 w-8">
-          <AvatarImage src="/placeholder-avatar.jpg" alt="User" />
+          <AvatarImage
+            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"
+            alt="User"
+          />
           <AvatarFallback>
             <User className="h-4 w-4" />
           </AvatarFallback>

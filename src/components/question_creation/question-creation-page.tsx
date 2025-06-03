@@ -8,8 +8,9 @@ import QuestionSettings from "./question-settings";
 import ValidationErrorModal from "./validation-error-modal";
 import { validateQuestionData, ValidationError } from "./validation";
 import { useToast } from "@/hooks/use-toast";
+import { questionsService } from "@/app/api/services/questions";
 
-interface QuestionSettings {
+interface QuestionCreationSettings {
   marks: number;
   difficulty: string;
   bloomsTaxonomy: string;
@@ -19,7 +20,7 @@ interface QuestionSettings {
 
 const QuestionCreationPage: React.FC = () => {
   // Initialize toast hook
-  const { info, success } = useToast();
+  const { info, success, error } = useToast();
 
   // Question type state
   const [selectedType, setSelectedType] = React.useState<QuestionType>("mcq");
@@ -36,7 +37,7 @@ const QuestionCreationPage: React.FC = () => {
 
   // Question settings state
   const [questionSettings, setQuestionSettings] =
-    React.useState<QuestionSettings>({
+    React.useState<QuestionCreationSettings>({
       marks: 1,
       difficulty: "medium",
       bloomsTaxonomy: "",
@@ -64,8 +65,10 @@ const QuestionCreationPage: React.FC = () => {
     });
     // Show info toast instead of alert
     info("Preview functionality will be implemented soon!");
-  }; // Handle save
-  const handleSave = () => {
+  };
+
+  // Handle save
+  const handleSave = async () => {
     // Comprehensive validation using the validation system
     const validationResult = validateQuestionData(
       questionData,
@@ -78,14 +81,35 @@ const QuestionCreationPage: React.FC = () => {
       return;
     }
 
-    console.log("Save question:", {
-      type: selectedType,
-      data: questionData,
-      settings: questionSettings,
-    });
+    try {
+      // Call the API to save the question
+      const response = await questionsService.createQuestion({
+        type: selectedType,
+        data: questionData,
+        settings: questionSettings,
+      });
 
-    // Show success toast instead of alert
-    success("Question saved successfully!");
+      console.log("Question saved successfully:", response);
+
+      // Show success toast
+      success("Question saved successfully!", {
+        description: `Question ID: ${response.id}`,
+      });
+
+      // TODO: Optionally reset the form after successful save
+      // TODO: Or redirect to questions list page
+    } catch (err) {
+      console.error("Error saving question:", err);
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to save question. Please try again.";
+
+      error("Failed to save question", {
+        description: errorMessage,
+      });
+    }
   };
 
   // Handle validation modal close

@@ -161,7 +161,6 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
         isUpdating.current = false;
       }, 10);
     } catch (e) {
-      const blank = " ___ ";
       console.error(
         "Error inserting blank at cursor position:",
         e instanceof Error ? e.message : e,
@@ -172,7 +171,6 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
       console.error("Editor state:", {
         isDestroyed: editor.isDestroyed,
         isFocused: editor.isFocused,
-        canInsertContent: editor.can().insertContent(blank),
       });
 
       // Show user-friendly error message

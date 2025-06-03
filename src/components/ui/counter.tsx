@@ -74,6 +74,8 @@ const Counter: React.FC<CounterProps> = ({
         onChange={handleInputChange}
         min={min}
         max={max}
+        aria-label="Counter value"
+        aria-describedby="counter-description"
         className="h-9 w-16 rounded-none border-x-0 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
 
