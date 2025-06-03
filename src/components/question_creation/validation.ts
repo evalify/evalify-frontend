@@ -49,7 +49,7 @@ export function validateQuestionData(
 
   // Common validation: marks validation
   if (marks !== undefined) {
-    if (!marks || marks <= 0) {
+    if (marks <= 0) {
       errors.push({
         field: "marks",
         message: "Marks must be a positive number greater than 0",
