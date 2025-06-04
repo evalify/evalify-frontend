@@ -72,7 +72,6 @@ export function PublishingSettings({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        {" "}
         <div className="space-y-2">
           <Label>Quiz Publish Date & Time</Label>
           <div className="flex gap-2">
@@ -94,12 +93,10 @@ export function PublishingSettings({
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-50" align="start">
                   <Calendar
-                    mode="single"
                     selected={data.publishDateTime.date}
                     onSelect={(date) =>
                       handleNestedChange("publishDateTime", "date", date)
                     }
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -169,7 +166,6 @@ export function PublishingSettings({
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-50" align="start">
                     <Calendar
-                      mode="single"
                       selected={data.resultsPublishDateTime.date}
                       onSelect={(date) =>
                         handleNestedChange(
@@ -178,7 +174,6 @@ export function PublishingSettings({
                           date,
                         )
                       }
-                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>

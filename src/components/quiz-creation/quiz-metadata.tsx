@@ -231,7 +231,6 @@ export function QuizMetadata({ data, updateData }: QuizMetadataProps) {
                             align="start"
                           >
                             <Calendar
-                              mode="single"
                               selected={data.startDateTime.date}
                               onSelect={(date) =>
                                 handleNestedChange(
@@ -240,7 +239,6 @@ export function QuizMetadata({ data, updateData }: QuizMetadataProps) {
                                   date,
                                 )
                               }
-                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
@@ -284,12 +282,10 @@ export function QuizMetadata({ data, updateData }: QuizMetadataProps) {
                             align="start"
                           >
                             <Calendar
-                              mode="single"
                               selected={data.endDateTime.date}
                               onSelect={(date) =>
                                 handleNestedChange("endDateTime", "date", date)
                               }
-                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
