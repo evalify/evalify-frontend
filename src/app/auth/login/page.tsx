@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, Eye, EyeOff, User, Lock, Shield, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 import ThemeToggle from "@/components/ui/theme-toggle";
 
 export default function SignIn() {
@@ -20,17 +19,6 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { isTokenValid } = useTokenRefresh();
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (session && isTokenValid) {
-      router.push("/dashboard");
-    } else if (session && !isTokenValid) {
-      // Token is invalid, sign out
-      signOut({ callbackUrl: "/auth/login" });
-    }
-  }, [session, isTokenValid, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
