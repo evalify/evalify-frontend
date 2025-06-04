@@ -1,28 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import axios from "@/lib/axios/axios-client";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import Quiz from "@/repo/quiz/quiz";
 
 export default function Page() {
-  const [quizData, setQuizData] = useState(null);
+  const { data, isPending } = useQuery({
+    queryKey: ["quiz"],
+    queryFn: Quiz.getAllQuizzes,
+  });
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await axios.get("/api/bank");
-        console.log(response.data);
-        setQuizData(response.data);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-    fetchData();
-  }, []);
+  if (isPending) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div>
       <h1>Quiz Student Page</h1>
-      <pre>{quizData ? JSON.stringify(quizData, null, 2) : "Loading..."}</pre>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
     </div>
   );
 }

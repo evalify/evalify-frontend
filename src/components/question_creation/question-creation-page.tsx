@@ -67,6 +67,27 @@ const QuestionCreationPage: React.FC = () => {
     info("Preview functionality will be implemented soon!");
   };
 
+  const resetForm = () => {
+    setSelectedType("mcq");
+    setQuestionData({
+      type: "mcq",
+      question: "",
+      explanation: "",
+      showExplanation: false,
+      allowMultipleCorrect: false,
+      options: [],
+    });
+    setQuestionSettings({
+      marks: 1,
+      difficulty: "medium",
+      bloomsTaxonomy: "",
+      courseOutcome: "",
+      topics: [],
+    });
+    setValidationErrors([]);
+    setShowValidationModal(false);
+  };
+
   // Handle save
   const handleSave = async () => {
     // Comprehensive validation using the validation system
