@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import Keycloak from "next-auth/providers/keycloak";
-import { decode } from "jsonwebtoken";
+import { decode, JwtPayload } from "jsonwebtoken";
 
 interface KeycloakToken {
   access_token: string;
@@ -19,15 +19,18 @@ interface DecodedJWT {
   [key: string]: unknown;
 }
 
-function processDecodedToken(decoded: DecodedJWT | null): {
+function processDecodedToken(decoded: string | JwtPayload | null): {
   roles: string[];
   groups: string[];
 } {
   let roles: string[] = [];
   let groups: string[] = [];
-  if (decoded && typeof decoded === "object") {
-    roles = decoded.realm_access?.roles || [];
-    groups = (decoded.groups || []).map((group: string) =>
+
+  // Only process if decoded is an object (JwtPayload) and not null or string
+  if (decoded && typeof decoded === "object" && !Array.isArray(decoded)) {
+    const decodedJWT = decoded as DecodedJWT;
+    roles = decodedJWT.realm_access?.roles || [];
+    groups = (decodedJWT.groups || []).map((group: string) =>
       group.replace(/^\//, ""),
     );
   }
