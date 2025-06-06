@@ -1,11 +1,13 @@
 import axios from "axios";
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
+  `${process.env.NEXT_PUBLIC_API_BASE_URL}/api` ||
+  "http://172.17.9.74:8020/api/";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -14,23 +16,12 @@ const axiosInstance = axios.create({
 // Request Interceptor
 axiosInstance.interceptors.request.use(
   async (config) => {
-    // Attempt to get the session on the client-side
-    let session = null;
     if (typeof window !== "undefined") {
-      // Client-side execution
-      session = await getSession();
-    } else {
-      // Server-side execution (e.g., getServerSideProps, API routes)
-      // Note: You need to pass req and res to getServerSession
-      // This part would typically be handled in getServerSideProps or API routes
-      // where you have access to req and res. For a universal axios instance,
-      // you might need a different approach or to set the token manually
-      // from getServerSideProps and pass it to your components.
-      // For most client-side requests, getSession() is sufficient.
-    }
+      const session = await getSession();
 
-    if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`;
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      }
     }
 
     return config;
@@ -40,29 +31,35 @@ axiosInstance.interceptors.request.use(
   },
 );
 
-// Optional: Response Interceptor for handling token expiration/refresh
+// Response Interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
-    // Example: If 401 Unauthorized and not a refresh attempt
+
+    // Handle 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      // You would implement a token refresh logic here if Keycloak supports it
-      // For Auth.js, a 401 typically means the session cookie might be invalid
-      // or the access token has expired and refresh logic wasn't triggered
-      // by Auth.js itself.
-      // In many Auth.js setups, a 401 from your backend might simply
-      // mean the user needs to re-authenticate if the session isn't automatically
-      // refreshing.
-      // You might redirect to login, or re-fetch the session.
-      console.error(
-        "401 Unauthorized. Session might be expired. Redirecting to login...",
-      );
-      // router.push("/api/auth/signin"); // Example: redirect to sign-in page
+
+      const session = await getSession();
+
+      if (session?.error?.includes("RefreshAccessTokenError")) {
+        // Token refresh failed, sign out
+        if (typeof window !== "undefined") {
+          await signOut({ callbackUrl: "/auth/login" });
+        }
+        return Promise.reject(error);
+      }
+
+      if (session?.access_token) {
+        // Retry with new token
+        originalRequest.headers.Authorization = `Bearer ${session.access_token}`;
+        return axiosInstance(originalRequest);
+      }
     }
+
     return Promise.reject(error);
   },
 );

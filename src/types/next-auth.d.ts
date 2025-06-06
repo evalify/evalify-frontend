@@ -9,6 +9,7 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
       roles: string[];
+      groups: string[];
     };
     access_token: string;
     error?: string | null;
@@ -20,6 +21,7 @@ declare module "next-auth" {
     email?: string | null;
     image?: string | null;
     roles: string[];
+    groups: string[];
   }
 }
 
@@ -29,5 +31,6 @@ declare module "next-auth/jwt" {
     access_token?: string;
     refresh_token?: string;
     expires_at?: number;
+    groups?: string[];
   }
 }
