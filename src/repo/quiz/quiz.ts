@@ -2,13 +2,13 @@ import axiosInstance from "@/lib/axios/axios-client";
 
 const Quiz = {
   async getAllQuizzes() {
-    return axiosInstance("/api/quiz", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = axiosInstance.get("/quiz");
+    return response;
   },
+  // async createQuiz(quizData) {
+  //   const response = await axiosInstance.post("/quiz", quizData);
+  //   return response;
+  // },
 };
 
 export default Quiz;
