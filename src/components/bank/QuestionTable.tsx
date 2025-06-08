@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/table";
 import { Question } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useRef, useEffect } from "react";
 
 export default function QuestionTable({
   questions,
@@ -19,15 +18,6 @@ export default function QuestionTable({
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
 }) {
-  const selectAllRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (selectAllRef.current) {
-      selectAllRef.current.indeterminate =
-        selectedIds.length > 0 && selectedIds.length < questions.length;
-    }
-  }, [selectedIds, questions.length]);
-
   const toggleSelect = (id: string) => {
     if (!onSelectionChange) return;
     if (selectedIds.includes(id)) {
@@ -52,7 +42,6 @@ export default function QuestionTable({
         <TableRow>
           <TableHead>
             <Checkbox
-              ref={selectAllRef}
               checked={
                 selectedIds.length === questions.length && questions.length > 0
               }

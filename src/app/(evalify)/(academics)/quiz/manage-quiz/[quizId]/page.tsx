@@ -227,7 +227,7 @@ const ManageQuizPage = () => {
                 Edit Quiz
               </Button>
               <Button
-                onClick={() => router.push(`/quiz/add-questions/${quizId}`)}
+                onClick={() => router.push(`/quiz/create-quiz`)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -803,7 +803,7 @@ const ManageQuizPage = () => {
             <CardContent>
               <div className="flex gap-4 mb-6">
                 <Button
-                  onClick={() => router.push(`/quiz/add-questions/${quizId}`)}
+                  onClick={() => router.push(`/quiz/create-quiz`)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
