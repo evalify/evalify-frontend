@@ -151,7 +151,6 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
       error("Editor is not ready. Please try again.");
       return;
     }
-
     const editor = editorRef.current.editor;
     if (!editor) {
       console.error(
@@ -161,9 +160,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
         "Editor is not initialized. Please refresh the page and try again.",
       );
       return;
-    }
-
-    // Check if editor is destroyed or not ready
+    } // Check if editor is destroyed or not ready
     if (editor.isDestroyed) {
       console.error("Cannot insert blank - editor has been destroyed");
       error("Editor is no longer available. Please refresh the page.");
@@ -200,9 +197,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
       console.error("Editor state:", {
         isDestroyed: editor.isDestroyed,
         isFocused: editor.isFocused,
-      });
-
-      // Show user-friendly error message
+      }); // Show user-friendly error message
       error("Failed to insert blank. Please try again or refresh the page.");
     }
   };
@@ -234,7 +229,6 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
       isUpdating.current = false;
     }, 100);
   };
-
   const removeAnswerFromBlank = (blankId: string, answerToRemove: string) => {
     // Set updating flag to prevent blank detection during answer removal
     isUpdating.current = true;
@@ -349,7 +343,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
               </p>
             </div>
           </div>
-        </CardHeader>
+        </CardHeader>{" "}
         <CardContent>
           <TiptapEditor
             ref={editorRef}
@@ -648,7 +642,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
               onCheckedChange={onShowExplanationChange}
             />
           </div>
-        </CardHeader>
+        </CardHeader>{" "}
         {showExplanation && (
           <CardContent>
             <TiptapEditor
