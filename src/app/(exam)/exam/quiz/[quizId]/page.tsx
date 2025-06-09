@@ -9,7 +9,7 @@ import { QuizProvider } from "@/components/quiz/quiz-context";
 import { getQuizData, processQuizData } from "@/lib/quiz-data";
 import { useState } from "react";
 import { QuizData } from "@/components/quiz/types/types";
-import { useFullScreenEnforcement } from "@/hooks/use-fullscreen-enforcement";
+import { useFullScreenEnforcement } from "@/components/quiz/hooks/use-fullscreen-enforcement";
 import { FullScreenModal } from "@/components/quiz/fullscreen-modal";
 import { ViolationsTracker } from "@/components/quiz/violations-tracker";
 

@@ -68,7 +68,7 @@ export default function SettingsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <Badge className="absolute -bottom-1 -right-1 bg-primary border-0">
-                      User
+                      {session?.user.groups[0].toUpperCase() || "User"}
                     </Badge>
                   </div>
 
