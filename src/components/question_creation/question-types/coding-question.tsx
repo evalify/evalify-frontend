@@ -279,7 +279,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
         </TabsList>
 
         <TabsContent value="question">
-          {" "}
+          {/* Question Content */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -296,25 +296,41 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                   className="mt-2"
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="showExplanation"
-                  checked={showExplanation}
-                  onChange={(e) => onShowExplanationChange(e.target.checked)}
-                />
-                <Label htmlFor="showExplanation">Include explanation</Label>
+          {/* Explanation Card */}
+          <Card className="mt-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Explanation
+                </CardTitle>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showExplanation"
+                    checked={showExplanation}
+                    onChange={(e) => onShowExplanationChange(e.target.checked)}
+                  />
+                  <Label htmlFor="showExplanation">Include explanation</Label>
+                </div>
               </div>
-
-              {showExplanation && (
+            </CardHeader>
+            <CardContent>
+              {showExplanation ? (
                 <div>
-                  <Label htmlFor="explanation-editor">Explanation</Label>
                   <TiptapEditor
                     initialContent={explanation || ""}
                     onUpdate={onExplanationChange}
                     className="mt-2"
                   />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Enable explanation to provide additional context for the
+                  question.
                 </div>
               )}
             </CardContent>
