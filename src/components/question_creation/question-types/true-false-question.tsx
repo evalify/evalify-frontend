@@ -3,9 +3,9 @@
 import React from "react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, ToggleLeft, Edit3 } from "lucide-react";
 
 interface TrueFalseQuestionProps {
   question: string;
@@ -33,7 +33,10 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
       {/* Question Input */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Question</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Question
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TiptapEditor
@@ -47,47 +50,39 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
       {/* Answer Selection */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Correct Answer</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ToggleLeft className="h-5 w-5 text-primary" />
+            Correct Answer
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <RadioGroup
-            value={correctAnswer === null ? "" : correctAnswer.toString()}
-            onValueChange={(value) => onCorrectAnswerChange(value === "true")}
-          >
+          <div className="flex gap-4">
             <div
-              className={`flex items-center space-x-2 p-3 border rounded-lg transition-colors ${
+              className={`flex-1 flex items-center justify-center p-4 border rounded-lg transition-colors cursor-pointer ${
                 correctAnswer === true
                   ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
-                  : "border-border"
+                  : "border-border hover:border-primary/30"
               }`}
+              onClick={() => onCorrectAnswerChange(true)}
             >
-              <RadioGroupItem value="true" id="true" />
-              <Label
-                htmlFor="true"
-                className="text-base font-medium cursor-pointer"
-              >
-                True
-              </Label>
+              <Label className="text-lg font-medium cursor-pointer">True</Label>
             </div>
             <div
-              className={`flex items-center space-x-2 p-3 border rounded-lg transition-colors ${
+              className={`flex-1 flex items-center justify-center p-4 border rounded-lg transition-colors cursor-pointer ${
                 correctAnswer === false
                   ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
-                  : "border-border"
+                  : "border-border hover:border-primary/30"
               }`}
+              onClick={() => onCorrectAnswerChange(false)}
             >
-              <RadioGroupItem value="false" id="false" />
-              <Label
-                htmlFor="false"
-                className="text-base font-medium cursor-pointer"
-              >
+              <Label className="text-lg font-medium cursor-pointer">
                 False
               </Label>
             </div>
-          </RadioGroup>
+          </div>
 
-          <div className="text-sm text-muted-foreground mt-2">
-            Select the correct answer for this statement
+          <div className="text-sm text-muted-foreground mt-4 text-center">
+            Click on the correct answer for this statement
           </div>
         </CardContent>
       </Card>
@@ -95,7 +90,10 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
       {/* Explanation Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Explanation (Optional)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Edit3 className="h-5 w-5 text-primary" />
+            Explanation (Optional)
+          </CardTitle>
           <div className="flex items-center gap-2">
             <Label htmlFor="show-explanation" className="text-sm">
               Include explanation

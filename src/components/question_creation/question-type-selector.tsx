@@ -17,6 +17,8 @@ interface QuestionTypeSelectorProps {
   onPreview: () => void;
   onSave: () => void;
   isLoading?: boolean;
+  isEdit?: boolean;
+  hasChanges?: boolean;
 }
 
 const questionTypes: { type: QuestionType; label: string }[] = [
@@ -35,9 +37,12 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
   onPreview,
   onSave,
   isLoading = false,
+  isEdit = false,
+  hasChanges = false,
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
+      {" "}
       {/* Left side - Question types */}
       <div className="flex flex-wrap gap-2">
         {questionTypes.map(({ type, label }) => (
@@ -47,12 +52,12 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
             size="sm"
             onClick={() => onTypeSelect(type)}
             className="min-w-fit"
+            disabled={isEdit}
           >
             {label}
           </Button>
         ))}
       </div>
-
       {/* Right side - Action buttons */}
       <div className="flex gap-2">
         <Button
@@ -62,14 +67,20 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
         >
           <Eye className="h-4 w-4" />
           Preview
-        </Button>
+        </Button>{" "}
         <Button
           onClick={onSave}
-          disabled={isLoading}
+          disabled={isLoading || (isEdit && !hasChanges)}
           className="flex items-center gap-2"
         >
           <Save className="h-4 w-4" />
-          {isLoading ? "Saving..." : "Save Question"}
+          {isLoading
+            ? isEdit
+              ? "Updating..."
+              : "Saving..."
+            : isEdit
+              ? "Update Question"
+              : "Save Question"}
         </Button>
       </div>
     </div>

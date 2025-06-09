@@ -22,6 +22,7 @@ interface EditorProps {
   initialContent?: string;
   onUpdate?: (content: string) => void;
   readOnly?: boolean;
+  height?: string;
 }
 
 export interface TiptapEditorRef {
@@ -29,7 +30,10 @@ export interface TiptapEditorRef {
 }
 
 export const TiptapEditor = forwardRef<TiptapEditorRef, EditorProps>(
-  ({ className, initialContent = "", onUpdate, readOnly = false }, ref) => {
+  (
+    { className, initialContent = "", onUpdate, readOnly = false, height },
+    ref,
+  ) => {
     // Use the sanitize method properly
     const sanitizedContent = initialContent
       ? DOMPurify.sanitize(initialContent)
@@ -108,8 +112,8 @@ export const TiptapEditor = forwardRef<TiptapEditorRef, EditorProps>(
       editable: !readOnly,
       editorProps: {
         attributes: {
-          class:
-            "prose dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4",
+          class: `prose dark:prose-invert max-w-none focus:outline-none p-4`,
+          style: height ? `min-height: ${height}` : "min-height: 100px",
         },
       },
       onUpdate: ({ editor }) => {
@@ -138,7 +142,6 @@ export const TiptapEditor = forwardRef<TiptapEditorRef, EditorProps>(
         }
       }
     }, [editor, initialContent]);
-
     return (
       <div className={cn("border rounded-md", className)}>
         {editor && (
