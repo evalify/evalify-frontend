@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Color } from "@tiptap/extension-color";
 import { Highlight } from "@tiptap/extension-highlight";
@@ -14,126 +14,142 @@ import {
   LatexNodeExtension,
 } from "@/components/rich-text-editor/toolbars/latex-extension";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
+import { useEffect, forwardRef, useImperativeHandle } from "react";
 import DOMPurify from "isomorphic-dompurify";
 
 interface EditorProps {
   className?: string;
   initialContent?: string;
   onUpdate?: (content: string) => void;
+  readOnly?: boolean;
 }
 
-export function TiptapEditor({
-  className,
-  initialContent = "",
-  onUpdate,
-}: EditorProps) {
-  // Use the sanitize method properly
-  const sanitizedContent = initialContent
-    ? DOMPurify.sanitize(initialContent)
-    : "";
-  const extensions = [
-    StarterKit.configure({
-      orderedList: {
-        HTMLAttributes: {
-          class: "list-decimal",
+export interface TiptapEditorRef {
+  editor: Editor | null;
+}
+
+export const TiptapEditor = forwardRef<TiptapEditorRef, EditorProps>(
+  ({ className, initialContent = "", onUpdate, readOnly = false }, ref) => {
+    // Use the sanitize method properly
+    const sanitizedContent = initialContent
+      ? DOMPurify.sanitize(initialContent)
+      : "";
+    const extensions = [
+      StarterKit.configure({
+        orderedList: {
+          HTMLAttributes: {
+            class: "list-decimal",
+          },
         },
-      },
-      bulletList: {
-        HTMLAttributes: {
-          class: "list-disc",
+        bulletList: {
+          HTMLAttributes: {
+            class: "list-disc",
+          },
         },
-      },
-      code: {
-        HTMLAttributes: {
-          class: "bg-accent rounded-md p-1",
+        code: {
+          HTMLAttributes: {
+            class: "bg-accent rounded-md p-1",
+          },
         },
-      },
-      horizontalRule: {
-        HTMLAttributes: {
-          class: "my-2",
+        horizontalRule: {
+          HTMLAttributes: {
+            class: "my-2",
+          },
         },
-      },
-      codeBlock: {
-        HTMLAttributes: {
-          class:
-            "bg-primary text-primary-foreground p-2 text-sm rounded-md p-1",
+        codeBlock: {
+          HTMLAttributes: {
+            class:
+              "bg-primary text-primary-foreground p-2 text-sm rounded-md p-1",
+          },
         },
-      },
-      heading: {
-        levels: [1, 2, 3, 4],
-        HTMLAttributes: {
-          class: "tiptap-heading",
+        heading: {
+          levels: [1, 2, 3, 4],
+          HTMLAttributes: {
+            class: "tiptap-heading",
+          },
         },
-      },
-    }),
-    TextStyle,
-    Color,
-    Highlight.configure({
-      multicolor: true,
-    }),
-    LaTeX,
-    LatexNodeExtension,
-    ImageExtension,
-    ImagePlaceholder.configure({
-      allowedMimeTypes: {
-        "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"],
-      },
-      maxFiles: 1,
-      maxSize: 5 * 1024 * 1024, // 5MB
-      onDrop: (files) => {
-        console.log(`Successfully uploaded ${files.length} image(s)`);
-      },
-      onDropRejected: (files) => {
-        const reasons = [];
-        for (const file of files) {
-          if (file.size > 5 * 1024 * 1024) {
-            reasons.push(`File "${file.name}" exceeds the 5MB size limit`);
-          } else {
-            reasons.push(`File "${file.name}" has an unsupported format`);
+      }),
+      TextStyle,
+      Color,
+      Highlight.configure({
+        multicolor: true,
+      }),
+      LaTeX,
+      LatexNodeExtension,
+      ImageExtension,
+      ImagePlaceholder.configure({
+        allowedMimeTypes: {
+          "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"],
+        },
+        maxFiles: 1,
+        maxSize: 5 * 1024 * 1024, // 5MB
+        onDrop: (files) => {
+          console.log(`Successfully uploaded ${files.length} image(s)`);
+        },
+        onDropRejected: (files) => {
+          const reasons = [];
+          for (const file of files) {
+            if (file.size > 5 * 1024 * 1024) {
+              reasons.push(`File "${file.name}" exceeds the 5MB size limit`);
+            } else {
+              reasons.push(`File "${file.name}" has an unsupported format`);
+            }
           }
+          console.error("Image upload failed:", reasons.join(", "));
+        },
+        onEmbed: (url) => {
+          console.log(`Image embedded from URL: ${url}`);
+        },
+      }),
+    ];
+    const editor = useEditor({
+      extensions,
+      content: sanitizedContent,
+      editable: !readOnly,
+      editorProps: {
+        attributes: {
+          class:
+            "prose dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4",
+        },
+      },
+      onUpdate: ({ editor }) => {
+        if (onUpdate && !readOnly) {
+          const html = editor.getHTML();
+          onUpdate(html);
         }
-        console.error("Image upload failed:", reasons.join(", "));
       },
-      onEmbed: (url) => {
-        console.log(`Image embedded from URL: ${url}`);
-      },
-    }),
-  ];
-  const editor = useEditor({
-    extensions,
-    content: sanitizedContent,
-    editorProps: {
-      attributes: {
-        class:
-          "prose dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4",
-      },
-    },
-    onUpdate: ({ editor }) => {
-      if (onUpdate) {
-        const html = editor.getHTML();
-        onUpdate(html);
-      }
-    },
-    immediatelyRender: false,
-  });
-  useEffect(() => {
-    if (editor && initialContent) {
-      const clean = initialContent ? DOMPurify.sanitize(initialContent) : "";
-      if (editor.getHTML() !== clean) {
-        editor.commands.setContent(clean);
-      }
-    }
-  }, [editor, initialContent]);
+      immediatelyRender: false,
+    });
 
-  return (
-    <div className={cn("border rounded-md", className)}>
-      {editor && (
-        <ToolbarProvider editor={editor}>
-          <EditorToolbar />
-          <EditorContent editor={editor} className="overflow-auto" />
-        </ToolbarProvider>
-      )}
-    </div>
-  );
-}
+    // Expose the editor instance through the ref
+    useImperativeHandle(
+      ref,
+      () => ({
+        editor,
+      }),
+      [editor],
+    );
+
+    useEffect(() => {
+      if (editor && initialContent) {
+        const clean = initialContent ? DOMPurify.sanitize(initialContent) : "";
+        if (editor.getHTML() !== clean) {
+          editor.commands.setContent(clean);
+        }
+      }
+    }, [editor, initialContent]);
+
+    return (
+      <div className={cn("border rounded-md", className)}>
+        {editor && (
+          <ToolbarProvider editor={editor}>
+            {!readOnly && <EditorToolbar />}
+            <EditorContent editor={editor} className="overflow-auto" />
+          </ToolbarProvider>
+        )}
+      </div>
+    );
+  },
+);
+
+TiptapEditor.displayName = "TiptapEditor";
