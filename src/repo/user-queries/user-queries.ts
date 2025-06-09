@@ -6,7 +6,6 @@ interface CreateUserData {
   email: string;
   phoneNumber: string;
   role: string;
-  password: string;
   isActive: boolean;
 }
 
@@ -16,7 +15,7 @@ interface UpdateUserData extends Omit<CreateUserData, "password"> {
 
 const userQueries = {
   createUser: async (data: CreateUserData): Promise<User> => {
-    const response = await axiosInstance.post("/api/user", data);
+    const response = await axiosInstance.post("/user", data);
     return response.data;
   },
 
