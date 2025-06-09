@@ -596,9 +596,12 @@ const ManageQuizPage = () => {
                       value: course.id,
                       label: `${course.code} - ${course.name}`,
                     }))}
-                    value={formData.course || []}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, course: value }))
+                    selected={formData.course || []}
+                    onChange={(selectedValues) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        course: selectedValues as string[],
+                      }))
                     }
                     placeholder="Select courses..."
                   />
@@ -650,9 +653,12 @@ const ManageQuizPage = () => {
                       value: student.id,
                       label: `${student.rollNumber} - ${student.name}`,
                     }))}
-                    value={formData.student || []}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, student: value }))
+                    selected={formData.student || []}
+                    onChange={(selectedValues) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        student: selectedValues as string[],
+                      }))
                     }
                     placeholder="Select students..."
                   />
@@ -704,9 +710,12 @@ const ManageQuizPage = () => {
                       value: lab.id,
                       label: `${lab.name} - ${lab.location}`,
                     }))}
-                    value={formData.lab || []}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, lab: value }))
+                    selected={formData.lab || []}
+                    onChange={(selectedValues) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        lab: selectedValues as string[],
+                      }))
                     }
                     placeholder="Select labs..."
                   />
@@ -756,9 +765,12 @@ const ManageQuizPage = () => {
                       value: batch.id,
                       label: `${batch.name} (${batch.year})`,
                     }))}
-                    value={formData.batch || []}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, batch: value }))
+                    selected={formData.batch || []}
+                    onChange={(selectedValues) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        batch: selectedValues as string[],
+                      }))
                     }
                     placeholder="Select batches..."
                   />
