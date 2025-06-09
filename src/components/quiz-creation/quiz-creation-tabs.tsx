@@ -330,7 +330,7 @@ export function QuizCreationTabs() {
         <Tabs
           value={currentTab}
           onValueChange={handleTabChange}
-          className="space-y-6"
+          className="space-y-6 h-full flex flex-col"
         >
           <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 h-auto p-1 gap-1 sm:gap-0">
             {tabs.map((tab) => {

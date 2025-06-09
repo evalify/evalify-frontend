@@ -341,7 +341,16 @@ export default function CodeEditor({
       });
     });
 
-    // No cleanup needed for internal state management
+    // Add event listener for fullscreen changes
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
   }, [functions]);
 
   // Accept monaco as unknown and cast to any for type safety
@@ -420,9 +429,17 @@ export default function CodeEditor({
     // Implement share functionality
     console.log("Share clicked");
   };
+
   const handleFullscreen = () => {
-    // Instead of managing document fullscreen, just toggle the editor's fullscreen state
-    setIsFullscreen(!isFullscreen);
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
   };
 
   const handleClear = () => {
