@@ -155,7 +155,6 @@ const QuestionSettings = ({
                       onTopicsChange(selectedOptions);
                     }}
                     allowMultiple={true}
-                    multiple={true}
                   />
                 </div>
               )}
