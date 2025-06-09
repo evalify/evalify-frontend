@@ -1,0 +1,80 @@
+import type { Question } from "../types";
+
+export const csQuestions: Question[] = [
+  {
+    id: "cs_q1",
+    number: 1,
+    description: "What is the time complexity of binary search algorithm?",
+    answer: "O(log n)",
+    marks: 5,
+    type: "Short Answer",
+    courseOutcome: 2,
+    bloomsTaxonomy: "Understand",
+    topic: "Algorithms",
+    difficulty: "Medium",
+  },
+  {
+    id: "cs_q2",
+    number: 2,
+    description:
+      "Explain the concept of polymorphism in object-oriented programming with an example.",
+    answer:
+      "Polymorphism is the ability of an object to take on many forms. The most common use of polymorphism in OOP occurs when a parent class reference is used to refer to a child class object. For example, consider a base class Shape with a method draw() and derived classes Circle, Rectangle, etc. that override the draw() method. We can create an array of Shape references that each refer to different derived class objects and call draw() on each, which will execute the appropriate derived class method.",
+    marks: 10,
+    type: "Essay",
+    courseOutcome: 3,
+    bloomsTaxonomy: "Apply",
+    topic: "Object-Oriented Programming",
+    difficulty: "Hard",
+  },
+  {
+    id: "cs_q3",
+    number: 3,
+    description: "Which of the following is NOT a valid data structure?",
+    answer: "C) Circuit",
+    options: [
+      { id: "a", text: "Array", isCorrect: false },
+      { id: "b", text: "Queue", isCorrect: false },
+      { id: "c", text: "Circuit", isCorrect: true },
+      { id: "d", text: "Tree", isCorrect: false },
+    ],
+    marks: 2,
+    type: "Multiple Choice",
+    courseOutcome: 1,
+    bloomsTaxonomy: "Remember",
+    topic: "Data Structures",
+    difficulty: "Easy",
+  },
+  {
+    id: "cs_q4",
+    number: 4,
+    description: "What is a hash collision and how can it be resolved?",
+    answer:
+      "A hash collision occurs when a hash function produces the same hash value for two different inputs. There are several ways to resolve hash collisions: 1) Chaining - storing colliding elements in a linked list at the same array index, 2) Open addressing - finding another empty slot in the hash table by probing, 3) Robin Hood hashing - moving existing items to improve overall performance.",
+    marks: 5,
+    type: "Short Answer",
+    courseOutcome: 2,
+    bloomsTaxonomy: "Analyze",
+    topic: "Data Structures",
+    difficulty: "Medium",
+  },
+  {
+    id: "cs_q5",
+    number: 5,
+    description:
+      "Which sorting algorithm has the best average-case time complexity?",
+    answer: "D) Merge Sort",
+    options: [
+      { id: "a", text: "Bubble Sort", isCorrect: false },
+      { id: "b", text: "Selection Sort", isCorrect: false },
+      { id: "c", text: "Insertion Sort", isCorrect: false },
+      { id: "d", text: "Merge Sort", isCorrect: true },
+    ],
+    marks: 2,
+    type: "Multiple Choice",
+    courseOutcome: 1,
+    bloomsTaxonomy: "Understand",
+    topic: "Algorithms",
+    difficulty: "Easy",
+  },
+];

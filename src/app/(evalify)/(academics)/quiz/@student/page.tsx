@@ -5,13 +5,17 @@ import { useQuery } from "@tanstack/react-query";
 import Quiz from "@/repo/quiz/quiz";
 
 export default function Page() {
-  const { data, isPending } = useQuery({
+  const { data, isPending, error } = useQuery({
     queryKey: ["quiz"],
     queryFn: Quiz.getAllQuizzes,
   });
 
   if (isPending) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
   }
 
   return (

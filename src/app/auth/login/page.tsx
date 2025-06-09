@@ -1,78 +1,35 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useState } from "react";
-import { ArrowLeft, Eye, EyeOff, User, Lock, Shield, Zap } from "lucide-react";
+import { ArrowLeft, Shield, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ui/theme-toggle";
+import { useEffect, useState } from "react";
+import Loading from "@/app/loading";
 
 export default function SignIn() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error when user starts typing
-    if (error) setError("");
-  };
+  useEffect(() => {
+    if (status === "loading") return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      // Here you would typically make an API call to your backend
-      // For now, this is a placeholder
-      if (!formData.username || !formData.password) {
-        throw new Error("Please fill in all fields");
-      }
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Example: Replace this with your actual authentication logic
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      // Handle successful login
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setIsLoading(false);
+    if (session?.user && !isRedirecting) {
+      setIsRedirecting(true);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
     }
-  };
+  }, [session, status, router, isRedirecting]);
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
+  if (status === "loading" || isRedirecting) {
+    return <Loading />;
+  }
+
+  if (session?.user) {
+    return null;
   }
 
   return (
@@ -123,114 +80,16 @@ export default function SignIn() {
 
         {/* Login Form */}
         <div className="space-y-6">
-          {/* Username/Password Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Username Field */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="username"
-                className="text-sm font-medium text-gray-700 dark:text-gray-200"
-              >
-                Username
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="pl-10 py-3 rounded-xl transition-all duration-300 border bg-white/70 border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-blue-400 focus:bg-white dark:bg-white/5 dark:border-white/20 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:bg-white/10"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700 dark:text-gray-200"
-              >
-                Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="pl-10 pr-10 py-3 rounded-xl transition-all duration-300 border bg-white/70 border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-blue-400 focus:bg-white dark:bg-white/5 dark:border-white/20 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:bg-white/10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                <p className="text-red-500 text-sm font-medium">{error}</p>
-              </div>
-            )}
-
-            {/* Sign In Button */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </Button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center text-gray-400 dark:text-gray-600">
-              <div className="w-full border-t border-current opacity-30"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase font-medium">
-              <span className="px-3 bg-white text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
           {/* Keycloak Sign In Button */}
           <Button
             onClick={() => signIn("keycloak")}
-            variant="outline"
-            className="w-full py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-gray-300/50 text-gray-700 hover:bg-gray-50 hover:border-gray-400 dark:border-white/20 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:border-white/30 relative overflow-hidden group"
+            className="w-full py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white relative overflow-hidden group"
           >
             <span className="relative z-10 flex items-center justify-center gap-3">
               <Shield size={18} />
               Sign in with Keycloak
             </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </Button>
 
           {/* Features */}

@@ -1,17 +1,46 @@
 import NextAuth from "next-auth";
 import Keycloak from "next-auth/providers/keycloak";
-import { decode } from "jsonwebtoken";
+import { decode, JwtPayload } from "jsonwebtoken";
 
 interface KeycloakToken {
   access_token: string;
   refresh_token?: string;
   expires_at: number;
+  groups: string[];
   idToken?: string;
   error?: string;
 }
 
+interface DecodedJWT {
+  realm_access?: {
+    roles?: string[];
+  };
+  groups?: string[];
+  [key: string]: unknown;
+}
+
+function processDecodedToken(decoded: string | JwtPayload | null): {
+  roles: string[];
+  groups: string[];
+} {
+  let roles: string[] = [];
+  let groups: string[] = [];
+
+  // Only process if decoded is an object (JwtPayload) and not null or string
+  if (decoded && typeof decoded === "object" && !Array.isArray(decoded)) {
+    const decodedJWT = decoded as DecodedJWT;
+    roles = decodedJWT.realm_access?.roles || [];
+    groups = (decodedJWT.groups || []).map((group: string) =>
+      group.replace(/^\//, ""),
+    );
+  }
+  return { roles, groups };
+}
+
 async function refreshKeycloakAccessToken(token: KeycloakToken) {
   try {
+    console.log("Attempting to refresh Keycloak access token...");
+
     const response = await fetch(
       `${process.env.AUTH_KEYCLOAK_ISSUER!}/protocol/openid-connect/token`,
       {
@@ -29,31 +58,44 @@ async function refreshKeycloakAccessToken(token: KeycloakToken) {
     const refreshedTokens = await response.json();
 
     if (!response.ok) {
-      console.error("Failed to refresh access token", refreshedTokens);
-      throw refreshedTokens;
+      console.error("Failed to refresh access token:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: refreshedTokens,
+      });
+      throw new Error(
+        `Token refresh failed: ${
+          refreshedTokens.error_description ||
+          refreshedTokens.error ||
+          "Unknown error"
+        }`,
+      );
     }
 
     const decoded = decode(refreshedTokens.access_token);
-    let roles: string[] = [];
-    if (decoded && typeof decoded === "object") {
-      roles = decoded.realm_access?.roles || [];
-    }
-    console.log("Refreshed access token successfully");
+    const { roles, groups } = processDecodedToken(decoded);
+
+    console.log("Successfully refreshed access token");
     return {
       ...token,
       access_token: refreshedTokens.access_token,
       refresh_token: refreshedTokens.refresh_token ?? token.refresh_token,
       expires_at: Math.floor(Date.now() / 1000) + refreshedTokens.expires_in,
-      roles: roles, // Ensure roles are preserved or re-decoded if necessary
-      error: null, // Clear any previous error
+      roles: roles,
+      groups: groups,
+      error: null,
     };
   } catch (error: unknown) {
+    console.error("Error refreshing access token:", error);
+
+    let errorMessage = "RefreshAccessTokenError";
     if (error instanceof Error) {
-      console.error("Error refreshing access token", error);
+      errorMessage = `RefreshAccessTokenError: ${error.message}`;
     }
+
     return {
       ...token,
-      error: "RefreshAccessTokenError",
+      error: errorMessage,
     };
   }
 }
@@ -79,16 +121,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Initial sign in
       if (account && user) {
         const decoded = decode(account.access_token!);
-        let roles: string[] = [];
-        if (decoded && typeof decoded === "object") {
-          roles = decoded.realm_access?.roles || [];
-        }
+        const { roles, groups } = processDecodedToken(decoded);
         return {
           ...token,
           access_token: account.access_token,
           refresh_token: account.refresh_token,
           expires_at: account.expires_at,
           roles: roles,
+          groups: groups,
           id: user.id, // or account.providerAccountId if user.id is not available directly
         };
       }
@@ -113,6 +153,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token) {
         session.user.id = token.id as string; // Ensure id is correctly assigned
         session.user.roles = token.roles as string[];
+        session.user.groups = token.groups as string[];
         session.access_token = token.access_token as string;
         if (token.error) {
           session.error = token.error as string;

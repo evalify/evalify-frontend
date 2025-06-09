@@ -11,16 +11,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Save, Settings, FileText, Calculator } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Save, FileText, Calculator } from "lucide-react";
 import { QuizMetadata } from "./quiz-metadata";
 import { ScoringMethod } from "./scoring-method";
-import { PublishingSettings } from "./publishing-settings";
+import { format, differenceInMinutes } from "date-fns";
 
 // Define the data structure for each component
 type QuizCreationData = {
   metadata: {
     title: string;
     description: string;
+    instructions: string;
     duration: {
       value: number;
       unit: "Minutes" | "Hours";
@@ -34,34 +36,32 @@ type QuizCreationData = {
       time: string;
     };
     tags: string[];
+    questionBreakdown: {
+      easy: number;
+      medium: number;
+      hard: number;
+      totalMarks: number;
+    };
     settings: {
       passwordProtected: boolean;
       password: string;
       autoSubmit: boolean;
       calculatorAccess: boolean;
       allowTabSwitching: boolean;
+      fullScreen: boolean;
+      shuffleQuestions: boolean;
+      shuffleOptions: boolean;
+      randomizeQuestions: boolean;
+      linearQuiz: boolean;
+      publishResult: boolean;
+      publishQuiz: boolean;
     };
   };
   scoring: {
-    method: "Standard" | "Weighted";
-    pointsPerQuestion: number;
-    penalizeWrongAnswers: boolean;
-    penaltyAmount: number;
-  };
-  publishing: {
-    publishDateTime: {
-      date: Date | undefined;
-      time: string;
-    };
-    visibility: string;
-    showResultsAfterSubmission: boolean;
-    resultsPublishDateTime: {
-      date: Date | undefined;
-      time: string;
-    };
-    postQuizFeedback: boolean;
-    allowQuizRetake: boolean;
-    numberOfRetakes: number;
+    method?: "Standard" | "Weighted";
+    pointsPerQuestion?: number;
+    penalizeWrongAnswers?: boolean;
+    penaltyAmount?: number;
   };
 };
 
@@ -78,12 +78,6 @@ const tabs = [
     icon: Calculator,
     description: "Configure how the quiz will be scored",
   },
-  {
-    id: "publishing",
-    label: "Publishing Settings",
-    icon: Settings,
-    description: "Set publication and visibility options",
-  },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -92,12 +86,14 @@ export function QuizCreationTabs() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = (searchParams.get("tab") as TabId) || "metadata";
+  const { error, success } = useToast();
 
   // Initialize quiz data with default values
   const [quizData, setQuizData] = useState<QuizCreationData>({
     metadata: {
       title: "",
       description: "",
+      instructions: "",
       duration: {
         value: 60,
         unit: "Minutes",
@@ -111,12 +107,25 @@ export function QuizCreationTabs() {
         time: "",
       },
       tags: [],
+      questionBreakdown: {
+        easy: 0,
+        medium: 0,
+        hard: 0,
+        totalMarks: 0,
+      },
       settings: {
         passwordProtected: false,
         password: "",
         autoSubmit: false,
         calculatorAccess: false,
         allowTabSwitching: true,
+        fullScreen: false,
+        shuffleQuestions: false,
+        shuffleOptions: false,
+        randomizeQuestions: false,
+        linearQuiz: false,
+        publishResult: false,
+        publishQuiz: false,
       },
     },
     scoring: {
@@ -124,21 +133,6 @@ export function QuizCreationTabs() {
       pointsPerQuestion: 1,
       penalizeWrongAnswers: false,
       penaltyAmount: 0,
-    },
-    publishing: {
-      publishDateTime: {
-        date: undefined,
-        time: "",
-      },
-      visibility: "All Students",
-      showResultsAfterSubmission: true,
-      resultsPublishDateTime: {
-        date: undefined,
-        time: "",
-      },
-      postQuizFeedback: false,
-      allowQuizRetake: false,
-      numberOfRetakes: 1,
     },
   });
 
@@ -158,34 +152,187 @@ export function QuizCreationTabs() {
     setQuizData((prev) => ({ ...prev, scoring: data }));
   };
 
-  const updatePublishing = (data: QuizCreationData["publishing"]) => {
-    setQuizData((prev) => ({ ...prev, publishing: data }));
+  // Validation helper functions
+  const validateQuizData = () => {
+    const validationErrors: string[] = [];
+    const { metadata } = quizData;
+
+    // Check required fields
+    if (!metadata.title.trim()) {
+      validationErrors.push("Quiz title is required");
+    }
+
+    if (!metadata.startDateTime.date) {
+      validationErrors.push("Start date is required");
+    }
+
+    if (!metadata.startDateTime.time) {
+      validationErrors.push("Start time is required");
+    }
+
+    if (!metadata.endDateTime.date) {
+      validationErrors.push("End date is required");
+    }
+
+    if (!metadata.endDateTime.time) {
+      validationErrors.push("End time is required");
+    }
+
+    if (!metadata.duration.value || metadata.duration.value <= 0) {
+      validationErrors.push("Duration must be greater than 0");
+    }
+
+    // If we have all date/time fields, validate them
+    if (
+      metadata.startDateTime.date &&
+      metadata.startDateTime.time &&
+      metadata.endDateTime.date &&
+      metadata.endDateTime.time &&
+      metadata.duration.value > 0
+    ) {
+      try {
+        // Create full datetime objects
+        const startDateTime = new Date(
+          `${format(metadata.startDateTime.date, "yyyy-MM-dd")}T${metadata.startDateTime.time}`,
+        );
+        const endDateTime = new Date(
+          `${format(metadata.endDateTime.date, "yyyy-MM-dd")}T${metadata.endDateTime.time}`,
+        );
+
+        // Check if end time is after start time
+        if (endDateTime <= startDateTime) {
+          validationErrors.push("End time must be after start time");
+        }
+
+        // Calculate actual duration between start and end
+        const actualDurationMinutes = differenceInMinutes(
+          endDateTime,
+          startDateTime,
+        );
+
+        // Convert specified duration to minutes
+        const specifiedDurationMinutes =
+          metadata.duration.unit === "Hours"
+            ? metadata.duration.value * 60
+            : metadata.duration.value;
+
+        // Check if the time window is sufficient for the quiz duration
+        if (actualDurationMinutes < specifiedDurationMinutes) {
+          validationErrors.push(
+            `Time window (${actualDurationMinutes} minutes) is shorter than quiz duration (${specifiedDurationMinutes} minutes)`,
+          );
+        }
+
+        // Optional: Check if start time is in the past (uncomment if needed)
+        const now = new Date();
+        if (startDateTime < now) {
+          validationErrors.push("Start time cannot be in the past");
+        }
+      } catch (error) {
+        validationErrors.push("Invalid date or time format");
+        console.error("Date validation error:", error);
+      }
+    }
+
+    return validationErrors;
   };
-  // Save quiz data
+
+  // Save quiz data with validation
   const handleSave = () => {
-    // Here you would typically save to an API
-    console.log("Saving quiz data:", quizData);
-    // TODO: Implement API call to save quiz data
+    const validationErrors = validateQuizData();
+
+    if (validationErrors.length > 0) {
+      // Show validation errors using sonner toast
+      const errorMessage =
+        validationErrors.length === 1
+          ? validationErrors[0]
+          : `Please fix ${validationErrors.length} validation errors:`;
+
+      error(errorMessage, {
+        description:
+          validationErrors.length > 1
+            ? validationErrors.join(" • ")
+            : undefined,
+        duration: 6000,
+      });
+      return;
+    }
+
+    // Additional validation for randomize questions
+    if (quizData.metadata.settings.randomizeQuestions) {
+      const { easy, medium, hard, totalMarks } =
+        quizData.metadata.questionBreakdown;
+      const totalQuestions = easy + medium + hard;
+
+      if (totalQuestions === 0) {
+        error(
+          "When randomize questions is enabled, you must specify at least one question in the breakdown.",
+          {
+            duration: 5000,
+          },
+        );
+        return;
+      }
+
+      if (totalMarks <= 0) {
+        error(
+          "Total marks must be greater than 0 when randomize questions is enabled.",
+          {
+            duration: 5000,
+          },
+        );
+        return;
+      }
+    }
+
+    // If validation passes, save the data
+    try {
+      // Here you would typically save to an API
+      console.log("Saving quiz data:", quizData);
+
+      success("Quiz saved successfully!", {
+        description: `"${quizData.metadata.title}" has been saved with all your settings.`,
+        duration: 4000,
+      });
+    } catch {
+      error("Failed to save quiz. Please try again.", {
+        description: "There was an error saving your quiz data.",
+        duration: 5000,
+      });
+    }
   };
+
   return (
-    <div className="w-full min-h-screen bg-background">
+    <div className="w-full">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-            Create Quiz
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Set up your quiz by configuring the details, scoring method, and
-            publishing settings.
-          </p>
+        <div className="flex justify-between">
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+              Quiz
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Set up your quiz by configuring the details, scoring method, and
+              publishing settings.
+            </p>
+          </div>
+          <div className="flex justify-end pt-6 border-t">
+            <Button
+              onClick={handleSave}
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <Save className="h-4 w-4" />
+              Save Quiz
+            </Button>
+          </div>
         </div>
 
         <Tabs
           value={currentTab}
           onValueChange={handleTabChange}
-          className="space-y-6"
+          className="space-y-6 h-full flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto p-1 gap-1 sm:gap-0">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 h-auto p-1 gap-1 sm:gap-0">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -233,37 +380,6 @@ export function QuizCreationTabs() {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="publishing" className="space-y-6">
-            <Card className="w-full">
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Publishing Settings
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Set when and how your quiz will be published, including
-                  visibility and result settings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6">
-                <PublishingSettings
-                  data={quizData.publishing}
-                  updateData={updatePublishing}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>{" "}
-          {/* Action buttons */}
-          <div className="flex justify-end pt-6 border-t">
-            <Button
-              onClick={handleSave}
-              className="flex items-center gap-2"
-              size="sm"
-            >
-              <Save className="h-4 w-4" />
-              Save Quiz
-            </Button>
-          </div>
         </Tabs>
       </div>
     </div>
