@@ -1,9 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Counter from "@/components/ui/counter";
 import SelectBox from "@/components/ui/select-box";
+import {
+  Award as AwardIcon,
+  BrainCircuit,
+  Target,
+  Hash,
+  Tags,
+} from "lucide-react";
 
 interface QuestionSettingsProps {
   marks: number;
@@ -44,7 +51,7 @@ const initialTopics: { value: string; label: string }[] = [
   // Empty array - Topics will only show if populated from API/props
 ];
 
-const QuestionSettings: React.FC<QuestionSettingsProps> = ({
+const QuestionSettings = ({
   marks,
   difficulty,
   bloomsTaxonomy,
@@ -55,7 +62,7 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
   onBloomsTaxonomyChange,
   onCourseOutcomeChange,
   onTopicsChange,
-}) => {
+}: QuestionSettingsProps) => {
   const [availableTopics] = useState(initialTopics);
   const [selectedTopics, setSelectedTopics] =
     useState<{ value: string; label: string }[]>(topics);
@@ -64,77 +71,98 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
     setSelectedTopics(topics);
   }, [topics]);
 
-  const handleTopicSelect = (value: string[]) => {
-    // For multiple selection, update selected topics directly
-    const selectedOptions = value.map(
-      (v) =>
-        availableTopics.find((t) => t.value === v) || { value: v, label: v },
-    );
-    setSelectedTopics(selectedOptions);
-    onTopicsChange(selectedOptions);
-  };
+  // Topic selection is now handled directly in the SelectBox component
   return (
     <div className="w-96 p-4 space-y-4">
-      {/* Marks and Difficulty Level */}{" "}
       <Card>
         <CardContent className="p-5">
           <div className="space-y-5">
             <div className="flex justify-between gap-6">
               <div className="flex flex-col">
-                <label className="text-sm font-semibold mb-2">Marks</label>
+                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <Hash className="h-4 w-4 text-primary" />
+                  <label>Marks</label>
+                </div>
                 <Counter initialValue={marks} onChange={onMarksChange} />
               </div>
               <div className="w-full">
+                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <AwardIcon className="h-4 w-4 text-primary" />
+                  <label>Difficulty Level</label>
+                </div>
                 <SelectBox
                   id="difficulty"
-                  label="Difficulty Level"
+                  label=""
                   placeholder="Select"
                   options={difficultyOptions}
                   value={difficulty}
                   onValueChange={onDifficultyChange}
+                  allowMultiple={false}
                 />
               </div>
             </div>
-            <div className="space-y-4">
-              <SelectBox
-                id="bloom"
-                label="Bloom's Taxonomy Level"
-                placeholder="Select a level"
-                options={bloomOptions}
-                value={bloomsTaxonomy}
-                onValueChange={onBloomsTaxonomyChange}
-              />
-              <SelectBox
-                id="course-outcome"
-                label="Course Outcome"
-                placeholder="Select Course Outcome"
-                options={courseOutcomeOptions}
-                value={courseOutcome}
-                onValueChange={onCourseOutcomeChange}
-              />
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <BrainCircuit className="h-4 w-4 text-primary" />
+                  <label>Bloom&apos;s Taxonomy</label>
+                </div>
+                <SelectBox
+                  id="blooms"
+                  label=""
+                  placeholder="Select"
+                  options={bloomOptions}
+                  value={bloomsTaxonomy}
+                  onValueChange={onBloomsTaxonomyChange}
+                  allowMultiple={false}
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <Target className="h-4 w-4 text-primary" />
+                  <label>Course Outcome</label>
+                </div>
+                <SelectBox
+                  id="co"
+                  label=""
+                  placeholder="Select"
+                  options={courseOutcomeOptions}
+                  value={courseOutcome}
+                  onValueChange={onCourseOutcomeChange}
+                  allowMultiple={false}
+                />
+              </div>
+              {availableTopics.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+                    <Tags className="h-4 w-4 text-primary" />
+                    <label>Related Topics</label>
+                  </div>
+                  <SelectBox
+                    id="topics"
+                    label=""
+                    placeholder="Select topics..."
+                    options={availableTopics}
+                    value={selectedTopics.map((t) => t.value)}
+                    onValueChange={(values: string[]) => {
+                      const selectedOptions = values.map(
+                        (v) =>
+                          availableTopics.find((t) => t.value === v) || {
+                            value: v,
+                            label: v,
+                          },
+                      );
+                      onTopicsChange(selectedOptions);
+                    }}
+                    allowMultiple={true}
+                    multiple={true}
+                  />
+                </div>
+              )}
             </div>
-          </div>{" "}
+          </div>
         </CardContent>
       </Card>
-      {/* Topics - Only show if topics are available */}
-      {availableTopics.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium">Topics</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-2">
-            <SelectBox
-              id="topics"
-              label=""
-              placeholder="Select related topics"
-              options={availableTopics}
-              value={selectedTopics.map((t) => t.value)}
-              onValueChange={handleTopicSelect}
-              allowMultiple={true}
-            />
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
