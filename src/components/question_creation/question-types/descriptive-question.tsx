@@ -6,7 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles } from "lucide-react";
+import {
+  Sparkles,
+  FileText,
+  Edit3,
+  BookOpen,
+  ClipboardList,
+} from "lucide-react";
 
 interface DescriptiveQuestionProps {
   question: string;
@@ -45,7 +51,10 @@ const DescriptiveQuestion: React.FC<DescriptiveQuestionProps> = ({
       {/* Question Input */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Question</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Question
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TiptapEditor
@@ -59,7 +68,10 @@ const DescriptiveQuestion: React.FC<DescriptiveQuestionProps> = ({
       {/* Sample Answer */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Sample Answer</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            Sample Answer
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TiptapEditor
@@ -76,7 +88,10 @@ const DescriptiveQuestion: React.FC<DescriptiveQuestionProps> = ({
       {/* Grading Criteria */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Grading Criteria (Optional)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Grading Criteria (Optional)
+          </CardTitle>
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
@@ -118,7 +133,10 @@ const DescriptiveQuestion: React.FC<DescriptiveQuestionProps> = ({
       {/* Explanation Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Explanation (Optional)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Edit3 className="h-5 w-5 text-primary" />
+            Explanation (Optional)
+          </CardTitle>
           <div className="flex items-center gap-2">
             <Label htmlFor="show-explanation" className="text-sm">
               Include explanation

@@ -6,7 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, GripVertical } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  GripVertical,
+  FileText,
+  Edit3,
+  Shuffle,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MatchItem {
@@ -187,8 +194,12 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
     <div className="space-y-6">
       {/* Question Input */}
       <Card>
+        {" "}
         <CardHeader>
-          <CardTitle className="text-lg">Question</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Question
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TiptapEditor
@@ -202,7 +213,10 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
       {/* Match Items */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Match Pairs</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Shuffle className="h-5 w-5 text-primary" />
+            Match Pairs
+          </CardTitle>
           <Button
             onClick={addMatchItem}
             size="sm"
@@ -374,7 +388,10 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
       {/* Explanation Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Explanation (Optional)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Edit3 className="h-5 w-5 text-primary" />
+            Explanation (Optional)
+          </CardTitle>
           <div className="flex items-center gap-2">
             <Label htmlFor="show-explanation" className="text-sm">
               Include explanation

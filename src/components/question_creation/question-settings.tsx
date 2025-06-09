@@ -40,11 +40,8 @@ const courseOutcomeOptions = [
   { value: "co4", label: "CO 4" },
 ];
 
-const initialTopics = [
-  { value: "topic1", label: "Topic 1" },
-  { value: "topic2", label: "Topic 2" },
-  { value: "topic3", label: "Topic 3" },
-  { value: "topic4", label: "Topic 4" },
+const initialTopics: { value: string; label: string }[] = [
+  // Empty array - Topics will only show if populated from API/props
 ];
 
 const QuestionSettings: React.FC<QuestionSettingsProps> = ({
@@ -59,7 +56,7 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
   onCourseOutcomeChange,
   onTopicsChange,
 }) => {
-  const [availableTopics, setAvailableTopics] = useState(initialTopics);
+  const [availableTopics] = useState(initialTopics);
   const [selectedTopics, setSelectedTopics] =
     useState<{ value: string; label: string }[]>(topics);
 
@@ -75,18 +72,6 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
     );
     setSelectedTopics(selectedOptions);
     onTopicsChange(selectedOptions);
-  };
-
-  const handleAddCustomTopic = (newOption: {
-    value: string;
-    label: string;
-  }) => {
-    // Add to available topics list
-    setAvailableTopics([...availableTopics, newOption]);
-    // Also add to selected topics
-    const newSelectedTopics = [...selectedTopics, newOption];
-    setSelectedTopics(newSelectedTopics);
-    onTopicsChange(newSelectedTopics);
   };
   return (
     <div className="w-96 p-4 space-y-4">
@@ -128,28 +113,28 @@ const QuestionSettings: React.FC<QuestionSettingsProps> = ({
                 onValueChange={onCourseOutcomeChange}
               />
             </div>
-          </div>
+          </div>{" "}
         </CardContent>
       </Card>
-      {/* Topics */}{" "}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Topics</CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 pt-2">
-          <SelectBox
-            id="topics"
-            label=""
-            placeholder="Select related topics"
-            options={availableTopics}
-            value={selectedTopics.map((t) => t.value)}
-            onValueChange={handleTopicSelect}
-            allowMultiple={true}
-            allowCustom={true}
-            onAddCustomOption={handleAddCustomTopic}
-          />
-        </CardContent>
-      </Card>
+      {/* Topics - Only show if topics are available */}
+      {availableTopics.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium">Topics</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 pt-2">
+            <SelectBox
+              id="topics"
+              label=""
+              placeholder="Select related topics"
+              options={availableTopics}
+              value={selectedTopics.map((t) => t.value)}
+              onValueChange={handleTopicSelect}
+              allowMultiple={true}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

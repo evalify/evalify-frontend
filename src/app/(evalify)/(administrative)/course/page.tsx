@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Filters } from "@/components/admin/FilterButton";
 import CourseManagement from "@/components/admin/CourseManagement";
 import NewCourse from "@/components/admin/NewCourse";
@@ -220,9 +220,8 @@ export default function Page() {
       document.body.removeChild(link);
     }
   };
-
   // Apply filters and search
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let result = [...allCourses];
 
     // Apply search query first (real-time search)
@@ -260,12 +259,12 @@ export default function Page() {
     }
 
     setFilteredCourses(result);
-  };
+  }, [allCourses, searchQuery, filters]); // Include all dependencies
 
-  // Apply filters when search query or courses change
+  // Apply filters when dependencies change
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, allCourses]);
+  }, [applyFilters]);
 
   // Toggle select mode
   const handleSelectToggle = () => {
