@@ -45,16 +45,26 @@ axiosInstance.interceptors.response.use(
 
       const session = await getSession();
 
-      if (session?.error?.includes("RefreshAccessTokenError")) {
-        // Token refresh failed, sign out
+      // Check for refresh token errors or missing session
+      if (
+        !session ||
+        !session.access_token ||
+        session.error?.includes("RefreshAccessTokenError") ||
+        session.error === "RefreshTokenExpired"
+      ) {
+        // Force logout immediately for any authentication issues
         if (typeof window !== "undefined") {
-          await signOut({ callbackUrl: "/auth/login" });
+          console.log("Authentication failed, forcing logout...");
+          await signOut({
+            callbackUrl: "/auth/login",
+            redirect: true,
+          });
         }
         return Promise.reject(error);
       }
 
-      if (session?.access_token) {
-        // Retry with new token
+      // If we have a valid session, retry with the token
+      if (session.access_token) {
         originalRequest.headers.Authorization = `Bearer ${session.access_token}`;
         return axiosInstance(originalRequest);
       }
