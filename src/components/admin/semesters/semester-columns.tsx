@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Semester } from "@/types/types";
-import { Checkbox } from "@/components/ui/checkbox";
 
 type SemesterAction = (semester: Semester, action: string) => void;
 
@@ -21,18 +20,30 @@ export const getColumns = (onAction: SemesterAction): ColumnDef<Semester>[] => {
     {
       id: "select",
       header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
+        <div className="flex justify-center p-4">
+          <input
+            type="checkbox"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
+            className="rounded border-gray-300 cursor-pointer"
+            aria-label="Select all rows"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       ),
       cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
+        <div
+          className="flex justify-center p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={(e) => row.toggleSelected(e.target.checked)}
+            className="rounded border-gray-300 cursor-pointer"
+            aria-label="Select row"
+          />
+        </div>
       ),
       enableSorting: false,
       enableHiding: false,
