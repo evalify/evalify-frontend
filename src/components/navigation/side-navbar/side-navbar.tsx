@@ -67,17 +67,12 @@ const academicsItems = [
 const administrationItems = [
   {
     title: "Users",
-    url: "/users",
+    url: "/user",
     icon: Users,
   },
   {
     title: "Batches",
     url: "/batch",
-    icon: GraduationCap,
-  },
-  {
-    title: "Courses",
-    url: "/course",
     icon: GraduationCap,
   },
   {

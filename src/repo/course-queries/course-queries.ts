@@ -77,7 +77,7 @@ export const courseQueries = {
   },
 
   getFaculty: async (): Promise<User[]> => {
-    const response = await axiosInstance.get(`/api/user/faculty`);
+    const response = await axiosInstance.get(`/user/faculty`);
     const faculty = response.data;
     return faculty.data || [];
   },
