@@ -380,7 +380,11 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={!strictMatch ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => onStrictMatchChange?.(false)}
+                      onClick={() => {
+                        if (onStrictMatchChange) {
+                          onStrictMatchChange(false);
+                        }
+                      }}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Flexible
@@ -397,7 +401,11 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={strictMatch ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => onStrictMatchChange?.(true)}
+                      onClick={() => {
+                        if (onStrictMatchChange) {
+                          onStrictMatchChange(true);
+                        }
+                      }}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Strict
@@ -419,7 +427,11 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={!useHybridEvaluation ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => onUseHybridEvaluationChange?.(false)}
+                      onClick={() => {
+                        if (onUseHybridEvaluationChange) {
+                          onUseHybridEvaluationChange(false);
+                        }
+                      }}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Normal
@@ -434,7 +446,11 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={useHybridEvaluation ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => onUseHybridEvaluationChange?.(true)}
+                      onClick={() => {
+                        if (onUseHybridEvaluationChange) {
+                          onUseHybridEvaluationChange(true);
+                        }
+                      }}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Hybrid
