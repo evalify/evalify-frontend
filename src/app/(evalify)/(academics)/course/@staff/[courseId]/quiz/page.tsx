@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { use, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -139,7 +139,13 @@ const getDifficultyColor = (difficulty: Quiz["difficulty"]) => {
   }
 };
 
-export default function QuizPage() {
+export default function QuizPage({
+  params,
+}: {
+  params: Promise<{ courseId: string }>;
+}) {
+  const param = use(params);
+  const { courseId } = param;
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [selectedQuizzes, setSelectedQuizzes] = useState<string[]>([]);
@@ -149,7 +155,7 @@ export default function QuizPage() {
   };
 
   const handleCreateQuiz = () => {
-    router.push("quiz/create-quiz/");
+    router.push(`/course/${courseId}/quiz/create`);
   };
 
   const handleSelectQuiz = (quizId: string, checked: boolean) => {

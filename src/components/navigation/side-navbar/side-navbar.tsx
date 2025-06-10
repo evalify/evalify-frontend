@@ -48,8 +48,8 @@ const mainNavItems = [
 
 const academicsItems = [
   {
-    title: "Quiz",
-    url: "/quiz",
+    title: "Courses",
+    url: "/course",
     icon: HelpCircle,
   },
   {
@@ -79,6 +79,11 @@ const administrationItems = [
     title: "Semester",
     url: "/semester",
     icon: Calendar,
+  },
+  {
+    title: "Departments",
+    url: "/department",
+    icon: GraduationCap,
   },
   {
     title: "Labs",

@@ -12,10 +12,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Save, FileText, Calculator } from "lucide-react";
+import { Save, FileText, Calculator, Users } from "lucide-react";
 import { QuizMetadata } from "./quiz-metadata";
 import { ScoringMethod } from "./scoring-method";
 import { format, differenceInMinutes } from "date-fns";
+import { QuizParticipant, QuizParticipantData } from "./quiz-participant";
+import type { Student, Batch, Course, Lab } from "@/lib/types";
+import Quiz from "@/repo/quiz/quiz";
 
 // Define the data structure for each component
 type QuizCreationData = {
@@ -73,6 +76,12 @@ const tabs = [
     description: "Basic quiz information and settings",
   },
   {
+    id: "participants",
+    label: "Participants",
+    icon: Users,
+    description: "Add participants to the quiz",
+  },
+  {
     id: "scoring",
     label: "Scoring Method",
     icon: Calculator,
@@ -87,6 +96,42 @@ export function QuizCreationTabs() {
   const searchParams = useSearchParams();
   const currentTab = (searchParams.get("tab") as TabId) || "metadata";
   const { error, success } = useToast();
+
+  // Mock data for participants
+  const students: Student[] = [
+    {
+      id: "student-1",
+      name: "John Doe",
+      email: "john@example.com",
+      rollNumber: "2021001",
+    },
+    {
+      id: "student-2",
+      name: "Jane Smith",
+      email: "jane@example.com",
+      rollNumber: "2021002",
+    },
+    {
+      id: "student-3",
+      name: "Bob Johnson",
+      email: "bob@example.com",
+      rollNumber: "2021003",
+    },
+  ];
+  const batches: Batch[] = [
+    { id: "batch-1", name: "CS Batch A", year: 2021 },
+    { id: "batch-2", name: "CS Batch B", year: 2021 },
+    { id: "batch-3", name: "CS Batch C", year: 2022 },
+  ];
+  const courses: Course[] = [
+    { id: "course-1", name: "Data Structures", code: "CS201" },
+    { id: "course-2", name: "Algorithms", code: "CS301" },
+    { id: "course-3", name: "Database Systems", code: "CS202" },
+  ];
+  const labs: Lab[] = [
+    { id: "lab-1", name: "Computer Lab A", location: "Block A, Room 101" },
+    { id: "lab-2", name: "Computer Lab B", location: "Block B, Room 201" },
+  ];
 
   // Initialize quiz data with default values
   const [quizData, setQuizData] = useState<QuizCreationData>({
@@ -134,6 +179,13 @@ export function QuizCreationTabs() {
       penalizeWrongAnswers: false,
       penaltyAmount: 0,
     },
+  });
+
+  const [participantData, setParticipantData] = useState<QuizParticipantData>({
+    students: [],
+    batches: [],
+    courses: [],
+    labs: [],
   });
 
   // Update URL when tab changes
@@ -237,12 +289,11 @@ export function QuizCreationTabs() {
     return validationErrors;
   };
 
-  // Save quiz data with validation
-  const handleSave = () => {
+  // Save quiz data with validation and API call
+  const handleSave = async () => {
     const validationErrors = validateQuizData();
 
     if (validationErrors.length > 0) {
-      // Show validation errors using sonner toast
       const errorMessage =
         validationErrors.length === 1
           ? validationErrors[0]
@@ -285,18 +336,71 @@ export function QuizCreationTabs() {
       }
     }
 
-    // If validation passes, save the data
+    // Transform data to QuizSchema
     try {
-      // Here you would typically save to an API
-      console.log("Saving quiz data:", quizData);
+      const meta = quizData.metadata;
+      const now = new Date().toISOString();
+      const startTime =
+        meta.startDateTime.date && meta.startDateTime.time
+          ? new Date(
+              `${format(meta.startDateTime.date, "yyyy-MM-dd")}T${meta.startDateTime.time}`,
+            ).toISOString()
+          : now;
+      const endTime =
+        meta.endDateTime.date && meta.endDateTime.time
+          ? new Date(
+              `${format(meta.endDateTime.date, "yyyy-MM-dd")}T${meta.endDateTime.time}`,
+            ).toISOString()
+          : now;
+      const duration =
+        meta.duration.unit === "Hours"
+          ? meta.duration.value * 60
+          : meta.duration.value;
 
-      success("Quiz saved successfully!", {
-        description: `"${quizData.metadata.title}" has been saved with all your settings.`,
+      const quizPayload = {
+        id: "",
+        name: meta.title,
+        description: meta.description,
+        instructions: meta.instructions,
+        startTime,
+        endTime,
+        duration,
+        password: meta.settings.passwordProtected ? meta.settings.password : "",
+        fullScreen: meta.settings.fullScreen,
+        shuffleQuestions: meta.settings.shuffleQuestions,
+        shuffleOptions: meta.settings.shuffleOptions,
+        linearQuiz: meta.settings.linearQuiz,
+        calculator: meta.settings.calculatorAccess,
+        autoSubmit: meta.settings.autoSubmit,
+        publishResult: meta.settings.publishResult,
+        publishQuiz: meta.settings.publishQuiz,
+        section: [],
+        course: participantData.courses,
+        student: participantData.students,
+        lab: participantData.labs,
+        batch: participantData.batches,
+        createdAt: now,
+        createdBy: "",
+      };
+
+      await Quiz.createQuiz(quizPayload);
+      success("Quiz created successfully!", {
+        description: `"${meta.title}" has been created and saved.`,
         duration: 4000,
       });
-    } catch {
-      error("Failed to save quiz. Please try again.", {
-        description: "There was an error saving your quiz data.",
+      // Optionally redirect or reset form here
+    } catch (e: unknown) {
+      let errorMessage = "There was an error saving your quiz data.";
+      if (
+        e &&
+        typeof e === "object" &&
+        "message" in e &&
+        typeof (e as { message?: string }).message === "string"
+      ) {
+        errorMessage = (e as { message: string }).message;
+      }
+      error("Failed to create quiz. Please try again.", {
+        description: errorMessage,
         duration: 5000,
       });
     }
@@ -332,7 +436,7 @@ export function QuizCreationTabs() {
           onValueChange={handleTabChange}
           className="space-y-6 h-full flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 h-auto p-1 gap-1 sm:gap-0">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto p-1 gap-1 sm:gap-0">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -353,13 +457,24 @@ export function QuizCreationTabs() {
                 </TabsTrigger>
               );
             })}
-          </TabsList>{" "}
+          </TabsList>
           <TabsContent value="metadata" className="space-y-6">
             <QuizMetadata
               data={quizData.metadata}
               updateData={updateMetadata}
             />
           </TabsContent>
+          <TabsContent value="participants" className="space-y-6">
+            <QuizParticipant
+              data={participantData}
+              updateData={setParticipantData}
+              students={students}
+              batches={batches}
+              courses={courses}
+              labs={labs}
+            />
+          </TabsContent>
+
           <TabsContent value="scoring" className="space-y-6">
             <Card className="w-full">
               <CardHeader className="px-4 sm:px-6">
