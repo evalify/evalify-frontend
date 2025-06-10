@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Play, Code } from "lucide-react";
+import { Plus, Trash2, Code, FileText, Settings, TestTube } from "lucide-react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import CodeEditor from "@/components/ui/code-editor";
 import { nanoid } from "nanoid";
@@ -279,9 +279,13 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
         </TabsList>
 
         <TabsContent value="question">
+          {/* Question Content */}
           <Card>
             <CardHeader>
-              <CardTitle>Question Content</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Question Content
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -292,25 +296,41 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                   className="mt-2"
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="showExplanation"
-                  checked={showExplanation}
-                  onChange={(e) => onShowExplanationChange(e.target.checked)}
-                />
-                <Label htmlFor="showExplanation">Include explanation</Label>
+          {/* Explanation Card */}
+          <Card className="mt-4">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Explanation
+                </CardTitle>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="showExplanation"
+                    checked={showExplanation}
+                    onChange={(e) => onShowExplanationChange(e.target.checked)}
+                  />
+                  <Label htmlFor="showExplanation">Include explanation</Label>
+                </div>
               </div>
-
-              {showExplanation && (
+            </CardHeader>
+            <CardContent>
+              {showExplanation ? (
                 <div>
-                  <Label htmlFor="explanation-editor">Explanation</Label>
                   <TiptapEditor
                     initialContent={explanation || ""}
                     onUpdate={onExplanationChange}
                     className="mt-2"
                   />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Enable explanation to provide additional context for the
+                  question.
                 </div>
               )}
             </CardContent>
@@ -320,14 +340,16 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
         <TabsContent value="setup">
           <Card>
             <CardHeader>
+              {" "}
               <CardTitle className="flex items-center gap-2">
-                <Code className="h-5 w-5" />
+                <Settings className="h-5 w-5 text-primary" />
                 Function Configuration
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {" "}
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="functionName">Function Name</Label>
                   <Input
                     id="functionName"
@@ -341,7 +363,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                     placeholder="e.g., add2"
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="returnType">Return Type</Label>
                   <Select
                     value={functionMetadata.returnType}
@@ -353,7 +375,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select return type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="int">int</SelectItem>
@@ -365,9 +387,8 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div>
+              </div>{" "}
+              <div className="space-y-2">
                 <Label htmlFor="language">Programming Language</Label>
                 <Select
                   value={functionMetadata.language}
@@ -380,7 +401,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select programming language" />
                   </SelectTrigger>
                   <SelectContent>
                     {SUPPORTED_LANGUAGES.map((lang) => (
@@ -391,7 +412,6 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label>Function Parameters</Label>
@@ -417,7 +437,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                           updateParameter(param.id, "name", e.target.value)
                         }
                         className="flex-1"
-                      />
+                      />{" "}
                       <Select
                         value={param.type}
                         onValueChange={(value) =>
@@ -425,7 +445,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                         }
                       >
                         <SelectTrigger className="w-32">
-                          <SelectValue />
+                          <SelectValue placeholder="Type" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="int">int</SelectItem>
@@ -461,8 +481,9 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
+                {" "}
                 <div className="flex items-center gap-2">
-                  <Play className="h-5 w-5" />
+                  <TestTube className="h-5 w-5 text-primary" />
                   Test Cases
                 </div>
                 <Button onClick={addTestCase} size="sm">
@@ -573,8 +594,12 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
 
         <TabsContent value="code">
           <Card>
+            {" "}
             <CardHeader>
-              <CardTitle>Code Preview</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Code className="h-5 w-5 text-primary" />
+                Code Preview
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Question Content Preview */}

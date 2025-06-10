@@ -78,7 +78,8 @@ const ValidationErrorModal: React.FC<ValidationErrorModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+        {" "}
+        <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="h-5 w-5" />
             Validation Errors
@@ -88,21 +89,23 @@ const ValidationErrorModal: React.FC<ValidationErrorModalProps> = ({
             {getQuestionTypeDisplayName(questionType)}:
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4 mt-4">
+        <div className="space-y-3">
           {Object.entries(groupedErrors).map(([field, messages]) => (
-            <Card key={field} className="border-red-200 bg-red-50">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
+            <Card
+              key={field}
+              className="border-red-200 dark:border-red-900/50 bg-red-50/80 dark:bg-red-950/10"
+            >
+              <CardContent className="p-3">
+                <div className="flex items-start gap-2">
                   <Badge variant="destructive" className="text-xs">
                     {getFieldDisplayName(field)}
                   </Badge>
                   <div className="flex-1">
-                    <ul className="space-y-1">
+                    <ul className="space-y-1.5">
                       {messages.map((message, index) => (
                         <li
                           key={index}
-                          className="text-sm text-red-700 flex items-start gap-2"
+                          className="text-sm text-red-700 dark:text-red-400 flex items-start gap-2"
                         >
                           <span className="w-1 h-1 bg-red-500 rounded-full mt-2 flex-shrink-0" />
                           {message}
@@ -115,7 +118,6 @@ const ValidationErrorModal: React.FC<ValidationErrorModalProps> = ({
             </Card>
           ))}
         </div>
-
         <div className="flex justify-between items-center pt-4 border-t">
           <p className="text-sm text-muted-foreground">
             {errors.length} error{errors.length !== 1 ? "s" : ""} found

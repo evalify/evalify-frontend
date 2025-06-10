@@ -5,11 +5,18 @@ import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { ContentPreview } from "@/components/rich-text-editor/content-preview";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, Edit, Save, X } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Edit,
+  Save,
+  X,
+  ListChecks,
+  FileText,
+  Edit3,
+} from "lucide-react";
 
 interface MCQOption {
   id: string;
@@ -154,13 +161,15 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
       // If exactly one correct answer exists, no changes needed
     }
   };
-
   return (
     <div className="space-y-6">
       {/* Question Input */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Question</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Question
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TiptapEditor
@@ -169,11 +178,15 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
             className="min-h-[200px]"
           />
         </CardContent>
-      </Card>{" "}
+      </Card>
+
       {/* Options */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Answer Options</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ListChecks className="h-5 w-5 text-primary" />
+            Answer Options
+          </CardTitle>
           <div className="flex items-center gap-4">
             {onAllowMultipleCorrectChange && (
               <div className="flex items-center gap-2">
@@ -234,7 +247,8 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
                 />
               </CardContent>
             </Card>
-          )}{" "}
+          )}
+
           {/* Options List */}
           {options.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -245,135 +259,116 @@ const MCQQuestion: React.FC<MCQQuestionProps> = ({
             </div>
           ) : (
             <>
-              {allowMultipleCorrect ? (
-                // Multiple correct answers - use checkboxes
-                <div className="space-y-4">
-                  {options.map((option, index) => (
-                    <div
-                      key={option.id}
-                      className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
-                        option.isCorrect
-                          ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
-                          : "border-border"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Checkbox
-                          checked={option.isCorrect}
-                          onCheckedChange={() => setCorrectOption(option.id)}
-                        />
-                        <Label className="text-sm font-medium">
-                          Option {String.fromCharCode(65 + index)}
-                        </Label>
-                        <div className="flex-1 ml-4">
-                          {option.text ? (
-                            <ContentPreview
-                              content={option.text}
-                              className="border-0 p-0 min-h-0 prose prose-sm max-w-none overflow-visible"
-                            />
-                          ) : (
-                            <span className="text-muted-foreground italic">
-                              No content
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startEditingOption(option)}
-                          disabled={
-                            editingOptionId === option.id || isCreatingNewOption
-                          }
-                          className="text-primary hover:text-primary"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeOption(option.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+              {/* Multiple correct answers - clickable options without checkboxes */}
+              <div className="space-y-4">
+                {options.map((option, index) => (
+                  <div
+                    key={option.id}
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-colors cursor-pointer ${
+                      option.isCorrect
+                        ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
+                        : "border-border hover:border-primary/30"
+                    }`}
+                    onClick={() => setCorrectOption(option.id)}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <Label className="text-sm font-medium">
+                        Option {String.fromCharCode(65 + index)}
+                      </Label>
+                      <div className="flex-1 ml-4">
+                        {option.text ? (
+                          <ContentPreview
+                            content={option.text}
+                            className="border-0 p-0 min-h-0 prose prose-sm max-w-none overflow-visible"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground italic">
+                            No content
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                // Single correct answer - use radio buttons
-                <RadioGroup
-                  value={options.find((opt) => opt.isCorrect)?.id || ""}
-                  onValueChange={setCorrectOption}
-                >
-                  {options.map((option, index) => (
-                    <div
-                      key={option.id}
-                      className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
-                        option.isCorrect
-                          ? "border-green-500 bg-green-100 dark:border-green-400 dark:bg-green-900/30"
-                          : "border-border"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <RadioGroupItem value={option.id} />
-                        <Label className="text-sm font-medium">
-                          Option {String.fromCharCode(65 + index)}
-                        </Label>
-                        <div className="flex-1 ml-4">
-                          {option.text ? (
-                            <ContentPreview
-                              content={option.text}
-                              className="border-0 p-0 min-h-0 prose prose-sm max-w-none overflow-visible"
-                            />
-                          ) : (
-                            <span className="text-muted-foreground italic">
-                              No content
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startEditingOption(option)}
-                          disabled={
-                            editingOptionId === option.id || isCreatingNewOption
-                          }
-                          className="text-primary hover:text-primary"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeOption(option.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <div className="flex gap-2 pointer-events-auto">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditingOption(option);
+                        }}
+                        disabled={
+                          editingOptionId === option.id || isCreatingNewOption
+                        }
+                        className="text-primary hover:text-primary"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeOption(option.id);
+                        }}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  ))}
-                </RadioGroup>
-              )}
+                  </div>
+                ))}
+              </div>
 
-              <div className="text-sm text-muted-foreground">
-                {allowMultipleCorrect
-                  ? "Check the boxes next to all correct answers"
-                  : "Select the radio button next to the correct answer"}
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  {allowMultipleCorrect
+                    ? "Click on options to toggle correct answers"
+                    : "Click on the correct answer option"}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onOptionsChange(
+                        options.map((option) => ({
+                          ...option,
+                          isCorrect: false,
+                        })),
+                      );
+                    }}
+                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
+                  >
+                    Clear Selections
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onOptionsChange([]);
+                      // Clear editor state if editing
+                      setEditingOptionId(null);
+                      setEditorContent("");
+                      setIsCreatingNewOption(false);
+                    }}
+                    className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                  >
+                    Clear All Options
+                  </Button>
+                </div>
               </div>
             </>
           )}
         </CardContent>
       </Card>
+
       {/* Explanation Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Explanation (Optional)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Edit3 className="h-5 w-5 text-primary" />
+            Explanation (Optional)
+          </CardTitle>
           <div className="flex items-center gap-2">
             <Label htmlFor="show-explanation" className="text-sm">
               Include explanation
