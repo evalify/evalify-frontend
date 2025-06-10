@@ -12,7 +12,7 @@ type BankSchema = {
 
 class Bank {
   static async getAllBanks(params?: URLSearchParams): Promise<BankSchema[]> {
-    const url = params ? `/bank?${params.toString()}` : "/bank";
+    const url = params ? `/api/bank?${params.toString()}` : "/api/bank";
     const response = await axiosInstance.get(url);
     return response.data;
   }
@@ -26,12 +26,12 @@ class Bank {
     };
 
     console.log("Creating bank with data:", payload);
-    const response = await axiosInstance.post("/bank", payload);
+    const response = await axiosInstance.post("/api/bank", payload);
     return response.data;
   }
 
   static async getBankById(bankId: string): Promise<BankSchema> {
-    const response = await axiosInstance.get(`/bank/${bankId}`);
+    const response = await axiosInstance.get(`/api/bank/${bankId}`);
     return response.data;
   }
 
@@ -39,12 +39,12 @@ class Bank {
     bankId: string,
     bankData: Partial<BankSchema>,
   ): Promise<BankSchema> {
-    const response = await axiosInstance.put(`/bank/${bankId}`, bankData);
+    const response = await axiosInstance.put(`/api/bank/${bankId}`, bankData);
     return response.data;
   }
 
   static async deleteBank(bankId: string): Promise<{ message: string }> {
-    const response = await axiosInstance.delete(`/bank/${bankId}`);
+    const response = await axiosInstance.delete(`/api/bank/${bankId}`);
     return response.data;
   }
 }
