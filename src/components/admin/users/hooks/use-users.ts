@@ -34,7 +34,7 @@ export const useUsers = (
       sortOrder,
     ],
     queryFn: async (): Promise<DataTableResponse> => {
-      let endpoint = "/api/user";
+      let endpoint = "/user";
       const params: { [key: string]: string } = {};
       if (role && role !== "ALL") {
         params.role = role;
@@ -44,7 +44,7 @@ export const useUsers = (
         if (role && role !== "ALL") {
           // This block is empty, which is suspicious, but I will keep the logic as is.
         } else {
-          endpoint = `/api/user/search`;
+          endpoint = `/user/search`;
           params.query = searchQuery;
           params.page = page.toString();
           params.size = size.toString();
