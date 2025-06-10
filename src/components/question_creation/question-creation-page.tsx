@@ -18,42 +18,177 @@ interface QuestionCreationSettings {
   topics: { value: string; label: string }[];
 }
 
-const QuestionCreationPage: React.FC = () => {
+interface QuestionCreationPageProps {
+  isEdit?: boolean;
+  initialQuestionData?: QuestionData;
+  initialQuestionSettings?: QuestionCreationSettings;
+  questionId?: string;
+}
+
+const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
+  isEdit = false,
+  initialQuestionData,
+  initialQuestionSettings,
+  questionId,
+}) => {
   // Initialize toast hook
   const { info, success, error } = useToast();
 
-  // Question type state
-  const [selectedType, setSelectedType] = React.useState<QuestionType>("mcq");
+  // Initialize question type from initial data or default to "mcq"
+  const [selectedType, setSelectedType] = React.useState<QuestionType>(
+    initialQuestionData?.type || "mcq",
+  );
 
-  // Question data state
-  const [questionData, setQuestionData] = React.useState<QuestionData>({
-    type: "mcq",
-    question: "",
-    explanation: "",
-    showExplanation: false,
-    allowMultipleCorrect: false,
-    options: [],
+  // Initialize question data from initial data or use defaults
+  const [questionData, setQuestionData] = React.useState<QuestionData>(
+    initialQuestionData || {
+      type: "mcq",
+      question: "",
+      explanation: "",
+      showExplanation: false,
+      allowMultipleCorrect: false,
+      options: [],
+    },
+  );
+
+  // Initialize question settings from initial data or use defaults
+  const [questionSettings, setQuestionSettings] =
+    React.useState<QuestionCreationSettings>(
+      initialQuestionSettings || {
+        marks: 1,
+        difficulty: "medium",
+        bloomsTaxonomy: "",
+        courseOutcome: "",
+        topics: [],
+      },
+    );
+
+  // Store initial state for change tracking
+  const initialStateRef = React.useRef({
+    type: selectedType,
+    data: questionData,
+    settings: questionSettings,
   });
 
-  // Question settings state
-  const [questionSettings, setQuestionSettings] =
-    React.useState<QuestionCreationSettings>({
-      marks: 1,
-      difficulty: "medium",
-      bloomsTaxonomy: "",
-      courseOutcome: "",
-      topics: [],
-    });
+  // Update initial state when props change
+  React.useEffect(() => {
+    if (isEdit && initialQuestionData && initialQuestionSettings) {
+      const newInitialState = {
+        type: initialQuestionData.type,
+        data: initialQuestionData,
+        settings: initialQuestionSettings,
+      };
+      initialStateRef.current = newInitialState;
+      setSelectedType(initialQuestionData.type);
+      setQuestionData(initialQuestionData);
+      setQuestionSettings(initialQuestionSettings);
+    }
+  }, [isEdit, initialQuestionData, initialQuestionSettings]);
+
+  // Track if there are changes
+  const hasChanges = React.useMemo(() => {
+    if (!isEdit) return false;
+
+    const current = {
+      type: selectedType,
+      data: questionData,
+      settings: questionSettings,
+    };
+
+    return JSON.stringify(current) !== JSON.stringify(initialStateRef.current);
+  }, [isEdit, selectedType, questionData, questionSettings]);
 
   // Validation state
   const [validationErrors, setValidationErrors] = React.useState<
     ValidationError[]
   >([]);
-  const [showValidationModal, setShowValidationModal] = React.useState(false);
-
-  // Handle question type change
+  const [showValidationModal, setShowValidationModal] = React.useState(false); // Handle question type change
   const handleTypeSelect = (type: QuestionType) => {
+    if (isEdit) {
+      // In edit mode, don't allow type changes
+      return;
+    }
     setSelectedType(type);
+
+    // Reset question data to default for the new type
+    const baseData = {
+      question: "",
+      explanation: "",
+      showExplanation: false,
+    };
+
+    let newQuestionData: QuestionData;
+
+    switch (type) {
+      case "mcq":
+        newQuestionData = {
+          ...baseData,
+          type: "mcq",
+          allowMultipleCorrect: false,
+          options: [],
+        };
+        break;
+      case "fillup":
+        newQuestionData = {
+          ...baseData,
+          type: "fillup",
+          blanks: [],
+        };
+        break;
+      case "match-following":
+        newQuestionData = {
+          ...baseData,
+          type: "match-following",
+          matchItems: [],
+        };
+        break;
+      case "descriptive":
+        newQuestionData = {
+          ...baseData,
+          type: "descriptive",
+          sampleAnswer: "",
+          wordLimit: 500,
+          gradingCriteria: "",
+        };
+        break;
+      case "true-false":
+        newQuestionData = {
+          ...baseData,
+          type: "true-false",
+          correctAnswer: null,
+        };
+        break;
+      case "coding":
+        newQuestionData = {
+          ...baseData,
+          type: "coding",
+          language: "",
+          starterCode: "",
+          testCases: [],
+          timeLimit: 30,
+          memoryLimit: 256,
+          functionName: "",
+        };
+        break;
+      case "file-upload":
+        newQuestionData = {
+          ...baseData,
+          type: "file-upload",
+          allowedFileTypes: [],
+          maxFileSize: 10,
+          maxFiles: 1,
+        };
+        break;
+      default:
+        newQuestionData = {
+          ...baseData,
+          type: "mcq",
+          allowMultipleCorrect: false,
+          options: [],
+        };
+    }
+
+    setQuestionData(newQuestionData);
   };
 
   // Handle preview
@@ -87,8 +222,9 @@ const QuestionCreationPage: React.FC = () => {
     setValidationErrors([]);
     setShowValidationModal(false);
   };
-
   // Handle save
+  const [isLoading, setIsLoading] = React.useState(false);
+
   const handleSave = async () => {
     // Comprehensive validation using the validation system
     const validationResult = validateQuestionData(
@@ -102,34 +238,63 @@ const QuestionCreationPage: React.FC = () => {
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      // Call the API to save the question
-      const response = await questionsService.createQuestion({
-        type: selectedType,
-        data: questionData,
-        settings: questionSettings,
-      });
+      let response;
 
-      console.log("Question saved successfully:", response);
+      if (isEdit && questionId) {
+        // Update existing question
+        response = await questionsService.updateQuestion(questionId, {
+          type: selectedType,
+          data: questionData,
+          settings: questionSettings,
+        });
 
-      // Show success toast
-      success("Question saved successfully!", {
-        description: `Question ID: ${response.id}`,
-      });
+        console.log("Question updated successfully:", response);
 
-      // Reset the form after successful save
-      resetForm();
+        // Show success toast
+        success("Question updated successfully!", {
+          description: `Question ID: ${response.id}`,
+        });
+
+        // Update initial state ref to reflect the new saved state
+        initialStateRef.current = {
+          type: selectedType,
+          data: questionData,
+          settings: questionSettings,
+        };
+      } else {
+        // Create new question
+        response = await questionsService.createQuestion({
+          type: selectedType,
+          data: questionData,
+          settings: questionSettings,
+        });
+
+        console.log("Question saved successfully:", response);
+
+        // Show success toast
+        success("Question saved successfully!", {
+          description: `Question ID: ${response.id}`,
+        });
+
+        // Reset the form after successful save (only for create mode)
+        resetForm();
+      }
     } catch (err) {
-      console.error("Error saving question:", err);
+      console.error(`Error ${isEdit ? "updating" : "saving"} question:`, err);
 
       const errorMessage =
         err instanceof Error
           ? err.message
-          : "Failed to save question. Please try again.";
+          : `Failed to ${isEdit ? "update" : "save"} question. Please try again.`;
 
-      error("Failed to save question", {
+      error(`Failed to ${isEdit ? "update" : "save"} question`, {
         description: errorMessage,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,13 +326,15 @@ const QuestionCreationPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Top Bar */}
-      <TopBar />
-      {/* Question Type Selector */}
+      <TopBar /> {/* Question Type Selector */}
       <QuestionTypeSelector
         selectedType={selectedType}
         onTypeSelect={handleTypeSelect}
         onPreview={handlePreview}
         onSave={handleSave}
+        isLoading={isLoading}
+        isEdit={isEdit}
+        hasChanges={hasChanges}
       />{" "}
       {/* Main Content Area - Fixed Layout */}
       <div className="flex-1 overflow-hidden flex">

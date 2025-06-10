@@ -15,7 +15,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Counter from "@/components/ui/counter";
-import { Upload, FileText, Image, Archive, X, Download } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Image,
+  Archive,
+  X,
+  Download,
+  Edit3,
+  Settings,
+} from "lucide-react";
 
 interface UploadedFile {
   id: string;
@@ -203,8 +212,12 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     <div className="space-y-6">
       {/* Question Input */}
       <Card>
+        {" "}
         <CardHeader>
-          <CardTitle className="text-lg">Question</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Question
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TiptapEditor
@@ -218,7 +231,10 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       {/* Question Files Upload */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Question Files (Optional)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Download className="h-5 w-5 text-primary" />
+            Question Files (Optional)
+          </CardTitle>
           <p className="text-sm text-muted-foreground">
             Upload files that students can download as part of the question
             (e.g., datasets, templates, reference materials)
@@ -316,7 +332,10 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       {/* File Upload Configuration */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Upload Configuration</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Settings className="h-5 w-5 text-primary" />
+            Upload Configuration
+          </CardTitle>
           <div className="flex items-center gap-6">
             {/* File Size Limit */}
             <div className="flex items-center gap-2">
@@ -500,7 +519,10 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
       {/* Explanation Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Explanation (Optional)</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Edit3 className="h-5 w-5 text-primary" />
+            Explanation (Optional)
+          </CardTitle>
           <div className="flex items-center gap-2">
             <Label htmlFor="show-explanation" className="text-sm">
               Include explanation
