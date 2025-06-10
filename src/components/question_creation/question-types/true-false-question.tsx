@@ -56,14 +56,8 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div
-            role="radiogroup"
-            aria-label="True or False answer selection"
-            className="flex gap-4"
-          >
+          <div className="flex gap-4">
             <div
-              role="radio"
-              aria-checked={correctAnswer === true}
               tabIndex={correctAnswer === true ? 0 : -1}
               className={`flex-1 flex items-center justify-center p-4 border rounded-lg transition-colors cursor-pointer ${
                 correctAnswer === true
@@ -71,18 +65,10 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
                   : "border-border hover:border-primary/30"
               }`}
               onClick={() => onCorrectAnswerChange(true)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onCorrectAnswerChange(true);
-                }
-              }}
             >
               <Label className="text-lg font-medium cursor-pointer">True</Label>
             </div>
             <div
-              role="radio"
-              aria-checked={correctAnswer === false}
               tabIndex={correctAnswer === false ? 0 : -1}
               className={`flex-1 flex items-center justify-center p-4 border rounded-lg transition-colors cursor-pointer ${
                 correctAnswer === false
@@ -90,12 +76,6 @@ const TrueFalseQuestion: React.FC<TrueFalseQuestionProps> = ({
                   : "border-border hover:border-primary/30"
               }`}
               onClick={() => onCorrectAnswerChange(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onCorrectAnswerChange(false);
-                }
-              }}
             >
               <Label className="text-lg font-medium cursor-pointer">
                 False

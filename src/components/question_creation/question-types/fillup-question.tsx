@@ -74,18 +74,19 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
   } | null>(null);
   const isUpdating = React.useRef(false);
   const blanksRef = React.useRef(blanks);
+  const editorRef = React.useRef<TiptapEditorRef>(null);
+  const { error, warning } = useToast();
 
   // Update blanks ref whenever blanks change
   React.useEffect(() => {
     blanksRef.current = blanks;
   }, [blanks]);
-  // Add a ref to access the TiptapEditor instance
-  const editorRef = React.useRef<TiptapEditorRef>(null); // Add toast for user feedback
-  const { error, warning } = useToast(); // Function to detect blanks from question content and auto-create answer sections
+
   const detectAndUpdateBlanks = React.useCallback(
     (questionContent: string) => {
       // Skip if we're already updating to prevent infinite loops
       if (isUpdating.current) return;
+
       // Find all instances of underscores (exactly 3 consecutive underscores with optional spaces around)
       const blankRegex = /\s*_{3}\s*/g;
       const matches = Array.from(questionContent.matchAll(blankRegex));
@@ -133,6 +134,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
     },
     [onBlanksChange],
   );
+
   // Auto-detect blanks when question content changes, but not when using the button
   React.useEffect(() => {
     // Skip if using the button (isUpdating.current is true)
@@ -149,6 +151,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
       error("Editor is not ready. Please try again.");
       return;
     }
+
     const editor = editorRef.current.editor;
     if (!editor) {
       console.error(
@@ -158,12 +161,15 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
         "Editor is not initialized. Please refresh the page and try again.",
       );
       return;
-    } // Check if editor is destroyed or not ready
+    }
+
+    // Check if editor is destroyed or not ready
     if (editor.isDestroyed) {
       console.error("Cannot insert blank - editor has been destroyed");
       error("Editor is no longer available. Please refresh the page.");
       return;
     }
+
     try {
       // Insert the blank (3 underscores with spaces) at the cursor position
       const blank = " ___ ";
@@ -180,7 +186,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
         return;
       }
 
-      // Get the current content and trigger both updates
+      // Get the current content and trigger updates
       const currentContent = editor.getHTML();
       onQuestionChange(currentContent); // Update the question content
       detectAndUpdateBlanks(currentContent); // Detect blanks
@@ -194,15 +200,13 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
       console.error("Editor state:", {
         isDestroyed: editor.isDestroyed,
         isFocused: editor.isFocused,
-      }); // Show user-friendly error message
+      });
+
+      // Show user-friendly error message
       error("Failed to insert blank. Please try again or refresh the page.");
     }
   };
-  // Removed addBlank function - blanks are now auto-detected from question content
-
-  const removeBlank = (blankId: string) => {
-    onBlanksChange(blanks.filter((blank) => blank.id !== blankId));
-  };
+  // Blanks are auto-detected from question content
   const addAnswerToBlank = (blankId: string) => {
     const answer = newAnswer[blankId]?.trim();
     if (!answer) return;
@@ -230,6 +234,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
       isUpdating.current = false;
     }, 100);
   };
+
   const removeAnswerFromBlank = (blankId: string, answerToRemove: string) => {
     // Set updating flag to prevent blank detection during answer removal
     isUpdating.current = true;
@@ -256,6 +261,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
   const startEditingAnswer = (blankId: string, answer: string) => {
     setEditingAnswer({ blankId, answerId: answer, value: answer });
   };
+
   const saveEditedAnswer = () => {
     if (!editingAnswer) return;
 
@@ -266,7 +272,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
     isUpdating.current = true;
 
     if (!trimmedValue) {
-      // If empty, remove the answer (inline without calling removeAnswerFromBlank to avoid flag conflict)
+      // If empty, remove the answer
       onBlanksChange(
         blanks.map((blank) =>
           blank.id === blankId
@@ -309,7 +315,6 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
 
   return (
     <div className="space-y-6">
-      {" "}
       {/* Question Input */}
       <Card>
         <CardHeader>
@@ -317,7 +322,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
             <CardTitle className="text-lg flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
               Question
-            </CardTitle>{" "}
+            </CardTitle>
             <Button
               onClick={insertBlankAtCursor}
               size="sm"
@@ -331,7 +336,6 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
           <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
             <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
-              {" "}
               <p className="font-medium mb-1">
                 How to create fill-in-the-blanks:
               </p>
@@ -345,7 +349,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
               </p>
             </div>
           </div>
-        </CardHeader>{" "}
+        </CardHeader>
         <CardContent>
           <TiptapEditor
             ref={editorRef}
@@ -353,8 +357,9 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
             onUpdate={onQuestionChange}
             height="200px"
           />
-        </CardContent>{" "}
-      </Card>{" "}
+        </CardContent>
+      </Card>
+
       {/* Evaluation Settings */}
       <div className="p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
         <div className="flex items-center gap-2 mb-4">
@@ -444,6 +449,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
           </div>
         </TooltipProvider>
       </div>
+
       {/* Blanks Configuration */}
       <Card>
         <CardHeader>
@@ -452,36 +458,33 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
             Answer Configuration
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           {blanks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No blanks detected in your question. Use the &quot;Add Blank&quot;
               button in the Question section above to insert blanks.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {blanks.map((blank, index) => (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {blanks.map((blank: FillupBlank, index: number) => (
                 <div
                   key={blank.id}
-                  className="p-4 border rounded-lg space-y-3 hover:shadow-md transition-shadow min-w-0"
+                  className="group relative space-y-3 rounded-lg border bg-card p-4 transition-shadow hover:shadow-md"
+                  role="region"
+                  aria-label={`Blank ${index + 1} configuration`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-sm font-medium">
                         {index + 1}
                       </Badge>
-                      <Label className="text-base font-medium">
+                      <Label
+                        className="text-base font-medium"
+                        htmlFor={`answer-input-${blank.id}`}
+                      >
                         Blank {index + 1}
                       </Label>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeBlank(blank.id)}
-                      className="text-destructive hover:text-destructive h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
 
                   {/* Accepted Answers */}
@@ -490,11 +493,16 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                       Accepted Answers
                     </Label>
                     {blank.acceptedAnswers.length > 0 && (
-                      <div className="space-y-1">
+                      <div
+                        className="space-y-1"
+                        role="list"
+                        aria-label={`Accepted answers for blank ${index + 1}`}
+                      >
                         {blank.acceptedAnswers.map((answer) => (
                           <div
                             key={answer}
-                            className="flex items-center justify-between p-2 bg-muted/20 rounded-md group"
+                            className="group/answer flex items-center justify-between rounded-md bg-muted/20 p-2"
+                            role="listitem"
                           >
                             {editingAnswer?.blankId === blank.id &&
                             editingAnswer?.answerId === answer ? (
@@ -507,21 +515,27 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                                       value: e.target.value,
                                     })
                                   }
-                                  className="h-6 text-xs"
-                                  onKeyDown={(e) => {
+                                  onKeyDown={(
+                                    e: React.KeyboardEvent<HTMLInputElement>,
+                                  ) => {
                                     if (e.key === "Enter") {
+                                      e.preventDefault();
                                       saveEditedAnswer();
                                     } else if (e.key === "Escape") {
+                                      e.preventDefault();
                                       cancelEditingAnswer();
                                     }
                                   }}
+                                  className="h-6 text-xs"
                                   autoFocus
+                                  aria-label={`Edit answer ${answer}`}
                                 />
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={saveEditedAnswer}
-                                  className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                                  className="h-6 w-6 p-0 text-green-600 hover:text-green-700 focus-visible:ring-2"
+                                  aria-label="Save changes"
                                 >
                                   <Check className="h-3 w-3" />
                                 </Button>
@@ -529,7 +543,8 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                                   variant="ghost"
                                   size="sm"
                                   onClick={cancelEditingAnswer}
-                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700 focus-visible:ring-2"
+                                  aria-label="Cancel editing"
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
@@ -539,14 +554,19 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                                 <span className="text-sm font-medium flex-1">
                                   {answer}
                                 </span>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div
+                                  className="flex items-center gap-1 md:opacity-0 md:group-hover/answer:opacity-100 transition-opacity"
+                                  role="group"
+                                  aria-label="Answer actions"
+                                >
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() =>
                                       startEditingAnswer(blank.id, answer)
                                     }
-                                    className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700"
+                                    className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700 focus-visible:ring-2"
+                                    aria-label={`Edit answer ${answer}`}
                                   >
                                     <Pencil className="h-3 w-3" />
                                   </Button>
@@ -556,7 +576,8 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                                     onClick={() =>
                                       removeAnswerFromBlank(blank.id, answer)
                                     }
-                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 focus-visible:ring-2"
+                                    aria-label={`Remove answer ${answer}`}
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -570,26 +591,31 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     {/* Add new answer */}
                     <div className="flex gap-2">
                       <Input
+                        id={`answer-input-${blank.id}`}
                         value={newAnswer[blank.id] || ""}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           setNewAnswer((prev) => ({
                             ...prev,
                             [blank.id]: e.target.value,
                           }))
                         }
-                        placeholder="Add accepted answer"
-                        className="text-xs flex-1 min-w-0"
-                        onKeyPress={(e) => {
+                        onKeyDown={(
+                          e: React.KeyboardEvent<HTMLInputElement>,
+                        ) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
                             addAnswerToBlank(blank.id);
                           }
                         }}
+                        placeholder="Add accepted answer"
+                        className="text-xs flex-1 min-w-0"
+                        aria-label={`Add new answer for blank ${index + 1}`}
                       />
                       <Button
                         onClick={() => addAnswerToBlank(blank.id)}
                         size="sm"
                         className="h-8 shrink-0"
+                        aria-label={`Add answer to blank ${index + 1}`}
                       >
                         Add
                       </Button>
@@ -604,6 +630,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
           )}
         </CardContent>
       </Card>
+
       {/* Explanation Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -621,7 +648,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
               onCheckedChange={onShowExplanationChange}
             />
           </div>
-        </CardHeader>{" "}
+        </CardHeader>
         {showExplanation && (
           <CardContent>
             <TiptapEditor
