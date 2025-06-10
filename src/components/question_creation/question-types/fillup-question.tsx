@@ -40,10 +40,14 @@ interface FillupQuestionProps {
   blanks: FillupBlank[];
   explanation?: string;
   showExplanation: boolean;
+  strictMatch?: boolean;
+  useHybridEvaluation?: boolean;
   onQuestionChange: (question: string) => void;
   onBlanksChange: (blanks: FillupBlank[]) => void;
   onExplanationChange: (explanation: string) => void;
   onShowExplanationChange: (show: boolean) => void;
+  onStrictMatchChange?: (strict: boolean) => void;
+  onUseHybridEvaluationChange?: (hybrid: boolean) => void;
 }
 
 const FillupQuestion: React.FC<FillupQuestionProps> = ({
@@ -55,6 +59,10 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
   onBlanksChange,
   onExplanationChange,
   onShowExplanationChange,
+  onStrictMatchChange,
+  onUseHybridEvaluationChange,
+  strictMatch = false,
+  useHybridEvaluation = false,
 }) => {
   const [newAnswer, setNewAnswer] = React.useState<{ [key: string]: string }>(
     {},
@@ -64,17 +72,14 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
     answerId: string;
     value: string;
   } | null>(null);
-  const [strictMatch, setStrictMatch] = React.useState(false);
-  const [useHybridEvaluation, setUseHybridEvaluation] = React.useState(false);
-  // Add a ref to track if we're currently updating to prevent infinite loops
   const isUpdating = React.useRef(false);
-  // Add a ref to track the current blanks to avoid dependency issues
   const blanksRef = React.useRef(blanks);
 
   // Update blanks ref whenever blanks change
   React.useEffect(() => {
     blanksRef.current = blanks;
-  }, [blanks]); // Add a ref to access the TiptapEditor instance
+  }, [blanks]);
+  // Add a ref to access the TiptapEditor instance
   const editorRef = React.useRef<TiptapEditorRef>(null); // Add toast for user feedback
   const { error, warning } = useToast(); // Function to detect blanks from question content and auto-create answer sections
   const detectAndUpdateBlanks = React.useCallback(
@@ -370,7 +375,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={!strictMatch ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => setStrictMatch(false)}
+                      onClick={() => onStrictMatchChange?.(false)}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Flexible
@@ -387,7 +392,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={strictMatch ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => setStrictMatch(true)}
+                      onClick={() => onStrictMatchChange?.(true)}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Strict
@@ -409,7 +414,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={!useHybridEvaluation ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => setUseHybridEvaluation(false)}
+                      onClick={() => onUseHybridEvaluationChange?.(false)}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Normal
@@ -424,7 +429,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                     <Button
                       variant={useHybridEvaluation ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => setUseHybridEvaluation(true)}
+                      onClick={() => onUseHybridEvaluationChange?.(true)}
                       className="h-8 flex-1 text-sm font-medium"
                     >
                       Hybrid

@@ -12,7 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios/axios-client";
+import { AxiosError } from "axios";
 import { useToast } from "@/hooks/use-toast";
+import { RefreshCcw } from "lucide-react";
 
 interface Test {
   id: string;
@@ -23,19 +25,42 @@ interface Test {
 
 export default function TestSelectPage() {
   const router = useRouter();
-  const { toast } = useToast();
+  const { error: showError } = useToast();
 
-  const { data: tests, isLoading } = useQuery<Test[]>({
+  const {
+    data: tests,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<Test[]>({
     queryKey: ["available-tests"],
     queryFn: async () => {
       try {
         const response = await axiosInstance.get("/api/tests/available");
         return response.data;
-      } catch {
-        toast("Failed to fetch available tests");
-        return [];
+      } catch (error) {
+        console.error("Failed to fetch tests:", error);
+
+        if (error instanceof AxiosError) {
+          const errorMessage =
+            error.response?.status === 404
+              ? "No tests are currently available"
+              : error.response?.status === 403
+                ? "You don't have permission to view tests"
+                : error.response?.status === 401
+                  ? "Please login to view tests"
+                  : "Failed to fetch available tests. Please try again";
+
+          showError(errorMessage);
+        } else {
+          showError("An unexpected error occurred. Please try again.");
+        }
+
+        throw error;
       }
     },
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const handleTestSelect = (testId: string) => {
@@ -44,8 +69,29 @@ export default function TestSelectPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading available tests...</div>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="flex items-center gap-2">
+          <div className="animate-spin">
+            <RefreshCcw className="h-5 w-5" />
+          </div>
+          <span className="text-lg">Loading available tests...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="text-lg text-destructive">Failed to load tests</div>
+        <Button
+          onClick={() => refetch()}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <RefreshCcw className="h-4 w-4" />
+          Try Again
+        </Button>
       </div>
     );
   }
