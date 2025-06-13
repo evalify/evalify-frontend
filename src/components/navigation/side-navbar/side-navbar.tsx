@@ -37,6 +37,8 @@ import { useSession, signOut, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ConfirmationDialog } from "@/components/ui/custom-alert-dialog";
+import AuthGuard from "@/components/auth/auth-guard";
+import { UserType } from "@/lib/auth/utils";
 
 const mainNavItems = [
   {
@@ -174,53 +176,61 @@ export function AppSidebar() {
 
         <SidebarSeparator />
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Academics</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {academicsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.url}
-                    tooltip={item.title}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <AuthGuard
+          requiredGroups={[UserType.STAFF, UserType.MANAGER]}
+          fallbackComponent={null}
+        >
+          <SidebarGroup>
+            <SidebarGroupLabel>Academics</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {academicsItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url}
+                      tooltip={item.title}
+                    >
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarSeparator />
+        </AuthGuard>
 
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {administrationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.url}
-                    tooltip={item.title}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
+        <AuthGuard
+          requiredGroups={[UserType.ADMIN, UserType.MANAGER]}
+          fallbackComponent={null}
+        >
+          <SidebarGroup>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {administrationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url}
+                      tooltip={item.title}
+                    >
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarSeparator />
+        </AuthGuard>
 
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>
