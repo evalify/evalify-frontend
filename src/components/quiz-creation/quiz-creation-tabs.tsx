@@ -91,7 +91,17 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
-export function QuizCreationTabs() {
+export function QuizCreationTabs(
+  {
+    // courseId,
+    // quizId,
+    // isEdit,
+  }: {
+    courseId?: string;
+    quizId?: string;
+    isEdit?: boolean;
+  },
+) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = (searchParams.get("tab") as TabId) || "metadata";

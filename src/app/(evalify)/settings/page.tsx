@@ -110,6 +110,7 @@ export default function SettingsPage() {
                     Appearance
                   </TabsTrigger>
                   <TabsTrigger
+                    disabled={true}
                     value="notifications"
                     className="data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-700"
                   >

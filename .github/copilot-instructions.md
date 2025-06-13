@@ -1,7 +1,7 @@
 
 
 ### Toast Messages
-use `useToast` from `src/hooks/use-toast.ts` for any toast messages.
+use `useToast` from `src/hooks/use-toast.ts` for any toast messages. Donot use alert / error messages
 
 ### UI
 - Use shadcn/ui components for UI elements.

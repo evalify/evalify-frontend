@@ -1,15 +1,22 @@
-import React, { use } from "react";
+import { QuizCreationTabs } from "@/components/quiz-creation/quiz-creation-tabs";
+import { use } from "react";
 
-export default function ManageQuizPage({
+export default function CreateQuizPage({
   params,
 }: {
-  params: Promise<{ courseId: string; quizId: string }>;
+  params: Promise<{
+    courseId: string;
+    quizId: string;
+  }>;
 }) {
   const param = use(params);
   const { courseId, quizId } = param;
-  return (
-    <div>
-      Manage Quiz Page {courseId} {quizId}
-    </div>
-  );
+
+  if (quizId === "create") {
+    return <QuizCreationTabs courseId={courseId} />;
+  } else {
+    return (
+      <QuizCreationTabs courseId={courseId} quizId={quizId} isEdit={true} />
+    );
+  }
 }

@@ -151,11 +151,11 @@ export default function QuizPage({
   const [selectedQuizzes, setSelectedQuizzes] = useState<string[]>([]);
 
   const handleManageQuiz = (quizId: string) => {
-    router.push(`quiz/manage-quiz/${quizId}`);
+    router.push(`/course/${courseId}/quiz/${quizId}/manage`);
   };
 
   const handleCreateQuiz = () => {
-    router.push(`/course/${courseId}/quiz/create`);
+    router.push(`/course/${courseId}/quiz/create/manage`);
   };
 
   const handleSelectQuiz = (quizId: string, checked: boolean) => {
