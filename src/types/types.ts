@@ -86,3 +86,10 @@ export interface DataTableResponse<T> {
     total_count: number;
   };
 }
+
+export interface Lab {
+  id: string;
+  name: string;
+  block: string;
+  ipSubnet: string;
+}

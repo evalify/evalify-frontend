@@ -19,7 +19,7 @@ export const getColumns = (
     {
       id: "select",
       header: ({ table }) => (
-        <div className="flex justify-center p-2">
+        <div className="flex justify-center p-4">
           <input
             type="checkbox"
             checked={table.getIsAllPageRowsSelected()}
@@ -32,7 +32,7 @@ export const getColumns = (
       ),
       cell: ({ row }) => (
         <div
-          className="flex justify-center p-2"
+          className="flex justify-center p-4"
           onClick={(e) => e.stopPropagation()}
         >
           <input
