@@ -82,28 +82,39 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   // Determine if we should show explanations and correct answers
   const shouldShowCorrectAnswers =
     config.mode === "display" ||
-    config.mode === "student" ||
+    config.mode === "review" ||
     config.showCorrectAnswers;
   const shouldShowExplanation =
     shouldShowCorrectAnswers || config.showExplanation;
+  const shouldShowUserAnswers =
+    config.mode === "student" ||
+    config.mode === "review" ||
+    config.showUserAnswers;
+  const shouldHighlightCorrectness =
+    config.mode === "review" || config.highlightCorrectness;
+  const shouldShowScore = config.mode === "review" || config.showScore;
 
   const handleEdit = () => {
     if (actions?.onEdit) {
-      actions.onEdit(question.id);
+      actions.onEdit(question.id || `question-${questionNumber || 1}`);
     }
   };
 
   const handleDelete = () => {
     if (actions?.onDelete) {
-      actions.onDelete(question.id);
+      actions.onDelete(question.id || `question-${questionNumber || 1}`);
     }
   };
 
   const handleEditMarks = () => {
     if (actions?.onEditMarks) {
-      const newMarks = prompt("Enter new marks:", question.marks.toString());
+      const currentMarks = question.markValue;
+      const newMarks = prompt("Enter new marks:", currentMarks.toString());
       if (newMarks && !isNaN(Number(newMarks))) {
-        actions.onEditMarks(question.id, Number(newMarks));
+        actions.onEditMarks(
+          question.id || `question-${questionNumber || 1}`,
+          Number(newMarks),
+        );
         showSuccess("Marks updated successfully");
       }
     }
@@ -111,7 +122,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
 
   const handleDuplicate = () => {
     if (actions?.onDuplicate) {
-      actions.onDuplicate(question.id);
+      actions.onDuplicate(question.id || `question-${questionNumber || 1}`);
       showSuccess("Question duplicated successfully");
     }
   };
@@ -120,6 +131,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     const enhancedConfig = {
       ...config,
       showCorrectAnswers: shouldShowCorrectAnswers,
+      showUserAnswers: shouldShowUserAnswers,
+      highlightCorrectness: shouldHighlightCorrectness,
+      showScore: shouldShowScore,
     };
 
     switch (question.type) {
@@ -219,7 +233,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 {config.showMarks && (
                   <Badge variant="outline" className="font-medium text-xs">
                     <Award className="w-3 h-3 mr-1" />
-                    {question.marks} {question.marks === 1 ? "mark" : "marks"}
+                    {question.markValue}{" "}
+                    {question.markValue === 1 ? "mark" : "marks"}
                   </Badge>
                 )}
               </div>
@@ -231,12 +246,12 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                       <TooltipTrigger>
                         <Badge
                           className={cn(
-                            getDifficultyColor(question.difficulty),
+                            getDifficultyColor(question.difficultyLevel),
                             "text-xs",
                           )}
                         >
                           <Target className="w-3 h-3 mr-1" />
-                          {question.difficulty}
+                          {question.difficultyLevel}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -250,12 +265,12 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                       <TooltipTrigger>
                         <Badge
                           className={cn(
-                            getTaxonomyColor(question.bloomsTaxonomy),
+                            getTaxonomyColor(question.taxonomy),
                             "text-xs",
                           )}
                         >
                           <BookOpen className="w-3 h-3 mr-1" />
-                          {question.bloomsTaxonomy}
+                          {question.taxonomy}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -264,15 +279,15 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     </Tooltip>
                   )}
 
-                  {question.co && (
+                  {question.coValue && (
                     <Tooltip>
                       <TooltipTrigger>
                         <Badge variant="outline" className="text-xs">
-                          CO-{question.co}
+                          CO-{question.coValue}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Course Outcome {question.co}</p>
+                        <p>Course Outcome {question.coValue}</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -290,13 +305,20 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 </div>
               )}
             </div>{" "}
-            {/* Score Display for Student Mode or Action Buttons */}
-            {config.mode === "student" ? (
+            {/* Score Display for Student Mode or Review Mode */}
+            {shouldShowScore && config.userAnswers ? (
               <div className="flex items-center gap-2 lg:ml-4">
-                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
+                <Badge
+                  className={cn(
+                    "text-xs",
+                    config.userAnswers.score !== undefined &&
+                      config.userAnswers.score > 0
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+                  )}
+                >
                   <Award className="w-3 h-3 mr-1" />
-                  Score: 1.5/{question.marks}{" "}
-                  {/* Mock score - you'd calculate this based on correctness */}
+                  Score: {config.userAnswers.score ?? 0}/{question.markValue}
                 </Badge>
               </div>
             ) : (
@@ -379,7 +401,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             )}
           </div>{" "}
           {/* Hint Toggle */}
-          {config.showHint && question.hint && (
+          {config.showHint && question.hintText && (
             <div className="flex items-center gap-2 mt-2">
               <Button
                 variant="ghost"
@@ -408,13 +430,13 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             />
           </div>
           {/* Hint Display */}
-          {showHint && question.hint && (
+          {showHint && question.hintText && (
             <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
               <div className="flex items-start gap-2">
                 <Lightbulb className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
                   <ContentPreview
-                    content={question.hint}
+                    content={question.hintText}
                     className="border-none p-0 bg-transparent"
                   />
                 </div>

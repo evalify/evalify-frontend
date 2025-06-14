@@ -45,11 +45,11 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
   const [showSolution, setShowSolution] = React.useState(false);
   const [testResults, setTestResults] = React.useState<
     Array<{
-      id: string;
-      input: string;
-      expectedOutput: string;
-      isHidden: boolean;
-      points: number;
+      id?: string;
+      input: unknown[];
+      expected: unknown;
+      isHidden?: boolean;
+      points?: number;
       passed: boolean;
       actualOutput: string;
       executionTime: number;
@@ -82,7 +82,7 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
         question.testcases?.map((tc) => ({
           ...tc,
           passed: Math.random() > 0.3, // Random pass/fail for demo
-          actualOutput: tc.expectedOutput, // Mock output
+          actualOutput: String(tc.expected || ""), // Mock output using backend format
           executionTime: Math.round(Math.random() * 100),
         })) || [];
       setTestResults(mockResults);
@@ -119,9 +119,9 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
             <span className="text-purple-600">{question.functionName}</span>
             <span>(</span>
             {question.params?.map((param, index) => (
-              <span key={param.name}>
+              <span key={`param-${index}`}>
                 {index > 0 && ", "}
-                <span className="text-orange-600">{param.name}</span>
+                <span className="text-orange-600">{param.param}</span>
                 <span className="text-gray-500">: {param.type}</span>
               </span>
             ))}
@@ -135,9 +135,9 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
           </div>
           {question.params && question.params.length > 0 && (
             <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-              {question.params.map((param) => (
-                <div key={param.name}>
-                  <strong>{param.name}</strong>: {param.description}
+              {question.params.map((param, index) => (
+                <div key={`param-desc-${index}`}>
+                  <strong>{param.param}</strong>: {param.description}
                 </div>
               ))}
             </div>
@@ -253,11 +253,13 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
 
           <div className="space-y-3">
             {visibleTestCases.map((testCase, index) => (
-              <Card key={testCase.id}>
+              <Card key={testCase.id || `test-${index}`}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Badge variant="outline">Test {index + 1}</Badge>
-                    <Badge variant="outline">{testCase.points} points</Badge>
+                    <Badge variant="outline">
+                      {testCase.points || 1} points
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -266,7 +268,7 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
                       Input:
                     </p>
                     <code className="block p-2 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-                      {testCase.input}
+                      {JSON.stringify(testCase.input)}
                     </code>
                   </div>
                   <div>
@@ -274,7 +276,7 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
                       Expected Output:
                     </p>
                     <code className="block p-2 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-                      {testCase.expectedOutput}
+                      {String(testCase.expected || "")}
                     </code>
                   </div>
                 </CardContent>
@@ -292,7 +294,7 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
             <div className="space-y-3">
               {testResults.map((result, index) => (
                 <Card
-                  key={result.id}
+                  key={result.id || `result-${index}`}
                   className={cn(
                     "border-l-4",
                     result.passed
@@ -318,7 +320,7 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
                           Expected:
                         </p>
                         <code className="block p-2 bg-white dark:bg-gray-800 rounded">
-                          {result.expectedOutput}
+                          {String(result.expected || "")}
                         </code>
                       </div>
                       <div>
