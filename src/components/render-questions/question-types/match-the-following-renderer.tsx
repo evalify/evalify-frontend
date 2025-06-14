@@ -54,9 +54,23 @@ export const MatchTheFollowingRenderer: React.FC<
     return question.keys;
   }, [question.keys, config.shuffleOptions, config.showCorrectAnswers]);
 
+  // Generate key for match pairs
+  const getPairKey = (
+    pair: (typeof question.keys)[0],
+    index: number,
+  ): string => {
+    return pair.id || `pair-${index}`;
+  };
+
   const isMatchCorrect = (leftId: string) => {
-    const correctPair = question.keys.find((pair) => pair.id === leftId);
-    return correctPair && matches[leftId] === correctPair.id;
+    const correctPair = question.keys.find(
+      (pair, index) => getPairKey(pair, index) === leftId,
+    );
+    return (
+      correctPair &&
+      matches[leftId] ===
+        getPairKey(correctPair, question.keys.indexOf(correctPair))
+    );
   };
 
   const getRowClass = (leftId: string) => {
@@ -86,35 +100,38 @@ export const MatchTheFollowingRenderer: React.FC<
               Correct Matches:
             </h4>
             <div className="space-y-3">
-              {question.keys.map((pair, index) => (
-                <div
-                  key={pair.id}
-                  className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded border"
-                >
-                  <div className="flex items-center gap-2 flex-1">
-                    <Badge
-                      variant="outline"
-                      className="w-6 h-6 p-0 flex items-center justify-center text-xs"
-                    >
-                      {index + 1}
-                    </Badge>
+              {question.keys.map((pair, index) => {
+                const pairKey = getPairKey(pair, index);
+                return (
+                  <div
+                    key={pairKey}
+                    className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded border"
+                  >
+                    <div className="flex items-center gap-2 flex-1">
+                      <Badge
+                        variant="outline"
+                        className="w-6 h-6 p-0 flex items-center justify-center text-xs"
+                      >
+                        {index + 1}
+                      </Badge>
+                      <div className="flex-1">
+                        <ContentPreview
+                          content={pair.leftPair}
+                          className="border-none p-0 bg-transparent text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="w-8 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
                     <div className="flex-1">
                       <ContentPreview
-                        content={pair.leftPair}
+                        content={pair.rightPair}
                         className="border-none p-0 bg-transparent text-sm"
-                      />{" "}
+                      />
                     </div>
+                    <Check className="w-5 h-5 text-green-600" />
                   </div>
-                  <div className="w-8 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
-                  <div className="flex-1">
-                    <ContentPreview
-                      content={pair.rightPair}
-                      className="border-none p-0 bg-transparent text-sm"
-                    />
-                  </div>
-                  <Check className="w-5 h-5 text-green-600" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -126,15 +143,16 @@ export const MatchTheFollowingRenderer: React.FC<
               </h4>
               <div className="space-y-2">
                 {question.keys.map((pair, index) => {
-                  const userAnswer = matches[pair.id];
+                  const pairKey = getPairKey(pair, index);
+                  const userAnswer = matches[pairKey];
                   const correctAnswer = question.keys.find(
-                    (p) => p.id === userAnswer,
+                    (p, i) => getPairKey(p, i) === userAnswer,
                   );
-                  const isCorrect = isMatchCorrect(pair.id);
+                  const isCorrect = isMatchCorrect(pairKey);
 
                   return (
                     <div
-                      key={pair.id}
+                      key={pairKey}
                       className={cn(
                         "flex items-center gap-4 p-2 rounded text-sm",
                         isCorrect
@@ -152,7 +170,7 @@ export const MatchTheFollowingRenderer: React.FC<
                         <ContentPreview
                           content={pair.leftPair}
                           className="border-none p-0 bg-transparent text-xs"
-                        />{" "}
+                        />
                       </div>
                       <div className="w-6 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
                       <div className="flex-1">
@@ -182,70 +200,78 @@ export const MatchTheFollowingRenderer: React.FC<
       ) : (
         /* Interactive matching interface for edit mode */
         <div className="space-y-3">
-          {question.keys.map((pair, index) => (
-            <div
-              key={pair.id}
-              className={cn(
-                "border rounded-lg p-4 transition-colors",
-                getRowClass(pair.id),
-              )}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                {/* Left item */}
-                <div className="md:col-span-5">
-                  <div className="flex items-start gap-2">
-                    <Badge variant="outline" className="flex-shrink-0 mt-1">
-                      {index + 1}
-                    </Badge>
-                    <div className="flex-1">
-                      <ContentPreview
-                        content={pair.leftPair}
-                        className="border-none p-0 bg-transparent text-sm"
-                      />
+          {question.keys.map((pair, index) => {
+            const pairKey = getPairKey(pair, index);
+            return (
+              <div
+                key={pairKey}
+                className={cn(
+                  "border rounded-lg p-4 transition-colors",
+                  getRowClass(pairKey),
+                )}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                  {/* Left item */}
+                  <div className="md:col-span-5">
+                    <div className="flex items-start gap-2">
+                      <Badge variant="outline" className="flex-shrink-0 mt-1">
+                        {index + 1}
+                      </Badge>
+                      <div className="flex-1">
+                        <ContentPreview
+                          content={pair.leftPair}
+                          className="border-none p-0 bg-transparent text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>{" "}
-                {/* Connector */}
-                <div className="md:col-span-1 flex justify-center items-center">
-                  <div className="w-8 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
-                </div>
-                {/* Right selection */}
-                <div className="md:col-span-5">
-                  <Select
-                    value={matches[pair.id] || ""}
-                    onValueChange={(value) => handleMatchChange(pair.id, value)}
-                    disabled={config.readOnly}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select match..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rightOptions.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          <ContentPreview
-                            content={option.rightPair}
-                            className="border-none p-0 bg-transparent text-sm"
-                          />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Status indicator */}
-                <div className="md:col-span-1 flex justify-center">
-                  {config.showCorrectAnswers && matches[pair.id] && (
-                    <>
-                      {isMatchCorrect(pair.id) ? (
-                        <Check className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <X className="w-5 h-5 text-red-600" />
-                      )}
-                    </>
-                  )}
+                  {/* Connector */}
+                  <div className="md:col-span-1 flex justify-center items-center">
+                    <div className="w-8 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+                  </div>
+                  {/* Right selection */}
+                  <div className="md:col-span-5">
+                    <Select
+                      value={matches[pairKey] || ""}
+                      onValueChange={(value) =>
+                        handleMatchChange(pairKey, value)
+                      }
+                      disabled={config.readOnly}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select match..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rightOptions.map((option, optionIndex) => {
+                          const optionKey = getPairKey(option, optionIndex);
+                          return (
+                            <SelectItem key={optionKey} value={optionKey}>
+                              <ContentPreview
+                                content={option.rightPair}
+                                className="border-none p-0 bg-transparent text-sm"
+                              />
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Status indicator */}
+                  <div className="md:col-span-1 flex justify-center">
+                    {config.showCorrectAnswers && matches[pairKey] && (
+                      <>
+                        {isMatchCorrect(pairKey) ? (
+                          <Check className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <X className="w-5 h-5 text-red-600" />
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -25,17 +25,17 @@ export enum Difficulty {
   HARD = "HARD",
 }
 
-// Base Question Interface
+// Base Question Interface - using backend format directly
 export interface BaseQuestion {
-  id: string;
+  id?: string; // Optional for backend compatibility
   question: string;
-  explanation?: string;
-  hint?: string;
-  marks: number;
-  bloomsTaxonomy: Taxonomy;
-  co: number;
+  explanation?: string | null;
+  hintText?: string | null; // Backend format
+  markValue: number; // Backend format
+  taxonomy: string; // Backend format
+  coValue: number; // Backend format
   negativeMark?: number;
-  difficulty: Difficulty;
+  difficultyLevel: string; // Backend format
   bank?: {
     id: string;
     name: string;
@@ -46,9 +46,9 @@ export interface BaseQuestion {
   }[];
 }
 
-// MCQ Option Interface
+// MCQ Option Interface - backend format
 export interface MCQOption {
-  id: string;
+  id?: string | null; // Backend might send null
   text: string;
   isCorrect: boolean;
 }
@@ -76,14 +76,14 @@ export interface Blank {
 
 export interface FillUpQuestion extends BaseQuestion {
   type: QuestionTypes.FILL_UP;
-  strictMatch: boolean;
-  llmEval: boolean;
+  strictMatch?: boolean;
+  llmEval?: boolean | null;
   template?: string;
   blanks: Blank[];
 }
 
 export interface MatchPair {
-  id: string;
+  id?: string;
   leftPair: string;
   rightPair: string;
 }
@@ -108,17 +108,17 @@ export interface FileUploadQuestion extends BaseQuestion {
 }
 
 export interface FunctionParam {
-  name: string;
+  param: string; // Backend format
   type: string;
   description?: string;
 }
 
 export interface TestCase {
-  id: string;
-  input: string;
-  expectedOutput: string;
-  isHidden: boolean;
-  points: number;
+  id?: string;
+  input: unknown[]; // Backend format
+  expected: unknown; // Backend format
+  isHidden?: boolean;
+  points?: number;
 }
 
 export interface CodingQuestion extends BaseQuestion {
@@ -146,7 +146,7 @@ export type Question =
 
 // Component Configuration
 export interface QuestionConfig {
-  mode: "display" | "student" | "edit";
+  mode: "display" | "student" | "edit" | "review";
   showActions?: boolean;
   showExplanation?: boolean;
   showHint?: boolean;
@@ -160,6 +160,9 @@ export interface QuestionConfig {
   // For student mode - show user answers and correct answers
   userAnswers?: QuestionAnswer;
   showCorrectAnswers?: boolean;
+  showUserAnswers?: boolean;
+  showScore?: boolean;
+  highlightCorrectness?: boolean; // Highlight correct/incorrect answers
 }
 
 // Action handlers
@@ -183,35 +186,64 @@ export interface QuestionRendererProps {
 // Answer types for different question types
 export interface MCQAnswer {
   selectedOption: string;
+  isCorrect?: boolean;
+  score?: number;
 }
 
 export interface MMCQAnswer {
   selectedOptions: string[];
+  correctOptions?: string[];
+  score?: number;
 }
 
 export interface TrueFalseAnswer {
   answer: boolean;
+  isCorrect?: boolean;
+  score?: number;
 }
 
 export interface FillUpAnswer {
   blanks: { [blankId: string]: string };
+  correctBlanks?: { [blankId: string]: string[] };
+  score?: number;
 }
 
 export interface MatchTheFollowingAnswer {
   matches: { [leftId: string]: string };
+  correctMatches?: { [leftId: string]: string };
+  score?: number;
 }
 
 export interface DescriptiveAnswer {
   text: string;
+  score?: number;
+  feedback?: string;
 }
 
 export interface FileUploadAnswer {
   files: File[];
+  score?: number;
+  feedback?: string;
 }
 
 export interface CodingAnswer {
   code: string;
   language: string;
+  score?: number;
+  testResults?: {
+    passed: number;
+    total: number;
+    details?: TestResult[];
+  };
+}
+
+export interface TestResult {
+  testCaseId: string;
+  passed: boolean;
+  input: unknown[];
+  expected: unknown;
+  actual?: unknown;
+  error?: string;
 }
 
 export type QuestionAnswer =
