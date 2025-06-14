@@ -3,18 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, User as UserIcon, Phone, Mail, Calendar, Shield } from "lucide-react";
+import { User as UserIcon, Phone, Mail, Calendar, Shield } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import userQueries from "@/repo/user-queries/user-queries";
 
 enum Role {
   ADMIN = "ADMIN",
-  STUDENT = "STUDENT", 
+  STUDENT = "STUDENT",
   FACULTY = "FACULTY",
   MANAGER = "MANAGER",
 }
@@ -34,33 +33,24 @@ interface UserDetails {
 }
 
 export default function UserDetailsPage() {
-  const { data: session, status } = useSession();
-  const [uploading, setUploading] = useState(false);
-  
-  // Get user ID from session
-  const userId = (session?.user as any)?.id;
-  // Fetch user data using React Query
+  // ALL HOOKS MUST BE AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
+  const { data: session } = useSession();
+
+  // Get user ID from session (will be undefined if no session)
+  const userId = session?.user?.id;
+
   const {
     data: fetchedUser,
-    isLoading: isFetchingUser,
     isError,
     error,
   } = useQuery({
     queryKey: ["user", userId],
-    queryFn: () => userQueries.fetchUserById(userId),
+    queryFn: () => userQueries.fetchUserById(userId!),
     enabled: !!session?.access_token && !!userId,
     retry: 1, // Only retry once on failure
   });
-  // Add debug logging
-  useEffect(() => {
-    if (fetchedUser) {
-      console.log("Successfully fetched user data:", fetchedUser);
-    }
-    if (error) {
-      console.error("Error fetching user data:", error);
-    }
-  }, [fetchedUser, error]);
 
+  // User state
   const [user, setUser] = useState<UserDetails>({
     name: "",
     email: "",
@@ -72,6 +62,17 @@ export default function UserDetailsPage() {
     createdAt: new Date(),
     lastPasswordChange: new Date(),
   });
+
+  // Add debug logging
+  useEffect(() => {
+    if (fetchedUser) {
+      console.log("Successfully fetched user data:", fetchedUser);
+    }
+    if (error) {
+      console.error("Error fetching user data:", error);
+    }
+  }, [fetchedUser, error]);
+
   // Update user data from fetched API data
   useEffect(() => {
     if (fetchedUser) {
@@ -92,49 +93,31 @@ export default function UserDetailsPage() {
   // Fallback: Update user data from session if API data isn't available
   useEffect(() => {
     if (session?.user && !fetchedUser) {
-      setUser(prevUser => ({
+      setUser((prevUser) => ({
         ...prevUser,
         name: session.user.name || "",
         email: session.user.email || "",
-        profileId: (session.user as any).id || "",
-        role: (session.user as any).roles?.includes("admin") ? Role.ADMIN : 
-              (session.user as any).roles?.includes("faculty") ? Role.FACULTY : 
-              Role.STUDENT,
+        profileId: session.user.id || "",
+        role: session.user.roles?.includes("admin")
+          ? Role.ADMIN
+          : session.user.roles?.includes("faculty")
+            ? Role.FACULTY
+            : Role.STUDENT,
         // Keep other fields as they might come from different sources
         phoneNumber: prevUser.phoneNumber || "",
         isActive: true, // Assume active if they have a session
       }));
-    }  }, [session, fetchedUser]);
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("customName", `profile_${userId}`);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/blob/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const result = await response.json();
-      setUser((prev) => ({ ...prev, image: result.fileUrl }));
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Failed to upload image. Please try again.");
-    } finally {
-      setUploading(false);
     }
-  };
+  }, [session, fetchedUser]);
+
+  // Early return after all hooks are called
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gray-900 py-8 px-4 flex items-center justify-center">
+        <div className="text-gray-100 text-lg">Loading user data...</div>
+      </div>
+    );
+  }
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -144,7 +127,8 @@ export default function UserDetailsPage() {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
-  };  const getRoleColor = (role: Role) => {
+  };
+  const getRoleColor = (role: Role) => {
     switch (role) {
       case Role.ADMIN:
         return "bg-red-600 hover:bg-red-700 text-white";
@@ -163,31 +147,18 @@ export default function UserDetailsPage() {
       .join("")
       .toUpperCase();
   };
-  // Show loading state while session is loading or fetching user data
-  if (status === "loading" || (status === "authenticated" && isFetchingUser)) {
-    return (
-      <div className="min-h-screen bg-gray-900 py-8 px-4 flex items-center justify-center">
-        <div className="text-gray-100 text-lg">Loading user data...</div>
-      </div>
-    );
-  }
-
-  // Show message if not authenticated
-  if (status === "unauthenticated") {
-    return (
-      <div className="min-h-screen bg-gray-900 py-8 px-4 flex items-center justify-center">
-        <div className="text-gray-100 text-lg">Please log in to view your profile.</div>
-      </div>
-    );
-  }
 
   // Show error if there's an API error
   if (isError && error) {
     return (
       <div className="min-h-screen bg-gray-900 py-8 px-4 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 text-lg mb-2">Error loading user data</div>
-          <div className="text-gray-300 text-sm">{error instanceof Error ? error.message : 'Unknown error occurred'}</div>
+          <div className="text-red-400 text-lg mb-2">
+            Error loading user data
+          </div>
+          <div className="text-gray-300 text-sm">
+            {error instanceof Error ? error.message : "Unknown error occurred"}
+          </div>
         </div>
       </div>
     );
@@ -203,26 +174,14 @@ export default function UserDetailsPage() {
               <div className="text-center">
                 <div className="relative inline-block mb-4">
                   <Avatar className="w-32 h-32 mx-auto">
-                    <AvatarImage src={`/blob/profile_${userId}`} alt={user.name} />
+                    <AvatarImage
+                      src={`/blob/profile_${userId}`}
+                      alt={user.name}
+                    />
                     <AvatarFallback className="text-2xl font-semibold bg-gray-700 text-gray-200">
                       {getInitials(user.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-2 -right-2">
-                    <Label htmlFor="image-upload" className="cursor-pointer">
-                      <div className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition-colors">
-                        <Upload className="w-4 h-4" />
-                      </div>
-                    </Label>
-                    <Input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="hidden"
-                    />
-                  </div>
                 </div>
                 <h1 className="text-2xl font-bold text-gray-100 mb-3">
                   {user.name}
@@ -242,13 +201,14 @@ export default function UserDetailsPage() {
                   </div>
                 </div>
               </div>
-            </div>            {/* Right Side - Detailed Information */}
+            </div>{" "}
+            {/* Right Side - Detailed Information */}
             <div className="lg:w-2/3 p-6">
               {/* Contact Information */}
               <div className="space-y-6">
-                 <h3 className="text-lg font-semibold text-gray-100 border-b border-gray-600 pb-2">
-                    Account Information
-                  </h3>
+                <h3 className="text-lg font-semibold text-gray-100 border-b border-gray-600 pb-2">
+                  Account Information
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-300 flex items-center gap-2">
@@ -275,9 +235,11 @@ export default function UserDetailsPage() {
 
                 {/* Account Information */}
                 <div className="space-y-4">
-                 
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                    <div className="space-y-2">                      <Label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {" "}
+                    <div className="space-y-2">
+                      {" "}
+                      <Label className="text-sm font-medium text-gray-300 flex items-center gap-2">
                         <UserIcon className="w-4 h-4" />
                         User Name
                       </Label>
@@ -295,9 +257,12 @@ export default function UserDetailsPage() {
                         <Calendar className="w-4 h-4" />
                         Account Created
                       </Label>
-                      <div className="p-3 bg-gray-700 rounded-md border border-gray-600">                        <p className="text-sm text-gray-100">
+                      <div className="p-3 bg-gray-700 rounded-md border border-gray-600">
+                        {" "}
+                        <p className="text-sm text-gray-100">
                           {formatDate(user.createdAt)}
-                        </p></div>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
