@@ -59,8 +59,8 @@ interface TrueFalseData extends BaseQuestionData {
 interface FillupData extends BaseQuestionData {
   type: "fillup";
   blanks: FillupBlank[];
-  strictMatch?: boolean;
-  useHybridEvaluation?: boolean;
+  strictMatch: boolean;
+  useHybridEvaluation: boolean;
 }
 
 interface DescriptiveData extends BaseQuestionData {
@@ -140,7 +140,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           ...baseData,
           type: "true-false",
           correctAnswer: null,
-        };      case "fillup":
+        };
+      case "fillup":
         return {
           ...baseData,
           type: "fillup",
@@ -276,7 +277,8 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
             />
           );
         }
-        break;      case "fillup":
+        break;
+      case "fillup":
         if (questionData.type === "fillup") {
           return (
             <FillupQuestion

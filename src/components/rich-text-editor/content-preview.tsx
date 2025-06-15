@@ -12,9 +12,14 @@ import DOMPurify from "dompurify";
 interface ContentPreviewProps {
   content: string;
   className?: string;
+  noProse?: boolean; // Disable prose styling (useful for options to avoid navigation arrows)
 }
 
-export function ContentPreview({ content, className }: ContentPreviewProps) {
+export function ContentPreview({
+  content,
+  className,
+  noProse = false,
+}: ContentPreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (previewRef.current && content) {
@@ -45,13 +50,24 @@ export function ContentPreview({ content, className }: ContentPreviewProps) {
     }
   }, [content]);
   return (
-    <div className={cn("border rounded-md", className)}>
+    <div className={cn(!noProse && "border rounded-md", className)}>
       <div
         ref={previewRef}
         className={cn(
-          "prose dark:prose-invert max-w-none min-h-[300px] p-4 overflow-auto",
+          noProse
+            ? "max-w-none overflow-auto min-h-0 [&]:before:hidden [&]:after:hidden [&_*]:before:hidden [&_*]:after:hidden" // Aggressively hide pseudo-elements
+            : "prose dark:prose-invert max-w-none p-4 overflow-auto min-h-0",
           className,
         )}
+        style={
+          noProse
+            ? {
+                fontSize: "14px",
+                lineHeight: "1.5",
+                // Explicitly disable any navigation-related CSS
+              }
+            : undefined
+        }
       />
     </div>
   );

@@ -33,7 +33,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -59,12 +58,13 @@ import {
   Search,
   SlidersHorizontal,
   Files,
+  Share,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Bank from "@/repo/bank/bank";
+import { useRouter } from "next/navigation";
 
 interface QuestionBank {
   id: string;
@@ -77,119 +77,148 @@ interface QuestionBank {
   lastUpdated: string;
 }
 
-interface BankApiItem {
-  name: string;
-  description: string;
-  semester: number;
-  batch: string[];
-  created_at: string;
-  bank_question: { id: string; question: string }[];
-  course?: string[];
-  _links: {
-    self: { href: string };
-    bank: { href: string };
-    created_by: { href: string };
-    student: { href: string };
-    course: { href: string };
-  };
+// Add interface for API response
+interface BankApiResponse {
+  id?: string;
+  bankId?: string;
+  name?: string;
+  courseCode?: string;
+  semester?: string;
+  questions?: number;
+  created_at?: string;
 }
 
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
-const AddBankDialog = () => {
-  const [open, setOpen] = useState(false);
-  const [selectedCourseCode, setSelectedCourseCode] = useState<string>("");
-  const [selectedSemester, setSelectedSemester] = useState<number>();
-  const [bankName, setBankName] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
+const BankDialog = ({
+  mode,
+  bank,
+  onClose,
+}: {
+  mode: "add" | "edit";
+  bank?: QuestionBank;
+  onClose: () => void;
+}) => {
+  const [open, setOpen] = useState(true);
+  const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
+    bank?.courseCode || "",
+  );
+  const [selectedSemester, setSelectedSemester] = useState<number | undefined>(
+    bank?.semester,
+  );
+  const [bankName, setBankName] = useState<string>(bank?.name || "");
 
-  const { toast } = useToast();
-
-  // Course code now uses an input field, so we don't need options
+  const { success, error } = useToast();
+  const queryClient = useQueryClient();
 
   const semesterOptions = semesters.map((semester) => ({
     value: semester.toString(),
     label: semester.toString(),
   }));
 
-  const queryClient = useQueryClient();
-
   const createBankMutation = useMutation({
     mutationFn: async (data: {
       name: string;
-      courseCode: string;
       semester: number;
-      description: string;
+      courseCode: string;
     }) => {
-      // Prepare payload according to backend schema
       const payload = {
         name: data.name,
-        semester: data.semester,
-        description: data.description,
-        course: [data.courseCode], // Include course code in the array
-        batch: [],
+        semester: data.semester.toString(),
+        courseCode: data.courseCode,
+        topics: 0,
+        questions: 0,
+        access: [],
       };
-      // Real API call with axiosInstance
-      console.log("Creating question bank with payload:", payload);
       return await Bank.createBank(payload);
     },
     onMutate: () => {
-      // Optionally show a loading state or disable the button
-      toast("Creating question bank...");
+      success("Creating question bank...");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["questionBanks"] });
-      toast("Question bank created successfully");
-      setOpen(false);
-      setBankName("");
-      setSelectedCourseCode("");
-      setSelectedSemester(0);
-      setDescription("");
+      success("Question bank created successfully");
+      handleClose();
     },
-    onError: (error) => {
-      console.error("Error creating question bank:", error);
-      toast("Failed to create question bank. Please try again.");
+    onError: (err) => {
+      console.error("Error creating question bank:", err);
+      error("Failed to create question bank. Please try again.");
+    },
+  });
+
+  const editBankMutation = useMutation({
+    mutationFn: async (data: {
+      id: string;
+      name: string;
+      courseCode: string;
+      semester?: number;
+    }) => {
+      const payload = {
+        name: data.name,
+        courseCode: data.courseCode,
+        ...(data.semester ? { semester: data.semester.toString() } : {}),
+      };
+      return await Bank.updateBank(data.id, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["questionBanks"] });
+      success("Question bank updated successfully");
+      handleClose();
+    },
+    onError: (err) => {
+      error("Failed to update question bank. Please try again.");
+      console.error("Edit error:", err);
     },
   });
 
   const handleSubmit = () => {
     if (!bankName.trim()) {
-      toast("Please enter a bank name");
+      error("Please enter a bank name");
       return;
     }
 
     if (!selectedCourseCode) {
-      toast("Please enter a course code");
+      error("Please enter a course code");
       return;
     }
 
     if (!selectedSemester) {
-      toast("Please select a semester");
+      error("Please select a semester");
       return;
     }
 
-    createBankMutation.mutate({
-      name: bankName,
-      courseCode: selectedCourseCode,
-      semester: selectedSemester,
-      description: description,
-    });
+    if (mode === "add") {
+      createBankMutation.mutate({
+        name: bankName,
+        semester: selectedSemester,
+        courseCode: selectedCourseCode,
+      });
+    } else if (mode === "edit" && bank) {
+      editBankMutation.mutate({
+        id: bank.id,
+        name: bankName,
+        courseCode: selectedCourseCode,
+        semester: selectedSemester,
+      });
+    }
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus size={16} />
-          Add Question Bank
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Question Bank</DialogTitle>
+          <DialogTitle>
+            {mode === "add" ? "Create" : "Edit"} Question Bank
+          </DialogTitle>
           <DialogDescription>
-            Create a new question bank to organize your questions for different
-            subjects and categories.
+            {mode === "add"
+              ? "Create a new question bank to organize your questions for different subjects and categories."
+              : "Update the details of your question bank."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -226,22 +255,27 @@ const AddBankDialog = () => {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Additional information about the question bank..."
-              className="min-h-[80px]"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Create Bank</Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              mode === "add"
+                ? createBankMutation.isPending
+                : editBankMutation.isPending
+            }
+          >
+            {mode === "add"
+              ? createBankMutation.isPending
+                ? "Creating..."
+                : "Create Bank"
+              : editBankMutation.isPending
+                ? "Saving..."
+                : "Save Changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -252,18 +286,15 @@ export default function QuestionBankPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  // const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [semesterFilter, setSemesterFilter] = useState<number | null>(null);
   const [sortField, setSortField] = useState<keyof QuestionBank>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [currentBank, setCurrentBank] = useState<QuestionBank | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editCourseCode, setEditCourseCode] = useState("");
-  const [editDescription, setEditDescription] = useState("");
+  const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
 
-  const { toast } = useToast();
+  const { success, error } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -300,32 +331,21 @@ export default function QuestionBankPage() {
         // This would depend on backend API capabilities
 
         // Make the API call
-        const response = await Bank.getAllBanks(queryParams);
+        const response = await Bank.getAllBanks();
 
-        // Map the response to our frontend interface
-        const banks: QuestionBank[] =
-          response._embedded?.banks.map((bank: BankApiItem) => {
-            // Extract ID from the self link href
-            const selfHref = bank._links.self.href;
-            const id = selfHref.substring(selfHref.lastIndexOf("/") + 1);
-
-            return {
-              id,
-              name: bank.name,
-              description: bank.description || "",
-              courseCode:
-                Array.isArray(bank.course) && bank.course.length > 0
-                  ? bank.course[0]
-                  : "N/A", // Safely handle course array
-              semester: bank.semester,
-              topics: [], // Backend doesn't seem to have topics
-              questionCount: bank.bank_question?.length || 0,
-              lastUpdated: bank.created_at,
-            };
-          }) || [];
-
-        // Client-side filtering if needed
-        let filteredBanks = [...banks];
+        // Transform API response to match QuestionBank interface
+        let filteredBanks: QuestionBank[] = response.map(
+          (bank: BankApiResponse) => ({
+            id: bank.id || bank.bankId || "",
+            name: bank.name || "",
+            courseCode: bank.courseCode || "",
+            semester: parseInt(bank.semester || "0") || 0,
+            description: bank.courseCode || "", // Use courseCode as description fallback
+            topics: [],
+            questionCount: bank.questions || 0,
+            lastUpdated: bank.created_at || new Date().toISOString(),
+          }),
+        );
 
         if (searchTerm) {
           filteredBanks = filteredBanks.filter(
@@ -372,14 +392,14 @@ export default function QuestionBankPage() {
           totalBanks,
           totalPages,
         };
-      } catch (error: unknown) {
+      } catch (err: unknown) {
         // Properly type the error and provide more descriptive messages based on error type
-        if (error instanceof Error) {
-          console.error("Error fetching question banks:", error.message);
-          toast(`Failed to load question banks: ${error.message}`);
-        } else if (typeof error === "object" && error && "response" in error) {
+        if (err instanceof Error) {
+          console.error("Error fetching question banks:", err.message);
+          error(`Failed to load question banks: ${err.message}`);
+        } else if (typeof err === "object" && err && "response" in err) {
           // Axios error
-          const axiosError = error as {
+          const axiosError = err as {
             response?: { status: number; data?: unknown };
           };
           const statusCode = axiosError.response?.status;
@@ -387,10 +407,10 @@ export default function QuestionBankPage() {
             `API Error (${statusCode}):`,
             axiosError.response?.data,
           );
-          toast(`Failed to load question banks: Server returned ${statusCode}`);
+          error(`Failed to load question banks: Server returned ${statusCode}`);
         } else {
-          console.error("Unknown error fetching question banks:", error);
-          toast("Failed to load question banks: Unknown error");
+          console.error("Unknown error fetching question banks:", err);
+          error("Failed to load question banks: Unknown error");
         }
 
         return {
@@ -484,76 +504,21 @@ export default function QuestionBankPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["questionBanks"] });
-      toast(`Question bank deleted successfully.`);
+      success(`Question bank deleted successfully.`);
     },
-    onError: (error) => {
-      toast(`Failed to delete question bank. Please try again.`);
-      console.error("Delete error:", error);
-    },
-  });
-
-  // Edit bank mutation
-  const editBankMutation = useMutation({
-    mutationFn: async (data: {
-      id: string;
-      name: string;
-      courseCode: string;
-      description: string;
-      semester?: number;
-    }) => {
-      // Prepare payload for Bank.updateBank
-      const payload = {
-        name: data.name,
-        description: data.description,
-        course: [data.courseCode],
-        ...(data.semester ? { semester: data.semester } : {}),
-      };
-
-      return await Bank.updateBank(data.id, payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionBanks"] });
-      toast(`Question bank updated successfully.`);
-      setEditDialogOpen(false);
-      setCurrentBank(null);
-      setEditName("");
-      setEditCourseCode("");
-      setEditDescription("");
-    },
-    onError: (error) => {
-      toast(`Failed to update question bank. Please try again.`);
-      console.error("Edit error:", error);
+    onError: (err) => {
+      error(`Failed to delete question bank. Please try again.`);
+      console.error("Delete error:", err);
     },
   });
 
   const handleEditBank = (bank: QuestionBank) => {
     setCurrentBank(bank);
-    setEditName(bank.name);
-    setEditCourseCode(bank.courseCode);
-    setEditDescription(""); // We don't have this in the mock data, so using empty string
-    setEditDialogOpen(true);
+    setDialogMode("edit");
+    setDialogOpen(true);
   };
 
-  const handleEditSubmit = () => {
-    if (!editName.trim()) {
-      toast("Please enter a bank name");
-      return;
-    }
-
-    if (!editCourseCode) {
-      toast("Please enter a course code");
-      return;
-    }
-
-    if (!currentBank) return;
-
-    editBankMutation.mutate({
-      id: currentBank.id,
-      name: editName,
-      courseCode: editCourseCode,
-      description: editDescription,
-    });
-  };
+  const router = useRouter();
 
   return (
     <div className="container mx-auto py-6">
@@ -565,7 +530,15 @@ export default function QuestionBankPage() {
               Manage your question banks for quizzes and assessments
             </CardDescription>
           </div>
-          <AddBankDialog />
+          <Button
+            onClick={() => {
+              setDialogMode("add");
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Bank
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
@@ -732,7 +705,12 @@ export default function QuestionBankPage() {
                     </TableRow>
                   ) : (
                     data?.banks.map((bank) => (
-                      <TableRow key={bank.id}>
+                      <TableRow
+                        key={bank.id}
+                        onClick={() => {
+                          router.push(`/question-bank/${bank.id}`);
+                        }}
+                      >
                         <TableCell>
                           <div className="font-medium">{bank.name}</div>
                         </TableCell>
@@ -778,22 +756,7 @@ export default function QuestionBankPage() {
                             variant="ghost"
                             className="rounded-full"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="lucide lucide-share"
-                            >
-                              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                              <polyline points="16 6 12 2 8 6" />
-                              <line x1="12" x2="12" y1="2" y2="15" />
-                            </svg>
+                            <Share className="h-4 w-4" />
                             <span className="sr-only">Share</span>
                           </Button>
                         </TableCell>
@@ -896,61 +859,13 @@ export default function QuestionBankPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Edit Bank Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Question Bank</DialogTitle>
-            <DialogDescription>
-              Update the details of your question bank.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-bank-name">Bank Name</Label>
-              <Input
-                id="edit-bank-name"
-                placeholder="e.g., Programming Fundamentals MCQs"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-course-code">Course Code</Label>
-              <Input
-                id="edit-course-code"
-                placeholder="e.g., CS101"
-                value={editCourseCode}
-                onChange={(e) => setEditCourseCode(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                placeholder="Additional information about the question bank..."
-                className="min-h-[80px]"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEditSubmit}
-              disabled={editBankMutation.isPending}
-            >
-              {editBankMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {dialogOpen && (
+        <BankDialog
+          mode={dialogMode}
+          bank={currentBank || undefined}
+          onClose={() => setDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

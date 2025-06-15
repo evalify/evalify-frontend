@@ -2,7 +2,7 @@ import axios from "axios";
 import { getSession, signOut } from "next-auth/react";
 
 const API_BASE_URL =
-  `${process.env.NEXT_PUBLIC_API_BASE_URL}` || "http://172.17.9.74:8020/api/";
+  `${process.env.NEXT_PUBLIC_API_BASE_URL}` || "http://172.17.9.74:8020";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
