@@ -1,11 +1,21 @@
 // API utilities for results data
 import axiosInstance from "@/lib/axios/axios-client";
-import {
-  StudentOverallResult,
-  CourseResult,
+import type {
   TestSummary,
   DetailedTestResult,
-} from "@/components/results/types";
+} from "@/components/results/common/types";
+import type {
+  StudentOverallResult,
+  CourseResult,
+} from "@/components/results/student/types";
+import type {
+  TeacherCourseOverview,
+  TestOverview,
+  DetailedTestStatistics,
+  PerformanceDistribution,
+  StudentTestResult,
+  QuestionStat,
+} from "@/components/results/teacher/types";
 
 export class ResultsAPI {
   // Get student's overall results summary
@@ -163,7 +173,7 @@ export const MockResultsAPI = {
         lastTestDate: new Date(
           Date.now() - 2 * 24 * 60 * 60 * 1000,
         ).toISOString(),
-        tests: [
+        testResults: [
           {
             testId: "test-1-1",
             testName: "Arrays and Linked Lists",
@@ -237,7 +247,7 @@ export const MockResultsAPI = {
         lastTestDate: new Date(
           Date.now() - 4 * 24 * 60 * 60 * 1000,
         ).toISOString(),
-        tests: [
+        testResults: [
           {
             testId: "test-2-1",
             testName: "SQL Fundamentals",
@@ -296,7 +306,7 @@ export const MockResultsAPI = {
         lastTestDate: new Date(
           Date.now() - 7 * 24 * 60 * 60 * 1000,
         ).toISOString(),
-        tests: [
+        testResults: [
           {
             testId: "test-3-1",
             testName: "Classes and Objects",
@@ -355,7 +365,7 @@ export const MockResultsAPI = {
         lastTestDate: new Date(
           Date.now() - 3 * 24 * 60 * 60 * 1000,
         ).toISOString(),
-        tests: [
+        testResults: [
           {
             testId: "test-4-1",
             testName: "HTML Fundamentals",
@@ -444,7 +454,7 @@ export const MockResultsAPI = {
         lastTestDate: new Date(
           Date.now() - 5 * 24 * 60 * 60 * 1000,
         ).toISOString(),
-        tests: [
+        testResults: [
           {
             testId: "test-5-1",
             testName: "Introduction to OS",
@@ -503,7 +513,7 @@ export const MockResultsAPI = {
         lastTestDate: new Date(
           Date.now() - 12 * 24 * 60 * 60 * 1000,
         ).toISOString(),
-        tests: [
+        testResults: [
           {
             testId: "test-6-1",
             testName: "Introduction to ML",
@@ -619,21 +629,16 @@ export const MockResultsAPI = {
       testId,
       testName: "Data Structures Midterm",
       courseName: "Data Structures and Algorithms",
+      courseId: "course-1",
       courseCode: "CS301",
       score: 85,
       maxScore: 100,
       percentage: 85,
-      timeTaken: 90,
-      totalTime: 120,
+      timeSpent: 90,
       completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      difficulty: "medium",
-      summary: {
-        totalQuestions: 20,
-        correctAnswers: 17,
-        incorrectAnswers: 2,
-        unanswered: 1,
-        timePerQuestion: 4.5,
-      },
+      questionCount: 20,
+      correctCount: 17,
+      passingScore: 60,
       questions: [
         {
           questionId: "q1",
@@ -718,14 +723,6 @@ export const MockResultsAPI = {
 };
 
 // Mock data for teacher results
-import {
-  TeacherCourseOverview,
-  TestOverview,
-  DetailedTestStatistics,
-  PerformanceDistribution,
-  StudentTestResult,
-  QuestionStat,
-} from "@/components/results/teacher-types";
 
 export const MockTeacherResultsAPI = {
   getTeacherCourses: async (

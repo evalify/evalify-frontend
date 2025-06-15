@@ -2,9 +2,8 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TestOverview } from "../teacher-types";
-import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, ChevronRight, FileText } from "lucide-react";
+import type { TestOverview } from "./types";
+import { Calendar, Clock, Users, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
@@ -62,7 +61,7 @@ export function RecentTestsCard({ tests, onViewTest }: RecentTestsCardProps) {
           <div className="h-3 w-3 rounded-full bg-primary"></div>
           Recent Tests (Last 7 Days)
         </CardTitle>
-      </CardHeader>{" "}
+      </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y">
           {recentTests.map((test) => {
@@ -73,9 +72,10 @@ export function RecentTestsCard({ tests, onViewTest }: RecentTestsCardProps) {
             return (
               <div
                 key={test.testId}
-                className="p-4 hover:bg-accent/50 transition-colors"
+                className="p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                onClick={() => onViewTest(test.testId)}
               >
-                <div className="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:justify-between sm:items-center">
+                <div className="flex flex-col space-y-3">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <div className="bg-primary/10 p-1.5 rounded-full">
@@ -108,16 +108,6 @@ export function RecentTestsCard({ tests, onViewTest }: RecentTestsCardProps) {
                       </div>
                     </div>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onViewTest(test.testId)}
-                    className="text-primary mt-2 sm:mt-0 hover:bg-primary/5"
-                  >
-                    View Details
-                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
                 </div>
               </div>
             );

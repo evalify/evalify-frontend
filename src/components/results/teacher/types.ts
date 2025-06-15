@@ -32,11 +32,14 @@ export interface PerformanceDistribution {
   range: string; // e.g. "0-10", "11-20", etc.
   count: number;
   percentage: number;
+  lowerBound?: number;
+  color?: string;
 }
 
 export interface StudentTestResult {
   studentId: string;
   studentName: string;
+  rollNumber: string;
   score: number;
   maxScore: number;
   percentage: number;
@@ -44,6 +47,10 @@ export interface StudentTestResult {
   completedAt: string;
   status: string;
   attemptCount: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  unansweredQuestions: number;
+  submittedAt: string;
 }
 
 export interface DetailedTestStatistics {
@@ -69,6 +76,7 @@ export interface DetailedTestStatistics {
 export interface QuestionStat {
   questionId: string;
   questionNumber: number;
+  questionText: string;
   questionType: string;
   difficulty: string;
   averageScore: number;

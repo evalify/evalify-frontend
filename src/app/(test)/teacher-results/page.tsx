@@ -7,7 +7,7 @@ import {
   TeacherCourseOverview,
   TestOverview,
   DetailedTestStatistics,
-} from "@/components/results/teacher-types";
+} from "@/components/results/teacher/types";
 import { MockTeacherResultsAPI } from "@/lib/results-api";
 import {
   CoursesGrid,
@@ -16,7 +16,10 @@ import {
   PerformanceDistributionChart,
   StudentResultsTable,
   QuestionStatsTable,
-} from "@/components/results/teacher-components";
+  SortOption,
+  SortDropdown,
+} from "@/components/results/teacher";
+import { DetailedTestResultView } from "@/components/results/common/detailed-test-result";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -34,16 +37,21 @@ export default function TeacherResultsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentView, setCurrentView] = useState<
-    "overview" | "course" | "test"
+    "overview" | "course" | "test" | "student-detail"
   >("overview");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+    null,
+  );
 
   const [coursesList, setCoursesList] = useState<TeacherCourseOverview[]>([]);
   const [recentTests, setRecentTests] = useState<TestOverview[]>([]);
   const [courseTests, setCourseTests] = useState<TestOverview[]>([]);
   const [testStatistics, setTestStatistics] =
     useState<DetailedTestStatistics | null>(null);
+  const [courseSortOption, setCourseSortOption] =
+    useState<SortOption>("latest");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,13 +153,19 @@ export default function TeacherResultsPage() {
   const handleViewTest = (testId: string) => {
     router.push(`/teacher-results?view=test&testId=${testId}`);
   };
-
   const handleBack = () => {
-    if (currentView === "test" && selectedCourseId) {
+    if (currentView === "student-detail") {
+      setCurrentView("test");
+      setSelectedStudentId(null);
+    } else if (currentView === "test" && selectedCourseId) {
       router.push(`/teacher-results?view=course&courseId=${selectedCourseId}`);
     } else {
       router.push("/teacher-results");
     }
+  };
+  const handleViewStudentResult = (studentId: string) => {
+    setSelectedStudentId(studentId);
+    setCurrentView("student-detail");
   };
 
   // Find selected course
@@ -233,7 +247,6 @@ export default function TeacherResultsPage() {
               </p>
               <div className="mt-4 h-1 w-24 bg-primary rounded-full ml-12"></div>
             </div>
-
             {/* Stats Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
@@ -311,7 +324,6 @@ export default function TeacherResultsPage() {
                 </CardContent>
               </Card>
             </div>
-
             {/* Recent Tests */}
             <div className="mb-1">
               <div className="flex items-center gap-2 mb-2">
@@ -322,13 +334,23 @@ export default function TeacherResultsPage() {
                 Recently administered tests across all courses
               </p>
             </div>
-            <RecentTestsCard tests={recentTests} onViewTest={handleViewTest} />
-
+            <RecentTestsCard tests={recentTests} onViewTest={handleViewTest} />{" "}
             {/* All Courses */}
             <div className="mt-8 mb-1">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Your Courses</h2>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Your Courses</h2>
+                </div>{" "}
+                <div className="flex items-center">
+                  <span className="text-sm text-muted-foreground mr-2">
+                    Sort by:
+                  </span>
+                  <SortDropdown
+                    value={courseSortOption || "latest"}
+                    onChange={(value) => setCourseSortOption(value)}
+                  />
+                </div>
               </div>
               <p className="text-sm text-muted-foreground ml-7 mb-4">
                 Performance analytics for all your courses
@@ -337,6 +359,7 @@ export default function TeacherResultsPage() {
             <CoursesGrid
               courses={coursesList}
               onViewCourse={handleViewCourse}
+              sortBy={courseSortOption}
             />
           </>
         )}
@@ -413,13 +436,22 @@ export default function TeacherResultsPage() {
               </CardContent>
             </Card>{" "}
             {/* Course Tests */}
-            <div className="mb-2">
-              <h2 className="text-xl font-semibold">Test History</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                All tests administered for this course
-              </p>
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-semibold mb-0">Test History</h2>
+                  <p className="text-sm text-muted-foreground">
+                    All tests administered for this course
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2">
+                <CourseTestsTable
+                  tests={courseTests}
+                  onViewTest={handleViewTest}
+                />
+              </div>
             </div>
-            <CourseTestsTable tests={courseTests} onViewTest={handleViewTest} />
           </>
         )}
 
@@ -515,8 +547,11 @@ export default function TeacherResultsPage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Individual student scores and statistics
               </p>
-            </div>
-            <StudentResultsTable statistics={testStatistics} />
+            </div>{" "}
+            <StudentResultsTable
+              statistics={testStatistics}
+              onViewStudentResult={handleViewStudentResult}
+            />
             <Separator className="my-8" />
             {/* Question Stats Table */}
             <div className="mb-2">
@@ -524,9 +559,13 @@ export default function TeacherResultsPage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Performance metrics for each question on the test
               </p>
-            </div>
+            </div>{" "}
             <QuestionStatsTable statistics={testStatistics} />
           </>
+        )}
+
+        {currentView === "student-detail" && selectedStudentId && (
+          <DetailedTestResultView onBack={handleBack} />
         )}
       </div>
     </div>

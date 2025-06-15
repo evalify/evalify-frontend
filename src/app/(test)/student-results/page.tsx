@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import TopBar from "@/components/question_creation/top-bar";
 import {
-  StudentOverviewCard,
-  RecentTestsCard,
+  StudentRecentTestsCard,
   CourseResultsGrid,
   TestSummaries,
   StudentOverallResult,
@@ -162,27 +161,36 @@ export default function StudentResultsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <TopBar />
-      <div className="container mx-auto px-4 py-8 space-y-8">
+      <div className="container mx-auto px-4 py-6 space-y-6">
         {currentView === "overview" && (
           <>
             {/* Student Overview */}
             <div>
               <h1 className="text-3xl font-bold mb-2">My Results</h1>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-muted-foreground mb-4">
                 Track your academic performance and progress
               </p>
-              <StudentOverviewCard />
+              {/* Overview cards removed as requested */}
             </div>{" "}
             {/* Recent Tests */}
-            <RecentTestsCard
-              tests={studentData.recentTests}
-              onViewTest={handleViewTest}
-            />
+            <div>
+              <h2 className="text-xl font-bold mb-4">Recent Tests</h2>
+              <StudentRecentTestsCard
+                studentId={studentData.studentId || "current-student"}
+                tests={studentData.recentTests}
+                onViewTest={handleViewTest}
+                showHeader={false}
+              />
+            </div>
             {/* Course Results */}
-            <CourseResultsGrid
-              courses={courseResults}
-              onViewCourse={handleViewCourse}
-            />
+            <div>
+              <h2 className="text-xl font-bold mb-4">Course Results</h2>
+              <CourseResultsGrid
+                courses={courseResults}
+                onViewCourse={handleViewCourse}
+                onViewTest={handleViewTest}
+              />
+            </div>
           </>
         )}
         {currentView === "course" && selectedCourse && (
