@@ -179,7 +179,7 @@ export const FileUploadRenderer: React.FC<FileUploadRendererProps> = ({
                 )}
               </div>
             ))}
-          </div>{" "}
+          </div>
         </div>
       )}
 

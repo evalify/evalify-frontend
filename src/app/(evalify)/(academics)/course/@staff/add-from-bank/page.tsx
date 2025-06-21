@@ -290,7 +290,6 @@ export default function AddQuestionsPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {" "}
       <div className="flex items-center mb-6">
         {bankFromURL ? (
           <Link href={`/question-banks/${bankFromURL}`}>
@@ -325,7 +324,7 @@ export default function AddQuestionsPage() {
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="filters">Filters</TabsTrigger>
           <TabsTrigger value="advanced">Advanced Search</TabsTrigger>
-        </TabsList>{" "}
+        </TabsList>
         <TabsContent value="filters">
           <Card className="bg-[#0c101e] border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -341,7 +340,6 @@ export default function AddQuestionsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {" "}
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-400">
                     Question Bank
@@ -539,7 +537,7 @@ export default function AddQuestionsPage() {
                       <SelectItem value="10">10</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>{" "}
+                </div>
                 <div>
                   <label className="block mb-2 text-sm font-medium text-gray-400">
                     Number of Questions
@@ -557,7 +555,7 @@ export default function AddQuestionsPage() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>{" "}
+        </TabsContent>
         <TabsContent value="advanced">
           <Card className="bg-[#0c101e] border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between pb-2">

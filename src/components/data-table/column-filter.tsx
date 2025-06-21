@@ -133,7 +133,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                     </div>
                     {option.icon && (
                       <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                    )}{" "}
+                    )}
                     <span>{option.label}</span>
                   </CommandItem>
                 );

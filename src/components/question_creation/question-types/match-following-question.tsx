@@ -194,7 +194,6 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
     <div className="space-y-6">
       {/* Question Input */}
       <Card>
-        {" "}
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
@@ -371,7 +370,7 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
                       key={`right-${item.id}`}
                       className="p-2 border rounded text-sm"
                     >
-                      {generateColumnBLabel(index)}.{" "}
+                      {generateColumnBLabel(index)}.
                       {item.rightText || "Enter item text"}
                     </div>
                   ))}

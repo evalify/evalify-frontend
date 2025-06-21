@@ -77,7 +77,7 @@ export const TrueFalseRenderer: React.FC<TrueFalseRendererProps> = ({
               >
                 True
               </Label>
-            </div>{" "}
+            </div>
             {config.showCorrectAnswers && (
               <div className="flex-shrink-0">
                 {question.answer === true ? (

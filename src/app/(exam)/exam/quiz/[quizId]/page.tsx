@@ -98,7 +98,6 @@ export default function QuizPage() {
   }
   return (
     <>
-      {" "}
       {/* Full-screen modal */}
       {showFullScreenModal && data?.fullScreenRequired && (
         <FullScreenModal
@@ -112,13 +111,11 @@ export default function QuizPage() {
         questions={data.questions}
         initialQuestionId={initialQuestionId}
       >
-        {" "}
         <div
           className={`flex flex-col min-h-screen h-screen ${isFullScreen ? "fullscreen-quiz" : ""}`}
         >
           <TestHeader />
           <div className="flex flex-row flex-1 h-full overflow-hidden">
-            {" "}
             <div className="flex-1 border-r border-gray-700 relative overflow-auto">
               {/* Blur overlay when full-screen is required but not active */}
               {data?.fullScreenRequired && !isFullScreen && (

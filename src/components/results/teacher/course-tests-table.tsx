@@ -135,7 +135,7 @@ export function CourseTestsTable({ tests, onViewTest }: CourseTestsTableProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>{" "}
+        </div>
         <div className="overflow-hidden rounded-md border">
           <Table>
             {/* Prevent extra whitespace inside table components */}
@@ -160,7 +160,7 @@ export function CourseTestsTable({ tests, onViewTest }: CourseTestsTableProps) {
                   >
                     Created {getSortIcon("createdAt")}
                   </Button>
-                </TableHead>{" "}
+                </TableHead>
                 <TableHead className="text-center">
                   <Button
                     variant="ghost"
@@ -209,7 +209,7 @@ export function CourseTestsTable({ tests, onViewTest }: CourseTestsTableProps) {
                           })}
                         </span>
                       </div>
-                    </TableCell>{" "}
+                    </TableCell>
                     <TableCell className="text-center">
                       <div className="flex flex-col items-center justify-center">
                         <div className="flex items-center justify-center gap-1.5">
@@ -217,15 +217,15 @@ export function CourseTestsTable({ tests, onViewTest }: CourseTestsTableProps) {
                           <span className="whitespace-nowrap font-medium">
                             {test.totalSubmissions}
                           </span>
-                        </div>{" "}
+                        </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          of{" "}
+                          of
                           {Math.round(
                             test.totalSubmissions /
                               (test.completionRate > 0
                                 ? test.completionRate / 100
                                 : 1),
-                          )}{" "}
+                          )}
                           students
                         </span>
                       </div>
@@ -241,7 +241,7 @@ export function CourseTestsTable({ tests, onViewTest }: CourseTestsTableProps) {
                   </TableRow>
                 );
               })}
-            </TableBody>{" "}
+            </TableBody>
           </Table>
         </div>
       </CardContent>

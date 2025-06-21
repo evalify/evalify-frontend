@@ -108,7 +108,7 @@ export function QuestionCard({
                 variant="outline"
                 className="text-xs flex items-center gap-1"
               >
-                <Database className="w-3 h-3" />{" "}
+                <Database className="w-3 h-3" />
                 {banks[question.source]?.name || question.source}
               </Badge>
             )}

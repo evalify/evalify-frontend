@@ -40,7 +40,6 @@ export function CourseCard({
       className="overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer"
       onClick={() => onViewCourse(course.courseId)}
     >
-      {" "}
       <CardHeader className="pb-3 border-b">
         <CardTitle className="flex items-center gap-2">
           <div className="truncate flex-1 leading-normal py-1 mr-3 overflow-visible">
@@ -53,8 +52,7 @@ export function CourseCard({
       </CardHeader>
       <CardContent className="pt-4">
         <div className="space-y-5">
-          {" "}
-          {/* Progress and Stats */}{" "}
+          {/* Progress and Stats */}
           <div>
             {/* Average Score - Emphasized */}
             <div className="flex flex-col items-center justify-center mb-3">
@@ -92,7 +90,7 @@ export function CourseCard({
                       <div className="text-xs text-muted-foreground">
                         {new Date(test.completedAt).toLocaleDateString()}
                       </div>
-                    </div>{" "}
+                    </div>
                     <Badge
                       variant="outline"
                       className={`${getScoreBgColor(test.percentage)} text-xs shrink-0`}

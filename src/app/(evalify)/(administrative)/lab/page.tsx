@@ -100,7 +100,7 @@ export default function LabsPage() {
         className="h-8"
       >
         Add Lab
-      </Button>{" "}
+      </Button>
     </div>
   );
 

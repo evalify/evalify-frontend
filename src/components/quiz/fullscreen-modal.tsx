@@ -73,7 +73,7 @@ export function FullScreenModal({
                 versions)
               </AlertDescription>
             </div>
-          </Alert>{" "}
+          </Alert>
           {onDismiss && !isRequired && (
             <div className="flex justify-end mt-4">
               <Button variant="outline" onClick={onDismiss}>
@@ -119,7 +119,7 @@ export function FullScreenModal({
               <li>Right-click context menu is disabled</li>
               <li>All interactions are monitored</li>
             </ul>
-          </div>{" "}
+          </div>
           <div className="flex justify-end gap-2">
             {onDismiss && !isRequired && (
               <Button variant="outline" onClick={onDismiss}>

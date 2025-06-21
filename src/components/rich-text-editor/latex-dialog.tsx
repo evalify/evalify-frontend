@@ -188,9 +188,8 @@ export function LatexDialog({
 
           <TabsContent value="editor" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {" "}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Equation</label>{" "}
+                <label className="text-sm font-medium">Equation</label>
                 <Textarea
                   ref={textareaRef}
                   value={latex}
@@ -206,7 +205,7 @@ export function LatexDialog({
                   onKeyDown={handleKeyDown}
                   placeholder="Enter LaTeX equation..."
                   className="font-mono min-h-[250px]"
-                />{" "}
+                />
                 <div className="flex gap-2 flex-wrap">
                   <Button
                     variant="outline"
@@ -285,7 +284,7 @@ export function LatexDialog({
                     size="sm"
                     onClick={() =>
                       insertTemplate(
-                        "\\begin{pmatrix} a & b & c \\end{pmatrix}"
+                        "\\begin{pmatrix} a & b & c \\end{pmatrix}",
                       )
                     }
                     title="Row Matrix (1×3)"
@@ -297,7 +296,7 @@ export function LatexDialog({
                     size="sm"
                     onClick={() =>
                       insertTemplate(
-                        "\\begin{pmatrix} a \\\\ b \\\\ c \\end{pmatrix}"
+                        "\\begin{pmatrix} a \\\\ b \\\\ c \\end{pmatrix}",
                       )
                     }
                     title="Column Matrix (3×1)"
@@ -309,7 +308,7 @@ export function LatexDialog({
                     size="sm"
                     onClick={() =>
                       insertTemplate(
-                        "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}"
+                        "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
                       )
                     }
                     title="Matrix 2×2"
@@ -321,7 +320,7 @@ export function LatexDialog({
                     size="sm"
                     onClick={() =>
                       insertTemplate(
-                        "\\begin{pmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{pmatrix}"
+                        "\\begin{pmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{pmatrix}",
                       )
                     }
                     title="Matrix 3×3"
@@ -340,8 +339,8 @@ export function LatexDialog({
                           ? latex
                           : `$${latex}$`
                         : latex.startsWith("$$") && latex.endsWith("$$")
-                        ? latex
-                        : `$$${latex}$$`
+                          ? latex
+                          : `$$${latex}$$`
                     }
                   />
                 </div>
@@ -356,7 +355,6 @@ export function LatexDialog({
                   <div key={category.category} className="space-y-3">
                     <h3 className="font-medium text-md">{category.category}</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {" "}
                       {category.templates.map((template) => (
                         <div
                           key={template.name}
