@@ -12,6 +12,7 @@ import {
   TestSummary,
 } from "@/components/results";
 import { MockResultsAPI } from "@/lib/results-api";
+import { StudentPerformanceTrendsChart } from "@/components/results/student/performance-trends-chart";
 
 export default function StudentResultsPage() {
   const router = useRouter();
@@ -170,8 +171,11 @@ export default function StudentResultsPage() {
               <p className="text-muted-foreground mb-4">
                 Track your academic performance and progress
               </p>
-              {/* Overview cards removed as requested */}
-            </div>{" "}
+            </div>
+            {/* Performance Trends Chart */}
+            <div className="mb-8">
+              <StudentPerformanceTrendsChart courses={courseResults} />
+            </div>
             {/* Recent Tests */}
             <div>
               <h2 className="text-xl font-bold mb-4">Recent Tests</h2>
