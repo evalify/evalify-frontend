@@ -53,7 +53,7 @@ export function DeleteLabDialog({
         <DialogHeader>
           <DialogTitle>Delete Lab</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete{" "}
+            Are you sure you want to delete
             {labName ? `"${labName}"` : "this lab"}? This action cannot be
             undone.
           </DialogDescription>

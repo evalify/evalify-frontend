@@ -97,7 +97,7 @@ export function SidebarDemo() {
         <Card className="h-[600px] overflow-hidden">
           <CardHeader>
             <CardTitle>
-              Live Preview - {currentSidebar === "basic" ? "Basic" : "Enhanced"}{" "}
+              Live Preview - {currentSidebar === "basic" ? "Basic" : "Enhanced"}
               Sidebar
             </CardTitle>
           </CardHeader>

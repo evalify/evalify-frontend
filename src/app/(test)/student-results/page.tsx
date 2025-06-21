@@ -171,7 +171,7 @@ export default function StudentResultsPage() {
                 Track your academic performance and progress
               </p>
               {/* Overview cards removed as requested */}
-            </div>{" "}
+            </div>
             {/* Recent Tests */}
             <div>
               <h2 className="text-xl font-bold mb-4">Recent Tests</h2>

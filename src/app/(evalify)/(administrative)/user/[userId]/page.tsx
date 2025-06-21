@@ -53,7 +53,7 @@ export default function UserProfilePage() {
   if (isError) {
     return (
       <div className="p-8 text-red-500">
-        Error:{" "}
+        Error:
         {error instanceof Error ? error.message : "Failed to fetch user data"}
       </div>
     );

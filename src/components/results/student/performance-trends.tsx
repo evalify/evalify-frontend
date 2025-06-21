@@ -120,7 +120,6 @@ export function PerformanceTrends({
       <CardContent className="pt-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div>
-            {" "}
             <div className="text-sm text-muted-foreground">Average Score</div>
             <div
               className={`font-medium text-lg mt-1 ${getScoreTextColor(averageScore)}`}
@@ -130,7 +129,6 @@ export function PerformanceTrends({
           </div>
 
           <div>
-            {" "}
             <div className="text-sm text-muted-foreground">Latest Score</div>
             <div
               className={`font-medium text-lg mt-1 ${getScoreTextColor(latestScore)}`}
@@ -140,7 +138,6 @@ export function PerformanceTrends({
           </div>
 
           <div>
-            {" "}
             <div className="text-sm text-muted-foreground">Best Score</div>
             <div
               className={`font-medium text-lg mt-1 ${getScoreTextColor(highestScore)}`}
@@ -212,7 +209,7 @@ export function PerformanceTrends({
                         {index + 1}
                       </Badge>
                       <span className="text-sm">{test.testName}</span>
-                    </div>{" "}
+                    </div>
                     <div
                       className={`text-sm font-medium ${getScoreTextColor(test.percentage)}`}
                     >

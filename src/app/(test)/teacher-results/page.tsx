@@ -334,14 +334,14 @@ export default function TeacherResultsPage() {
                 Recently administered tests across all courses
               </p>
             </div>
-            <RecentTestsCard tests={recentTests} onViewTest={handleViewTest} />{" "}
+            <RecentTestsCard tests={recentTests} onViewTest={handleViewTest} />
             {/* All Courses */}
             <div className="mt-8 mb-1">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
                   <h2 className="text-xl font-semibold">Your Courses</h2>
-                </div>{" "}
+                </div>
                 <div className="flex items-center">
                   <span className="text-sm text-muted-foreground mr-2">
                     Sort by:
@@ -434,7 +434,7 @@ export default function TeacherResultsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>{" "}
+            </Card>
             {/* Course Tests */}
             <div className="flex flex-col gap-1">
               <div className="flex justify-between items-center">
@@ -513,7 +513,7 @@ export default function TeacherResultsPage() {
                         High / Low
                       </p>
                       <p className="text-xl font-semibold">
-                        {testStatistics.highestScore}% /{" "}
+                        {testStatistics.highestScore}% /
                         {testStatistics.lowestScore}%
                       </p>
                     </div>
@@ -531,7 +531,7 @@ export default function TeacherResultsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>{" "}
+            </Card>
             {/* Performance Distribution Chart */}
             <div className="mb-2">
               <h2 className="text-xl font-semibold">Score Distribution</h2>
@@ -547,7 +547,7 @@ export default function TeacherResultsPage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Individual student scores and statistics
               </p>
-            </div>{" "}
+            </div>
             <StudentResultsTable
               statistics={testStatistics}
               onViewStudentResult={handleViewStudentResult}
@@ -559,7 +559,7 @@ export default function TeacherResultsPage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Performance metrics for each question on the test
               </p>
-            </div>{" "}
+            </div>
             <QuestionStatsTable statistics={testStatistics} />
           </>
         )}

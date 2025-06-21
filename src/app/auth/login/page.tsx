@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { ArrowLeft, Shield, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ui/theme-toggle";
@@ -91,7 +91,6 @@ export default function SignIn() {
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </Button>
-
           {/* Features */}
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div className="p-4 rounded-xl text-center transition-all duration-300 bg-gray-50/80 hover:bg-gray-100/80 dark:bg-white/5 dark:hover:bg-white/10">
@@ -107,16 +106,11 @@ export default function SignIn() {
               </p>
             </div>
           </div>
-
           {/* Debug: Sign Out Button (only show if session exists) */}
           {session && (
-            <Button
-              onClick={() => signOut()}
-              variant="outline"
-              className="w-full py-3 text-sm rounded-xl transition-all duration-300 border-gray-300/50 text-gray-700 hover:bg-gray-50 dark:border-white/20 dark:text-gray-300 dark:hover:bg-white/10"
-            >
-              Sign Out
-            </Button>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Already logged in as {session.user.email}
+            </div>
           )}
         </div>
 

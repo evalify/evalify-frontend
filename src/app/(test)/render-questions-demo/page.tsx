@@ -328,7 +328,7 @@ export default function QuestionRendererDemo() {
               <p className="text-xs text-muted-foreground">Mobile Responsive</p>
             </CardContent>
           </Card>
-        </div>{" "}
+        </div>
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Configuration Panel */}
           <Card className="xl:col-span-1">
@@ -359,7 +359,7 @@ export default function QuestionRendererDemo() {
                 </div>
               </div>
               <Separator />
-              {/* Mode Selection */}{" "}
+              {/* Mode Selection */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Display Mode</Label>
                 <div className="grid grid-cols-1 gap-1">
@@ -599,7 +599,7 @@ export default function QuestionRendererDemo() {
                 </div>
               </div>
             </CardContent>
-          </Card>{" "}
+          </Card>
           {/* Question Display */}
           <div className="xl:col-span-3">
             <Tabs defaultValue="preview" className="space-y-4">
@@ -641,7 +641,6 @@ export default function QuestionRendererDemo() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {" "}
                     <QuestionRenderer
                       question={selectedQuestion}
                       config={enhancedConfig}
@@ -705,14 +704,14 @@ export default function QuestionRendererDemo() {
                             • <code>hintText</code> OR <code>hint</code>
                           </li>
                           <li>
-                            • <code>taxonomy</code> OR{" "}
+                            • <code>taxonomy</code> OR
                             <code>bloomsTaxonomy</code>
                           </li>
                           <li>
                             • <code>coValue</code> OR <code>co</code>
                           </li>
                           <li>
-                            • <code>difficultyLevel</code> OR{" "}
+                            • <code>difficultyLevel</code> OR
                             <code>difficulty</code>
                           </li>
                         </ul>

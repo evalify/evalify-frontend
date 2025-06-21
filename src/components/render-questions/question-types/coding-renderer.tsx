@@ -352,7 +352,7 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
             </pre>
           </div>
         </>
-      )}{" "}
+      )}
       {/* Solution in display/student mode */}
       {(config.showCorrectAnswers || config.mode === "student") &&
         question.answer && (

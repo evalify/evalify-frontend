@@ -514,7 +514,7 @@ export function QuizMetadata({ data, updateData }: QuizMetadataProps) {
                     </div>
                     <div className="mt-3 pt-3 border-t border-border/50 text-center">
                       <span className="text-sm text-muted-foreground">
-                        Total Marks:{" "}
+                        Total Marks:
                       </span>
                       <span className="font-semibold text-primary">
                         {data.questionBreakdown.totalMarks}

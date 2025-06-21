@@ -90,7 +90,7 @@ const Dashboardpage = () => {
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           {session?.user?.name && (
             <p className="text-muted-foreground">
-              Welcome back, {capitalizeWord(session.user.name)}!{" "}
+              Welcome back, {capitalizeWord(session.user.name)}!
               {"Here's what's happening with your platform."}
             </p>
           )}

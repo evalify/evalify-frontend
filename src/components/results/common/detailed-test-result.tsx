@@ -151,7 +151,7 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
                   <span className="font-medium">
                     {String.fromCharCode(65 + index)}.
                   </span>
-                  <span>{option.text}</span>{" "}
+                  <span>{option.text}</span>
                   {option.isCorrect && (
                     <Badge
                       variant="secondary"
@@ -261,10 +261,9 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}{" "}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {" "}
           <Button
             variant="outline"
             size="sm"
@@ -300,12 +299,10 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
         </div>
 
         <div className="bg-card rounded-lg border p-4 shadow-sm">
-          {" "}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Score</p>
               <div className="flex items-baseline gap-2">
-                {" "}
                 <span
                   className={`text-2xl font-bold ${getScoreTextColor(result.percentage)}`}
                 >
@@ -315,7 +312,7 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
                   ({result.score}/{result.maxScore})
                 </span>
               </div>
-            </div>{" "}
+            </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-3 mb-1">
                 <p className="text-sm text-muted-foreground">
@@ -341,7 +338,7 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
                 </p>
               </div>
               <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-md border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40">
-                <HelpCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />{" "}
+                <HelpCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <p className="text-amber-700 dark:text-amber-300 font-medium">
                   {
                     result.questions.filter(
@@ -366,7 +363,6 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
       </div>
       {/* Questions */}
       <div className="mb-4">
-        {" "}
         <div className="flex items-center gap-2 mb-4">
           <FileText className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold">Questions & Answers</h2>
@@ -374,7 +370,6 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
         <div className="space-y-6">
           {result.questions.map((question, index) => (
             <Card key={question.questionId} className="overflow-hidden">
-              {" "}
               <CardHeader className="bg-muted/30 py-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
@@ -386,7 +381,7 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
                         {getQuestionIcon(
                           question.isCorrect,
                           question.questionType,
-                        )}{" "}
+                        )}
                         <Badge
                           variant="outline"
                           className={`font-normal text-xs ${
@@ -427,7 +422,7 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
                           variant="secondary"
                           className="font-normal text-xs bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
                         >
-                          {question.marks}{" "}
+                          {question.marks}
                           {question.marks === 1 ? "mark" : "marks"}
                         </Badge>
                       </div>
@@ -439,7 +434,7 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
                 </div>
               </CardHeader>
               <CardContent className="pt-4">
-                {renderAnswer(question)}{" "}
+                {renderAnswer(question)}
                 {question.explanation && (
                   <div className="mt-4 p-3 rounded bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-800">
                     <p className="text-sm font-medium mb-1 text-indigo-800 dark:text-indigo-300">

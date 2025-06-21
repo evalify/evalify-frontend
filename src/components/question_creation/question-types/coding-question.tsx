@@ -340,14 +340,12 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
         <TabsContent value="setup">
           <Card>
             <CardHeader>
-              {" "}
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-primary" />
                 Function Configuration
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {" "}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="functionName">Function Name</Label>
@@ -387,7 +385,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-              </div>{" "}
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="language">Programming Language</Label>
                 <Select
@@ -437,7 +435,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                           updateParameter(param.id, "name", e.target.value)
                         }
                         className="flex-1"
-                      />{" "}
+                      />
                       <Select
                         value={param.type}
                         onValueChange={(value) =>
@@ -481,7 +479,6 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                {" "}
                 <div className="flex items-center gap-2">
                   <TestTube className="h-5 w-5 text-primary" />
                   Test Cases
@@ -594,7 +591,6 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
 
         <TabsContent value="code">
           <Card>
-            {" "}
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Code className="h-5 w-5 text-primary" />

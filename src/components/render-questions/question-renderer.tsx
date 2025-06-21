@@ -213,11 +213,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   return (
     <TooltipProvider>
       <Card className={cn("w-full", config.compact && "shadow-sm", className)}>
-        {" "}
         <CardHeader className={cn("pb-4", config.compact && "pb-2")}>
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              {" "}
               {/* min-w-0 prevents flex item from overflowing */}
               {/* Question Number and Type */}
               <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -233,7 +231,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 {config.showMarks && (
                   <Badge variant="outline" className="font-medium text-xs">
                     <Award className="w-3 h-3 mr-1" />
-                    {question.markValue}{" "}
+                    {question.markValue}
                     {question.markValue === 1 ? "mark" : "marks"}
                   </Badge>
                 )}
@@ -304,7 +302,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     ))}
                 </div>
               )}
-            </div>{" "}
+            </div>
             {/* Score Display for Student Mode or Review Mode */}
             {shouldShowScore && config.userAnswers ? (
               <div className="flex items-center gap-2 lg:ml-4">
@@ -393,13 +391,13 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Delete Question</p>
-                      </TooltipContent>{" "}
+                      </TooltipContent>
                     </Tooltip>
                   )}
                 </div>
               )
             )}
-          </div>{" "}
+          </div>
           {/* Hint Toggle */}
           {config.showHint && question.hintText && (
             <div className="flex items-center gap-2 mt-2">
@@ -445,7 +443,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           )}
         </CardHeader>
         <CardContent className={cn("pt-0", config.compact && "px-4 pb-4")}>
-          {" "}
           {/* Question Type Specific Content */}
           {renderQuestionContent()}
           {/* Explanation */}

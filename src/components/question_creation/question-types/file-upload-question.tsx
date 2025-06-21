@@ -212,7 +212,6 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
     <div className="space-y-6">
       {/* Question Input */}
       <Card>
-        {" "}
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
@@ -500,7 +499,7 @@ const FileUploadQuestion: React.FC<FileUploadQuestionProps> = ({
             </p>
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>
-                <strong>Allowed types:</strong>{" "}
+                <strong>Allowed types:</strong>
                 {allowedFileTypes.length > 0
                   ? allowedFileTypes.map((type) => `.${type}`).join(", ")
                   : "All file types"}

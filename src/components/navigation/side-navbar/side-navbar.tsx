@@ -293,7 +293,7 @@ export function AppSidebar() {
                           <ConfirmationDialog
                             title="Logout Confirmation"
                             message="Are you sure you want to logout?"
-                            onAccept={() => signOut({ callbackUrl: "/" })}
+                            onAccept={() => signOut({ redirectTo: "/" })}
                             confirmButtonText="Yes, Logout"
                           >
                             <LogOut className="h-4 w-4" />

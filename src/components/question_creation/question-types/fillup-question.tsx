@@ -335,15 +335,15 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
               </p>
               <p>
                 Click &quot;Add Blank&quot; button to insert blanks, or manually
-                type{" "}
+                type
                 <code className="bg-white dark:bg-gray-800 px-1 rounded">
                   ___
-                </code>{" "}
+                </code>
                 (three underscores) to mark blanks in your question text.
               </p>
             </div>
           </div>
-        </CardHeader>{" "}
+        </CardHeader>
         <CardContent>
           <TiptapEditor
             ref={editorRef}
@@ -597,7 +597,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
                           </div>
                         ))}
                       </div>
-                    )}{" "}
+                    )}
                     {/* Add new answer */}
                     <div className="flex gap-2">
                       <Input
@@ -658,7 +658,7 @@ const FillupQuestion: React.FC<FillupQuestionProps> = ({
               onCheckedChange={onShowExplanationChange}
             />
           </div>
-        </CardHeader>{" "}
+        </CardHeader>
         {showExplanation && (
           <CardContent>
             <TiptapEditor

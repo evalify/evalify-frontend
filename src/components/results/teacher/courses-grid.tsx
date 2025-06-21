@@ -158,7 +158,7 @@ export function CoursesGrid({
                     Tests
                   </div>
                   <p className="font-medium">{course.totalTests}</p>
-                </div>{" "}
+                </div>
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <BarChart className="h-4 w-4 mr-2" />

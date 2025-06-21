@@ -378,7 +378,7 @@ export function EnhancedSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => signOut({ redirectTo: "/" })}
                   tooltip="Sign out"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                 >
