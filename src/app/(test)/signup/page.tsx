@@ -3,15 +3,23 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User as UserIcon, Phone, Mail, Calendar, Shield } from "lucide-react";
+import {
+  Upload,
+  User as UserIcon,
+  Phone,
+  Mail,
+  Calendar,
+  Shield,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import userQueries from "@/repo/user-queries/user-queries";
 
-enum Role {
+enum Group {
   ADMIN = "ADMIN",
   STUDENT = "STUDENT",
   FACULTY = "FACULTY",
@@ -25,7 +33,7 @@ interface UserDetails {
   profileId?: string;
   image?: string;
   password?: string;
-  role: Role;
+  group: Group;
   phoneNumber: string;
   isActive: boolean;
   createdAt: Date;
@@ -33,12 +41,12 @@ interface UserDetails {
 }
 
 export default function UserDetailsPage() {
-  // ALL HOOKS MUST BE AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
   const { data: session } = useSession();
+  const [uploading, setUploading] = useState(false);
 
-  // Get user ID from session (will be undefined if no session)
+  // Get user ID from session
   const userId = session?.user?.id;
-
+  // Fetch user data using React Query
   const {
     data: fetchedUser,
     isError,
@@ -49,20 +57,6 @@ export default function UserDetailsPage() {
     enabled: !!session?.access_token && !!userId,
     retry: 1, // Only retry once on failure
   });
-
-  // User state
-  const [user, setUser] = useState<UserDetails>({
-    name: "",
-    email: "",
-    profileId: "",
-    password: "********",
-    role: Role.STUDENT,
-    phoneNumber: "",
-    isActive: true,
-    createdAt: new Date(),
-    lastPasswordChange: new Date(),
-  });
-
   // Add debug logging
   useEffect(() => {
     if (fetchedUser) {
@@ -73,7 +67,17 @@ export default function UserDetailsPage() {
     }
   }, [fetchedUser, error]);
 
-  // Update user data from fetched API data
+  const [user, setUser] = useState<UserDetails>({
+    name: "",
+    email: "",
+    profileId: "",
+    password: "********",
+    group: Group.STUDENT,
+    phoneNumber: "",
+    isActive: true,
+    createdAt: new Date(),
+    lastPasswordChange: new Date(),
+  }); // Update user data from fetched API data
   useEffect(() => {
     if (fetchedUser) {
       setUser({
@@ -81,7 +85,7 @@ export default function UserDetailsPage() {
         name: fetchedUser.name,
         email: fetchedUser.email,
         profileId: fetchedUser.profileId,
-        role: fetchedUser.role as Role,
+        group: fetchedUser.role as Group,
         phoneNumber: fetchedUser.phoneNumber,
         isActive: fetchedUser.isActive,
         createdAt: new Date(fetchedUser.createdAt),
@@ -89,7 +93,6 @@ export default function UserDetailsPage() {
       });
     }
   }, [fetchedUser]);
-
   // Fallback: Update user data from session if API data isn't available
   useEffect(() => {
     if (session?.user && !fetchedUser) {
@@ -98,19 +101,51 @@ export default function UserDetailsPage() {
         name: session.user.name || "",
         email: session.user.email || "",
         profileId: session.user.id || "",
-        role: session.user.roles?.includes("admin")
-          ? Role.ADMIN
-          : session.user.roles?.includes("faculty")
-            ? Role.FACULTY
-            : Role.STUDENT,
+        group: session.user.groups?.includes("admin")
+          ? Group.ADMIN
+          : session.user.groups?.includes("faculty")
+            ? Group.FACULTY
+            : Group.STUDENT,
         // Keep other fields as they might come from different sources
         phoneNumber: prevUser.phoneNumber || "",
         isActive: true, // Assume active if they have a session
       }));
     }
   }, [session, fetchedUser]);
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  // Early return after all hooks are called
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("customName", `profile_${userId}`);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/blob/upload`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const result = await response.json();
+      setUser((prev) => ({ ...prev, image: result.fileUrl }));
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="min-h-screen bg-gray-900 py-8 px-4 flex items-center justify-center">
@@ -128,13 +163,13 @@ export default function UserDetailsPage() {
       minute: "2-digit",
     }).format(date);
   };
-  const getRoleColor = (role: Role) => {
-    switch (role) {
-      case Role.ADMIN:
+  const getGroupColor = (group: Group) => {
+    switch (group) {
+      case Group.ADMIN:
         return "bg-red-600 hover:bg-red-700 text-white";
-      case Role.FACULTY:
+      case Group.FACULTY:
         return "bg-yellow-600 hover:bg-yellow-700 text-white";
-      case Role.MANAGER:
+      case Group.MANAGER:
         return "bg-purple-600 hover:bg-purple-700 text-white";
       default:
         return "bg-blue-600 hover:bg-blue-700 text-white";
@@ -182,14 +217,29 @@ export default function UserDetailsPage() {
                       {getInitials(user.name)}
                     </AvatarFallback>
                   </Avatar>
+                  <div className="absolute -bottom-2 -right-2">
+                    <Label htmlFor="image-upload" className="cursor-pointer">
+                      <div className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition-colors">
+                        <Upload className="w-4 h-4" />
+                      </div>
+                    </Label>
+                    <Input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                  </div>
                 </div>
                 <h1 className="text-2xl font-bold text-gray-100 mb-3">
                   {user.name}
-                </h1>
+                </h1>{" "}
                 <div className="space-y-2">
-                  <Badge className={`${getRoleColor(user.role)} border-0`}>
+                  <Badge className={`${getGroupColor(user.group)} border-0`}>
                     <Shield className="w-3 h-3 mr-1" />
-                    {user.role}
+                    {user.group}
                   </Badge>
                   <div>
                     <Badge
