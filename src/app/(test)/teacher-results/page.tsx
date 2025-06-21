@@ -629,7 +629,7 @@ export default function TeacherResultsPage() {
                   <QuestionWiseBarChart
                     questionStats={testStatistics.questionStats.map((q, i) => {
                       const correctCount = Math.round(
-                        (q.correctPercentage / 100) * q.attemptedCount
+                        (q.correctPercentage / 100) * q.attemptedCount,
                       );
                       return {
                         question: `Q${i + 1}`,
