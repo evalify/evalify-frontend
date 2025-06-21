@@ -60,6 +60,15 @@ export const MarksFrequencyBarChart: React.FC<MarksFrequencyBarChartProps> = ({
       },
     ],
   };
+  // Utility to safely get CSS variable (SSR-safe)
+  const getCSSVariable = (variable: string, fallback: string) => {
+    if (typeof window === "undefined") return fallback;
+    return (
+      getComputedStyle(document.documentElement).getPropertyValue(variable) ||
+      fallback
+    );
+  };
+
   const options = {
     plugins: {
       legend: { display: false },
@@ -75,17 +84,11 @@ export const MarksFrequencyBarChart: React.FC<MarksFrequencyBarChartProps> = ({
         title: {
           display: true,
           text: "Percentage Range",
-          color:
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--foreground",
-            ) || "#fff",
+          color: getCSSVariable("--foreground", "#fff"),
           font: { size: 14 },
         },
         ticks: {
-          color:
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--foreground",
-            ) || "#fff",
+          color: getCSSVariable("--foreground", "#fff"),
         },
       },
       y: {
@@ -93,17 +96,11 @@ export const MarksFrequencyBarChart: React.FC<MarksFrequencyBarChartProps> = ({
         title: {
           display: true,
           text: "Number of Students",
-          color:
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--foreground",
-            ) || "#fff",
+          color: getCSSVariable("--foreground", "#fff"),
           font: { size: 14 },
         },
         ticks: {
-          color:
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--foreground",
-            ) || "#fff",
+          color: getCSSVariable("--foreground", "#fff"),
         },
       },
     },

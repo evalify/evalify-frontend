@@ -88,6 +88,13 @@ export function StudentPerformanceTrendsChart({
     };
   });
 
+  // Add SSR-safe dark mode detection helper
+  const isDarkMode = (): boolean => {
+    if (typeof window === "undefined" || typeof document === "undefined")
+      return false;
+    return document.documentElement.classList.contains("dark");
+  };
+
   return (
     <Card className="border border-border shadow-lg w-full h-full bg-background">
       <CardHeader className="pb-2 border-b rounded-t-xl">
@@ -145,24 +152,16 @@ export function StudentPerformanceTrendsChart({
                 tooltip: {
                   enabled: true,
                   backgroundColor: () => {
-                    const isDark =
-                      document.documentElement.classList.contains("dark");
-                    return isDark ? "#1e293b" : "#fff";
+                    return isDarkMode() ? "#1e293b" : "#fff";
                   },
                   titleColor: () => {
-                    const isDark =
-                      document.documentElement.classList.contains("dark");
-                    return isDark ? "#60a5fa" : "#1e293b"; // darker for light mode
+                    return isDarkMode() ? "#60a5fa" : "#1e293b";
                   },
                   bodyColor: () => {
-                    const isDark =
-                      document.documentElement.classList.contains("dark");
-                    return isDark ? "#f1f5f9" : "#0f172a";
+                    return isDarkMode() ? "#f1f5f9" : "#0f172a";
                   },
                   borderColor: () => {
-                    const isDark =
-                      document.documentElement.classList.contains("dark");
-                    return isDark ? "#334155" : "#2563eb";
+                    return isDarkMode() ? "#334155" : "#2563eb";
                   },
                   borderWidth: 1,
                   titleFont: { weight: "bold" },

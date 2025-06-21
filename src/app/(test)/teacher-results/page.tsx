@@ -627,17 +627,16 @@ export default function TeacherResultsPage() {
                   }
                 >
                   <QuestionWiseBarChart
-                    questionStats={testStatistics.questionStats.map((q, i) => ({
-                      question: `Q${i + 1}`,
-                      correct: Math.round(
-                        (q.correctPercentage / 100) * q.attemptedCount,
-                      ),
-                      wrong:
-                        q.attemptedCount -
-                        Math.round(
-                          (q.correctPercentage / 100) * q.attemptedCount,
-                        ),
-                    }))}
+                    questionStats={testStatistics.questionStats.map((q, i) => {
+                      const correctCount = Math.round(
+                        (q.correctPercentage / 100) * q.attemptedCount
+                      );
+                      return {
+                        question: `Q${i + 1}`,
+                        correct: correctCount,
+                        wrong: q.attemptedCount - correctCount,
+                      };
+                    })}
                   />
                 </div>
               </div>

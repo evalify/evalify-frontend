@@ -9,7 +9,7 @@ export interface StudentPerformancePieChartProps {
   scores: number[];
 }
 
-// Distribution: Excellent: 90%+, Good: 80-89%, Average: 60-79%, Needs Improvement: <60%
+// Distribution: Excellent: 90%+, Good: 75-89%, Average: 50-74%, Needs Improvement: <50%  
 function getPerformanceDistribution(scores: number[]) {
   let excellent = 0,
     good = 0,
@@ -55,10 +55,9 @@ export const StudentPerformancePieChart: React.FC<
         display: true,
         position: "bottom",
         labels: {
-          color:
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--foreground",
-            ) || "#222",
+          color: typeof window !== "undefined"
+            ? getComputedStyle(document.documentElement).getPropertyValue("--foreground") || "#222"
+            : "#222",
         },
       },
       tooltip: { enabled: true },

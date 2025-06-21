@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -12,21 +12,40 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-export interface QuestionStat {
+// Use a distinct name to avoid conflict with types.ts
+export interface QuestionStatChart {
   question: string;
   correct: number;
   wrong: number;
 }
 
 export interface QuestionWiseBarChartProps {
-  questionStats: QuestionStat[];
+  questionStats: QuestionStatChart[];
   horizontalMode?: boolean;
 }
+
+// Custom hook for theme-aware colors (SSR safe)
+const useThemeColors = () => {
+  const [colors, setColors] = useState({ foreground: "#222" });
+
+  useEffect(() => {
+    const updateColors = () => {
+      const style = getComputedStyle(document.documentElement);
+      setColors({
+        foreground: style.getPropertyValue("--foreground") || "#222",
+      });
+    };
+    updateColors();
+  }, []);
+
+  return colors;
+};
 
 export const QuestionWiseBarChart: React.FC<QuestionWiseBarChartProps> = ({
   questionStats,
   horizontalMode = false,
 }) => {
+  const themeColors = useThemeColors();
   // Only show first 15 questions, rest scrollable in horizontal mode; for vertical, scroll if >30
   const scrollThreshold = horizontalMode ? 15 : 30;
   const isScrollable = questionStats.length > scrollThreshold;
@@ -57,10 +76,7 @@ export const QuestionWiseBarChart: React.FC<QuestionWiseBarChartProps> = ({
             display: true,
             position: "bottom",
             labels: {
-              color:
-                getComputedStyle(document.documentElement).getPropertyValue(
-                  "--foreground",
-                ) || "#222",
+              color: themeColors.foreground,
             },
           },
           tooltip: { enabled: true },
@@ -71,20 +87,14 @@ export const QuestionWiseBarChart: React.FC<QuestionWiseBarChartProps> = ({
           x: {
             stacked: false,
             ticks: {
-              color:
-                getComputedStyle(document.documentElement).getPropertyValue(
-                  "--foreground",
-                ) || "#fff",
+              color: themeColors.foreground,
             },
           },
           y: {
             beginAtZero: true,
             stacked: false,
             ticks: {
-              color:
-                getComputedStyle(document.documentElement).getPropertyValue(
-                  "--foreground",
-                ) || "#fff",
+              color: themeColors.foreground,
             },
           },
         },
