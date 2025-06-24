@@ -13,9 +13,7 @@ import {
   CoursesGrid,
   RecentTestsCard,
   CourseTestsTable,
-  PerformanceDistributionChart,
   StudentResultsTable,
-  QuestionStatsTable,
   SortOption,
   SortDropdown,
 } from "@/components/results/teacher";
@@ -29,9 +27,16 @@ import {
   BookOpen,
   Clock,
   FileBarChart,
+  LayoutGrid,
+  Rows3,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { QuestionBarChart } from "@/components/results/common/question-bar-chart";
+import { MarksPieChart } from "@/components/results/common/marks-pie-chart";
+import { StudentPerformancePieChart } from "@/components/results/teacher/student-performance-pie-chart";
+import { MarksFrequencyBarChart } from "@/components/results/teacher/marks-frequency-bar-chart";
+import { QuestionWiseBarChart } from "@/components/results/teacher/question-wise-bar-chart";
 
 export default function TeacherResultsPage() {
   const router = useRouter();
@@ -55,6 +60,7 @@ export default function TeacherResultsPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartsStacked, setChartsStacked] = useState(false);
 
   // Load initial data (courses and recent tests)
   const loadInitialData = React.useCallback(async () => {
@@ -491,7 +497,12 @@ export default function TeacherResultsPage() {
                         Average Score
                       </p>
                       <p className="text-xl font-semibold">
-                        {testStatistics.averageScore.toFixed(1)}%
+                        {testStatistics.averageScore.toFixed(1)}% (
+                        {(
+                          (testStatistics.averageScore / 100) *
+                          testStatistics.totalMarks
+                        ).toFixed(1)}
+                        /{testStatistics.totalMarks})
                       </p>
                     </div>
                   </div>
@@ -502,7 +513,10 @@ export default function TeacherResultsPage() {
                         Submissions
                       </p>
                       <p className="text-xl font-semibold">
-                        {testStatistics.totalSubmissions}
+                        {testStatistics.totalSubmissions}{" "}
+                        <span className="text-base text-muted-foreground">
+                          / {testStatistics.totalStudents ?? "-"}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -513,6 +527,17 @@ export default function TeacherResultsPage() {
                         High / Low
                       </p>
                       <p className="text-xl font-semibold">
+                        {testStatistics.highestScore}% (
+                        {(
+                          (testStatistics.highestScore / 100) *
+                          testStatistics.totalMarks
+                        ).toFixed(1)}
+                        ) / {testStatistics.lowestScore}% (
+                        {(
+                          (testStatistics.lowestScore / 100) *
+                          testStatistics.totalMarks
+                        ).toFixed(1)}
+                        )
                         {testStatistics.highestScore}% /
                         {testStatistics.lowestScore}%
                       </p>
@@ -525,13 +550,99 @@ export default function TeacherResultsPage() {
                         Median Score
                       </p>
                       <p className="text-xl font-semibold">
-                        {testStatistics.medianScore}%
+                        {testStatistics.medianScore}% (
+                        {(
+                          (testStatistics.medianScore / 100) *
+                          testStatistics.totalMarks
+                        ).toFixed(1)}
+                        /{testStatistics.totalMarks})
                       </p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+            {/* --- PERFORMANCE GRAPHS SECTION --- */}
+            <section className="mb-8">
+              <div className="flex flex-col gap-1 mb-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <FileBarChart className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Performance Graphs</h2>
+                </div>
+                <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                  <span className="text-sm text-muted-foreground mr-1">
+                    Chart Layout:
+                  </span>
+                  <div className="inline-flex rounded-md shadow-sm bg-muted border border-border">
+                    <button
+                      type="button"
+                      aria-label="Vertical layout"
+                      className={`px-2 py-1 flex items-center justify-center rounded-l-md focus:outline-none transition-colors duration-150 ${chartsStacked ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-accent"} border-r border-border`}
+                      onClick={() => setChartsStacked(true)}
+                    >
+                      <Rows3 className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Horizontal layout"
+                      className={`px-2 py-1 flex items-center justify-center rounded-r-md focus:outline-none transition-colors duration-150 ${!chartsStacked ? "bg-primary text-primary-foreground" : "bg-transparent text-muted-foreground hover:bg-accent"}`}
+                      onClick={() => setChartsStacked(false)}
+                    >
+                      <LayoutGrid className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={
+                  chartsStacked
+                    ? "flex flex-col gap-1"
+                    : "grid grid-cols-1 md:grid-cols-3 gap-6"
+                }
+              >
+                <div>
+                  <StudentPerformancePieChart
+                    scores={testStatistics.studentResults.map(
+                      (s) => s.percentage,
+                    )}
+                  />
+                </div>
+                <div
+                  className={
+                    chartsStacked
+                      ? "min-h-[340px] md:min-h-[400px] flex items-center"
+                      : "min-h-[260px] flex items-center"
+                  }
+                >
+                  <MarksFrequencyBarChart
+                    scores={testStatistics.studentResults.map(
+                      (s) => s.percentage,
+                    )}
+                    totalMarks={testStatistics.totalMarks}
+                  />
+                </div>
+                <div
+                  className={
+                    chartsStacked
+                      ? "min-h-[340px] md:min-h-[400px] flex items-center"
+                      : "min-h-[260px] flex items-center"
+                  }
+                >
+                  <QuestionWiseBarChart
+                    questionStats={testStatistics.questionStats.map((q, i) => {
+                      const correctCount = Math.round(
+                        (q.correctPercentage / 100) * q.attemptedCount,
+                      );
+                      return {
+                        question: `Q${i + 1}`,
+                        correct: correctCount,
+                        wrong: q.attemptedCount - correctCount,
+                      };
+                    })}
+                  />
+                </div>
+              </div>
+            </section>
             {/* Performance Distribution Chart */}
             <div className="mb-2">
               <h2 className="text-xl font-semibold">Score Distribution</h2>
@@ -554,18 +665,46 @@ export default function TeacherResultsPage() {
             />
             <Separator className="my-8" />
             {/* Question Stats Table */}
-            <div className="mb-2">
+            {/* <div className="mb-2">
               <h2 className="text-xl font-semibold">Question Analysis</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Performance metrics for each question on the test
               </p>
             </div>
+            <div className="mb-8">
+              <QuestionBarChart questions={testStatistics?.questionStats || []} />
+            </div>
+            <div className="mb-8">
+              <MarksPieChart questions={testStatistics?.questionStats || []} />
+            </div> */}
             <QuestionStatsTable statistics={testStatistics} />
           </>
         )}
 
         {currentView === "student-detail" && selectedStudentId && (
-          <DetailedTestResultView onBack={handleBack} />
+          <>
+            {/* Move charts to the top for better visibility */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div>
+                <h3 className="font-semibold mb-2 text-sm text-muted-foreground">
+                  Right/Wrong by Question
+                </h3>
+                <QuestionBarChart
+                  questions={testStatistics?.questionStats || []}
+                />
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2 text-sm text-muted-foreground">
+                  Mark Distribution
+                </h3>
+                <MarksPieChart
+                  questions={testStatistics?.questionStats || []}
+                />
+              </div>
+            </div>
+            {/* Then show the individual student's detailed info */}
+            <DetailedTestResultView onBack={handleBack} />
+          </>
         )}
       </div>
     </div>

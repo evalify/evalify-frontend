@@ -136,6 +136,34 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
       case "mcq":
         return (
           <div className="space-y-2">
+            {question.options?.map((option, index) => {
+              const isCorrect = option.isCorrect;
+              const isSelected = question.studentAnswer === option.id;
+              return (
+                <div
+                  key={option.id}
+                  className={`p-2 rounded border ${
+                    isCorrect
+                      ? "bg-emerald-100 border-emerald-300 dark:bg-green-900/20 dark:border-green-800"
+                      : isSelected
+                        ? "bg-red-100 border-red-300 dark:bg-red-900/20 dark:border-red-800"
+                        : "bg-slate-100 border-slate-300 dark:bg-gray-900/20 dark:border-gray-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                      {String.fromCharCode(65 + index)}.
+                    </span>
+                    <span>{option.text}</span>
+                    {isCorrect && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-auto bg-emerald-100 border border-emerald-300 text-emerald-800"
+                      >
+                        Correct
+                      </Badge>
+                    )}
+                    {isSelected && !isCorrect && (
             {question.options?.map((option, index) => (
               <div
                 key={option.id}
@@ -169,9 +197,10 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
                         Your Answer
                       </Badge>
                     )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
 
@@ -304,7 +333,9 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
               <p className="text-sm text-muted-foreground mb-1">Score</p>
               <div className="flex items-baseline gap-2">
                 <span
-                  className={`text-2xl font-bold ${getScoreTextColor(result.percentage)}`}
+                  className={`text-2xl font-bold ${getScoreTextColor(
+                    result.percentage,
+                  )}`}
                 >
                   {result.percentage.toFixed(1)}%
                 </span>
@@ -367,6 +398,7 @@ export const DetailedTestResultView: React.FC<DetailedTestResultProps> = ({
           <FileText className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold">Questions & Answers</h2>
         </div>
+        {/* Remove the charts for students */}
         <div className="space-y-6">
           {result.questions.map((question, index) => (
             <Card key={question.questionId} className="overflow-hidden">
