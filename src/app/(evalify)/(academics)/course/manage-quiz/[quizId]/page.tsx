@@ -846,11 +846,11 @@ const ManageQuizPage = () => {
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
             <div>
-              <strong>Created:</strong>{" "}
+              <strong>Created:</strong>
               {format(new Date(quiz.createdAt), "PPp")}
             </div>
             <div>
-              <strong>Created By:</strong>{" "}
+              <strong>Created By:</strong>
               {typeof quiz.createdBy === "string" ? quiz.createdBy : "Faculty"}
             </div>
           </div>

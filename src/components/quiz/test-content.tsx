@@ -140,7 +140,7 @@ export default function TestContent({
             <div className="flex justify-between items-center">
               <CardDescription>
                 <h2 className="text-xl">
-                  Question {currentQuestionIndexInSection + 1} of{" "}
+                  Question {currentQuestionIndexInSection + 1} of
                   {currentSectionQuestions.length} (Section {currentSection.id})
                 </h2>
               </CardDescription>

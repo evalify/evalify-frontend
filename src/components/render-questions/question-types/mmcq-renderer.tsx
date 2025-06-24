@@ -72,7 +72,6 @@ export const MMCQRenderer: React.FC<MMCQRendererProps> = ({
           )}
         >
           <div className="flex items-start gap-3">
-            {" "}
             <Checkbox
               id={option.id}
               checked={selectedOptions.includes(option.id)}
@@ -86,9 +85,7 @@ export const MMCQRenderer: React.FC<MMCQRendererProps> = ({
               htmlFor={option.id}
               className="flex-1 cursor-pointer min-w-0"
             >
-              {" "}
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                {" "}
                 <div className="flex-1 min-w-0">
                   <ContentPreview
                     content={option.text}

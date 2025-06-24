@@ -79,7 +79,6 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
       )}
       {/* Individual blanks */}
       <div className="space-y-4">
-        {" "}
         {question.blanks.map((blank, index) => (
           <div key={blank.id} className="space-y-2">
             <Label htmlFor={blank.id} className="text-sm font-medium">
@@ -111,7 +110,7 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
               {config.mode === "student" && answers[blank.id] && (
                 <div className="text-sm p-2 bg-gray-100 dark:bg-gray-800 rounded">
                   <p className="text-gray-600 dark:text-gray-400">
-                    <strong>Your answer:</strong>{" "}
+                    <strong>Your answer:</strong>
                     <span className="font-medium">{answers[blank.id]}</span>
                   </p>
                 </div>
@@ -139,7 +138,7 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
             )}
           </div>
         ))}
-      </div>{" "}
+      </div>
       {/* Show explanation in student mode */}
       {config.mode === "student" && question.explanation && (
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">

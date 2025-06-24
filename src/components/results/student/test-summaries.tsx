@@ -96,14 +96,13 @@ export function TestSummaries({
       {/* Course Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-sm">
-          {" "}
           <CardHeader className="pb-2 border-b">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <span className="p-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900">
                 <Target className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </span>
               Average Score
-            </CardTitle>{" "}
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
             <div className="flex items-baseline">
@@ -117,14 +116,13 @@ export function TestSummaries({
         </Card>
 
         <Card className="shadow-sm">
-          {" "}
           <CardHeader className="pb-2 border-b">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <span className="p-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900">
                 <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </span>
               Completion
-            </CardTitle>{" "}
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
             <div className="flex items-baseline gap-2">
@@ -142,19 +140,17 @@ export function TestSummaries({
         </Card>
 
         <Card className="shadow-sm">
-          {" "}
           <CardHeader className="pb-2 border-b">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <span className="p-1.5 rounded-full bg-violet-100 dark:bg-violet-900">
                 <Clock className="h-4 w-4 text-violet-600 dark:text-violet-400" />
               </span>
               Best Performance
-            </CardTitle>{" "}
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
             {completedTests.length > 0 ? (
               <div className="flex items-baseline gap-2">
-                {" "}
                 <span
                   className={`text-2xl font-bold ${getScoreTextColor(Math.max(...completedTests.map((test) => test.percentage)))}`}
                 >
@@ -172,8 +168,8 @@ export function TestSummaries({
             )}
           </CardContent>
         </Card>
-      </div>{" "}
-      {/* Performance Trends removed as requested */} {/* Tests List */}{" "}
+      </div>
+      {/* Performance Trends removed as requested */} {/* Tests List */}
       <Card className="shadow-sm">
         <CardHeader className="py-2 px-4 border-b">
           <CardTitle className="flex items-center justify-between text-lg">
@@ -186,7 +182,6 @@ export function TestSummaries({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {" "}
           {tests.length === 0 ? (
             <div className="text-center p-6">
               <p className="text-muted-foreground">
@@ -244,14 +239,13 @@ export function TestSummaries({
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 mt-2 sm:mt-0">
-                      {" "}
                       <Badge
                         variant="outline"
                         className={`px-3 py-1 text-sm font-semibold ${getScoreBgColor(test.percentage)}`}
                       >
                         {test.score}/{test.maxScore} (
                         {test.percentage.toFixed(1)}%)
-                      </Badge>{" "}
+                      </Badge>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>

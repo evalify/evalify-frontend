@@ -84,7 +84,7 @@ export const DescriptiveRenderer: React.FC<DescriptiveRendererProps> = ({
           disabled={config.readOnly}
           className="min-h-[200px] resize-vertical"
         />
-      </div>{" "}
+      </div>
       {/* Expected answer in display/student mode */}
       {(config.showCorrectAnswers || config.mode === "student") &&
         question.expectedAnswer && (

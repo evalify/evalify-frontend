@@ -84,7 +84,6 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
 }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-      {" "}
       {/* Left side - Question types */}
       <div className="flex flex-wrap gap-2">
         {questionTypes.map(({ type, label, icon }) => (
@@ -110,7 +109,7 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
         >
           <Eye className="h-4 w-4" />
           Preview
-        </Button>{" "}
+        </Button>
         <Button
           onClick={onSave}
           disabled={isLoading || (isEdit && !hasChanges)}

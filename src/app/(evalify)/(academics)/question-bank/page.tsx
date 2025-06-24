@@ -798,9 +798,9 @@ export default function QuestionBankPage() {
 
             <div className="flex items-center justify-between py-4">
               <div className="text-sm text-muted-foreground">
-                Showing{" "}
-                {Math.min((page - 1) * pageSize + 1, data?.totalBanks || 0)} to{" "}
-                {Math.min(page * pageSize, data?.totalBanks || 0)} of{" "}
+                Showing
+                {Math.min((page - 1) * pageSize + 1, data?.totalBanks || 0)} to
+                {Math.min(page * pageSize, data?.totalBanks || 0)} of
                 {data?.totalBanks || 0} question banks
               </div>
 

@@ -105,7 +105,7 @@ const DescriptiveQuestion: React.FC<DescriptiveQuestionProps> = ({
             <div className="flex items-center gap-2">
               <Label htmlFor="show-grading-criteria" className="text-sm">
                 Include grading criteria
-              </Label>{" "}
+              </Label>
               <Switch
                 id="show-grading-criteria"
                 checked={showGradingCriteria}

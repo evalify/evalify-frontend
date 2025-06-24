@@ -168,7 +168,7 @@ export function EditorToolbar() {
           >
             Insert Image
           </DropdownMenuItem>
-        </DropdownMenuGroup>{" "}
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>

@@ -78,14 +78,13 @@ const ValidationErrorModal: React.FC<ValidationErrorModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        {" "}
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="h-5 w-5" />
             Validation Errors
           </DialogTitle>
           <DialogDescription>
-            Please fix the following issues before saving your{" "}
+            Please fix the following issues before saving your
             {getQuestionTypeDisplayName(questionType)}:
           </DialogDescription>
         </DialogHeader>
