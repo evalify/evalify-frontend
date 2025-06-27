@@ -71,6 +71,7 @@ interface DescriptiveData extends BaseQuestionData {
 }
 
 interface CodingData extends BaseQuestionData {
+  [x: string]: boolean;
   type: "coding";
   language: string;
   starterCode?: string;
