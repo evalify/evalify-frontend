@@ -1,23 +1,7 @@
-import { QuestionData } from "@/components/question_creation/question-editor";
-import { QuestionType } from "@/components/question_creation/question-type-selector";
-
-export interface QuestionCreationRequest {
-  type: QuestionType;
-  data: QuestionData;
-  settings: {
-    marks: number;
-    difficulty: string;
-    bloomsTaxonomy: string;
-    courseOutcome: string;
-    topics: { value: string; label: string }[];
-  };
-}
-
-export interface QuestionResponse {
-  id: string;
-  message: string;
-  question: QuestionCreationRequest;
-}
+import {
+  QuestionCreationRequest,
+  QuestionResponse,
+} from "@/components/question_creation/question-creation-types";
 
 export interface ApiError {
   error: string;

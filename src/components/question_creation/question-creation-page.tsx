@@ -2,28 +2,23 @@
 
 import React from "react";
 import TopBar from "./top-bar";
-import QuestionTypeSelector, { QuestionType } from "./question-type-selector";
-import QuestionEditor, { QuestionData } from "./question-editor";
+import QuestionTypeSelector from "./question-type-selector";
+import QuestionEditor from "./question-editor";
 import QuestionSettings from "./question-settings";
 import ValidationErrorModal from "./validation-error-modal";
-import { validateQuestionData, ValidationError } from "./validation";
+import { validateQuestionData } from "./validation";
 import { useToast } from "@/hooks/use-toast";
 import { questionsService } from "@/app/api/services/questions";
-
-interface QuestionCreationSettings {
-  marks: number;
-  difficulty: string;
-  bloomsTaxonomy: string;
-  courseOutcome: string;
-  topics: { value: string; label: string }[];
-}
-
-interface QuestionCreationPageProps {
-  isEdit?: boolean;
-  initialQuestionData?: QuestionData;
-  initialQuestionSettings?: QuestionCreationSettings;
-  questionId?: string;
-}
+import {
+  QuestionType,
+  QuestionData,
+  QuestionCreationSettings,
+  QuestionCreationPageProps,
+  ValidationError,
+  createDefaultQuestionData,
+  createDefaultQuestionSettings,
+} from "./question-creation-types";
+import { Difficulty, Taxonomy } from "@/components/render-questions/types";
 
 const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   isEdit = false,
@@ -41,26 +36,13 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
 
   // Initialize question data from initial data or use defaults
   const [questionData, setQuestionData] = React.useState<QuestionData>(
-    initialQuestionData || {
-      type: "mcq",
-      question: "",
-      explanation: "",
-      showExplanation: false,
-      allowMultipleCorrect: false,
-      options: [],
-    },
+    initialQuestionData || createDefaultQuestionData("mcq"),
   );
 
   // Initialize question settings from initial data or use defaults
   const [questionSettings, setQuestionSettings] =
     React.useState<QuestionCreationSettings>(
-      initialQuestionSettings || {
-        marks: 1,
-        difficulty: "medium",
-        bloomsTaxonomy: "",
-        courseOutcome: "",
-        topics: [],
-      },
+      initialQuestionSettings || createDefaultQuestionSettings(),
     );
 
   // Store initial state for change tracking
@@ -109,86 +91,8 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       return;
     }
     setSelectedType(type);
-
     // Reset question data to default for the new type
-    const baseData = {
-      question: "",
-      explanation: "",
-      showExplanation: false,
-    };
-
-    let newQuestionData: QuestionData;
-
-    switch (type) {
-      case "mcq":
-        newQuestionData = {
-          ...baseData,
-          type: "mcq",
-          allowMultipleCorrect: false,
-          options: [],
-        };
-        break;
-      case "fillup":
-        newQuestionData = {
-          ...baseData,
-          type: "fillup",
-          blanks: [],
-        };
-        break;
-      case "match-following":
-        newQuestionData = {
-          ...baseData,
-          type: "match-following",
-          matchItems: [],
-        };
-        break;
-      case "descriptive":
-        newQuestionData = {
-          ...baseData,
-          type: "descriptive",
-          sampleAnswer: "",
-          wordLimit: 500,
-          gradingCriteria: "",
-        };
-        break;
-      case "true-false":
-        newQuestionData = {
-          ...baseData,
-          type: "true-false",
-          correctAnswer: null,
-        };
-        break;
-      case "coding":
-        newQuestionData = {
-          ...baseData,
-          type: "coding",
-          language: "",
-          starterCode: "",
-          testCases: [],
-          timeLimit: 30,
-          memoryLimit: 256,
-          functionName: "",
-        };
-        break;
-      case "file-upload":
-        newQuestionData = {
-          ...baseData,
-          type: "file-upload",
-          allowedFileTypes: [],
-          maxFileSize: 10,
-          maxFiles: 1,
-        };
-        break;
-      default:
-        newQuestionData = {
-          ...baseData,
-          type: "mcq",
-          allowMultipleCorrect: false,
-          options: [],
-        };
-    }
-
-    setQuestionData(newQuestionData);
+    setQuestionData(createDefaultQuestionData(type));
   };
 
   // Handle preview
@@ -204,21 +108,8 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
 
   const resetForm = () => {
     setSelectedType("mcq");
-    setQuestionData({
-      type: "mcq",
-      question: "",
-      explanation: "",
-      showExplanation: false,
-      allowMultipleCorrect: false,
-      options: [],
-    });
-    setQuestionSettings({
-      marks: 1,
-      difficulty: "medium",
-      bloomsTaxonomy: "",
-      courseOutcome: "",
-      topics: [],
-    });
+    setQuestionData(createDefaultQuestionData("mcq"));
+    setQuestionSettings(createDefaultQuestionSettings());
     setValidationErrors([]);
     setShowValidationModal(false);
   };
@@ -308,12 +199,19 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   const handleMarksChange = (marks: number) => {
     setQuestionSettings((prev) => ({ ...prev, marks }));
   };
+
   const handleDifficultyChange = (difficulty: string) => {
-    setQuestionSettings((prev) => ({ ...prev, difficulty }));
+    setQuestionSettings((prev) => ({
+      ...prev,
+      difficulty: difficulty as Difficulty,
+    }));
   };
 
   const handleBloomsTaxonomyChange = (bloomsTaxonomy: string) => {
-    setQuestionSettings((prev) => ({ ...prev, bloomsTaxonomy }));
+    setQuestionSettings((prev) => ({
+      ...prev,
+      bloomsTaxonomy: bloomsTaxonomy as Taxonomy | "",
+    }));
   };
 
   const handleCourseOutcomeChange = (courseOutcome: string) => {

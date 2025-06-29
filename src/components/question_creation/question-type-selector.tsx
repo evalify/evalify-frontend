@@ -11,25 +11,10 @@ import {
   Code,
   Upload,
 } from "lucide-react";
-
-export type QuestionType =
-  | "mcq"
-  | "fillup"
-  | "match-following"
-  | "descriptive"
-  | "true-false"
-  | "coding"
-  | "file-upload";
-
-interface QuestionTypeSelectorProps {
-  selectedType: QuestionType;
-  onTypeSelect: (type: QuestionType) => void;
-  onPreview: () => void;
-  onSave: () => void;
-  isLoading?: boolean;
-  isEdit?: boolean;
-  hasChanges?: boolean;
-}
+import {
+  QuestionType,
+  QuestionTypeSelectorProps,
+} from "./question-creation-types";
 
 const questionTypes: {
   type: QuestionType;
@@ -39,6 +24,11 @@ const questionTypes: {
   {
     type: "mcq",
     label: "Multiple Choice",
+    icon: <CircleDot className="h-4 w-4" />,
+  },
+  {
+    type: "mmcq",
+    label: "Multiple MCQ",
     icon: <CircleDot className="h-4 w-4" />,
   },
   {
