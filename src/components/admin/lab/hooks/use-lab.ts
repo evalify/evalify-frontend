@@ -54,16 +54,14 @@ export const useLabs = (
       const response = await axiosInstance.get(endpoint, { params });
       const backendResponse = response.data;
 
-      // The backend returns an array directly, not a paginated response
-      const labs = Array.isArray(backendResponse) ? backendResponse : [];
-
+      // The backend returns a paginated response with data and pagination
       return {
-        data: labs,
-        pagination: {
+        data: backendResponse.data || [],
+        pagination: backendResponse.pagination || {
           total_pages: 1,
-          current_page: 0,
-          per_page: labs.length,
-          total_count: labs.length,
+          current_page: 1,
+          per_page: 10,
+          total_count: 0,
         },
       };
     },

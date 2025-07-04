@@ -13,13 +13,27 @@ interface UpdateLabData {
   ipSubnet: string;
 }
 
+interface LabsResponse {
+  data: Lab[];
+  pagination: {
+    current_page: number;
+    per_page: number;
+    total_pages: number;
+    total_count: number;
+  };
+}
+
 const labQueries = {
-  getLabs: async () => {
+  getLabs: async (): Promise<LabsResponse> => {
     const response = await axiosInstance.get("/lab");
     return response.data;
   },
 
-  searchLabs: async (name?: string, block?: string, ipSubnet?: string) => {
+  searchLabs: async (
+    name?: string,
+    block?: string,
+    ipSubnet?: string,
+  ): Promise<LabsResponse> => {
     const params: { [key: string]: string } = {};
 
     if (name) params.name = name;
