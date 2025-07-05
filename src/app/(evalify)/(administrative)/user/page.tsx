@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { DataTable } from "@/components/data-table/data-table";
+import { AdminPageLayout } from "@/components/admin/common/admin-page-layout";
 import { getColumns } from "@/components/admin/users/user-columns";
 import { useUsers } from "@/components/admin/users/hooks/use-users";
 import { UserDialog } from "@/components/admin/users/user-dialog";
@@ -26,7 +26,8 @@ useUsersForDataTable.isQueryHook = true;
 
 export default function UsersPage() {
   const queryClient = useQueryClient();
-  const { success, error } = useToast();
+  const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<(string | number)[]>(
     [],
@@ -35,6 +36,7 @@ export default function UsersPage() {
   const columsWrapper = () => {
     return getColumns();
   };
+
   const columnFilterOptions = [
     {
       columnId: "role",
@@ -52,10 +54,10 @@ export default function UsersPage() {
     mutationFn: (userIds) => userQueries.bulkDeleteUsers(userIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      success("Users deleted successfully");
+      toast("Users deleted successfully");
     },
     onError: (err) => {
-      error(err.message || "Failed to delete users");
+      toast(err.message || "Failed to delete users");
     },
   });
 
@@ -67,13 +69,17 @@ export default function UsersPage() {
     mutationFn: (data) => batchQueries.assignUsersToBatch(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      success("Users assigned successfully");
+      toast("Users assigned successfully");
       setIsAssignDialogOpen(false);
     },
     onError: (err) => {
-      error(err.message || "Failed to assign users");
+      toast(err.message || "Failed to assign users");
     },
   });
+
+  const handleCreate = () => {
+    setIsCreateDialogOpen(true);
+  };
 
   const handleDelete = (userIds: (string | number)[]): Promise<void> => {
     return deleteMutation.mutateAsync(userIds);
@@ -90,41 +96,59 @@ export default function UsersPage() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Users Management</h1>
-      </div>
+    <AdminPageLayout
+      title="Users Management"
+      description="Manage system users, roles, and batch assignments"
+      createButtonText="Add User"
+      onCreateClick={handleCreate}
+      config={{
+        enableUrlState: false,
+        enableDateFilter: false,
+        enableColumnFilters: true,
+        enableAssign: true,
+        enableDelete: false,
+        enableExport: false,
+        enablePagination: true,
+        enableSearch: true,
+        enableToolbar: true,
+        enableColumnVisibility: true,
+      }}
+      exportConfig={{
+        entityName: "users",
+        columnMapping: {
+          name: "Full Name",
+          email: "Email Address",
+          role: "User Role",
+          batch: "Assigned Batch",
+          createdAt: "Created Date",
+        },
+        columnWidths: [
+          { wch: 25 },
+          { wch: 30 },
+          { wch: 15 },
+          { wch: 25 },
+          { wch: 20 },
+        ],
+        headers: ["name", "email", "role", "batch", "createdAt"],
+      }}
+      getColumns={columsWrapper}
+      fetchDataFn={useUsersForDataTable}
+      idField="id"
+      columnFilterOptions={columnFilterOptions}
+      deleteFn={handleDelete}
+      assignFn={handleAssignClick}
+    >
+      <UserDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+      />
 
-      <div>
-        <AssignBatchDialog
-          isOpen={isAssignDialogOpen}
-          onClose={() => setIsAssignDialogOpen(false)}
-          onAssign={handleAssign}
-          isAssigning={assignMutation.isPending}
-        />
-        <UserDialog />
-        <DataTable
-          config={{
-            enableUrlState: false,
-            enableDateFilter: false,
-            enableColumnFilters: true,
-            enableAssign: true,
-            enableDelete: false,
-          }}
-          exportConfig={{
-            entityName: "users",
-            columnMapping: {},
-            columnWidths: [],
-            headers: [],
-          }}
-          getColumns={columsWrapper}
-          fetchDataFn={useUsersForDataTable}
-          idField="id"
-          columnFilterOptions={columnFilterOptions}
-          deleteFn={handleDelete}
-          assignFn={handleAssignClick}
-        />
-      </div>
-    </div>
+      <AssignBatchDialog
+        isOpen={isAssignDialogOpen}
+        onClose={() => setIsAssignDialogOpen(false)}
+        onAssign={handleAssign}
+        isAssigning={assignMutation.isPending}
+      />
+    </AdminPageLayout>
   );
 }

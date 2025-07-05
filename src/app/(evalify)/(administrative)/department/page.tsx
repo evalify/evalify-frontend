@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { DataTable } from "@/components/data-table/data-table";
+import { AdminPageLayout } from "@/components/admin/common/admin-page-layout";
 import { useDepartments } from "@/components/admin/department/hooks/use-department";
 import { getColumns } from "@/components/admin/department/department-column";
 import { DepartmentDialog } from "@/components/admin/department/department-dialog";
@@ -32,11 +32,16 @@ export default function DepartmentsPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<
     Department | undefined
   >();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState<string | null>(
     null,
   );
+
+  const handleCreate = () => {
+    setIsCreateDialogOpen(true);
+  };
 
   const handleEdit = (department: Department) => {
     setSelectedDepartment(department);
@@ -53,33 +58,39 @@ export default function DepartmentsPage() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Departments Management</h1>
-        <DepartmentDialog mode="create" />
-      </div>
-
-      <div>
-        <DataTable
-          config={{
-            enableUrlState: true,
-            enableDateFilter: false,
-            enableColumnFilters: false,
-          }}
-          exportConfig={{
-            entityName: "departments",
-            columnMapping: {
-              name: "Department Name",
-              batches: "Number of Batches",
-            },
-            columnWidths: [{ wch: 30 }, { wch: 15 }],
-            headers: ["Department Name", "Number of Batches"],
-          }}
-          getColumns={columnsWrapper}
-          fetchDataFn={useDepartmentsForDataTable}
-          idField="id"
-        />
-      </div>
+    <AdminPageLayout
+      title="Departments Management"
+      description="Manage academic departments and their associated batches"
+      createButtonText="Add Department"
+      onCreateClick={handleCreate}
+      config={{
+        enableUrlState: true,
+        enableDateFilter: false,
+        enableColumnFilters: false,
+        enableExport: false,
+        enablePagination: true,
+        enableSearch: true,
+        enableToolbar: true,
+        enableColumnVisibility: true,
+      }}
+      exportConfig={{
+        entityName: "departments",
+        columnMapping: {
+          name: "Department Name",
+          batches: "Number of Batches",
+        },
+        columnWidths: [{ wch: 30 }, { wch: 15 }],
+        headers: ["name", "batches"],
+      }}
+      getColumns={columnsWrapper}
+      fetchDataFn={useDepartmentsForDataTable}
+      idField="id"
+    >
+      <DepartmentDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        mode="create"
+      />
 
       {selectedDepartment && (
         <DepartmentDialog
@@ -103,6 +114,6 @@ export default function DepartmentsPage() {
           }}
         />
       )}
-    </div>
+    </AdminPageLayout>
   );
 }

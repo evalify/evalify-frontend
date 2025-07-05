@@ -32,6 +32,7 @@ interface UserFormData {
   name: string;
   email: string;
   phoneNumber: string;
+  profileId: string;
   role: string;
   password?: string;
   isActive: boolean;
@@ -54,22 +55,25 @@ export function UserDialog({
   const isOpen = controlledIsOpen ?? uncontrolledIsOpen;
   const setIsOpen = onClose ?? setUncontrolledIsOpen;
 
-  const [formData, setFormData] = useState<UserFormData>({
+  const [formData, setFormData] = useState<UserFormData>(() => ({
     name: "",
     email: "",
     phoneNumber: "",
+    profileId: "",
     role: "",
     password: "",
     isActive: true,
-  });
+  }));
 
   useEffect(() => {
     if (user && mode === "edit") {
       setFormData({
-        name: user.name ?? "",
-        email: user.email ?? "",
-        phoneNumber: user.phoneNumber ?? "",
-        role: user.role ?? "",
+        name: user.name || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+        profileId: user.profileId || "",
+        role: user.role || "",
+        password: "",
         isActive: user.isActive ?? true,
       });
     } else if (mode === "create") {
@@ -120,6 +124,7 @@ export function UserDialog({
       name: "",
       email: "",
       phoneNumber: "",
+      profileId: "",
       role: "",
       password: "",
       isActive: true,
@@ -159,6 +164,11 @@ export function UserDialog({
       return;
     }
 
+    if (!formData.profileId.trim()) {
+      error("Enrollment number is required");
+      return;
+    }
+
     if (!formData.role) {
       error("Role is required");
       return;
@@ -188,7 +198,7 @@ export function UserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      {!isEditMode && (
+      {!isEditMode && controlledIsOpen === undefined && (
         <DialogTrigger asChild>
           <Button className="mb-4" variant={"outline"}>
             Add User
@@ -214,6 +224,7 @@ export function UserDialog({
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 disabled={isLoading}
+                placeholder="Enter full name"
                 required
               />
             </div>
@@ -226,6 +237,7 @@ export function UserDialog({
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 disabled={isLoading}
+                placeholder="Enter email address"
                 required
               />
             </div>
@@ -239,6 +251,19 @@ export function UserDialog({
                   handleInputChange("phoneNumber", e.target.value)
                 }
                 disabled={isLoading}
+                placeholder="Enter phone number"
+                required
+              />
+            </div>
+            <div className="grid gap-3">
+              <Label htmlFor="enrollment-1">Enrollment Number</Label>
+              <Input
+                id="enrollment-1"
+                name="enrollmentNumber"
+                value={formData.profileId}
+                onChange={(e) => handleInputChange("profileId", e.target.value)}
+                disabled={isLoading}
+                placeholder="Enter enrollment number"
                 required
               />
             </div>
@@ -280,7 +305,7 @@ export function UserDialog({
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <DialogClose asChild>
               <Button variant="outline" type="button" disabled={isLoading}>
                 Cancel

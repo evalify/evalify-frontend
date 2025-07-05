@@ -100,11 +100,13 @@ export function DepartmentDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="mb-4">
-          {mode === "create" ? "Add Department" : "Edit Department"}
-        </Button>
-      </DialogTrigger>
+      {controlledIsOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button variant="default" className="mb-4">
+            {mode === "create" ? "Add Department" : "Edit Department"}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>

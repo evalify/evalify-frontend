@@ -5,6 +5,7 @@ interface CreateUserData {
   name: string;
   email: string;
   phoneNumber: string;
+  profileId: string;
   role: string;
   isActive: boolean;
 }
