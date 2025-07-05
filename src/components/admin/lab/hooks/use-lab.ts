@@ -20,34 +20,25 @@ export const useLabs = (
   columnFilters?: Record<string, string[]>,
   sortBy?: string,
   sortOrder?: string,
-  searchType: "name" | "block" | "ipSubnet" = "name",
 ) => {
   const { data: session } = useSession();
   const user = session?.user;
 
   const query = useQuery({
-    queryKey: [
-      "labs",
-      user?.id,
-      searchQuery,
-      searchType,
-      page,
-      size,
-      sortBy,
-      sortOrder,
-    ],
+    queryKey: ["labs", user?.id, searchQuery, page, size, sortBy, sortOrder],
     queryFn: async (): Promise<LabDataTableResponse> => {
       if (!user) throw new Error("User not authenticated");
 
-      const params: { [key: string]: string | null } = {
-        name: null,
-        block: null,
-        ipSubnet: null,
+      const params: { [key: string]: string | number } = {
+        page,
+        size,
+        sort_by: sortBy || "name",
+        sort_order: sortOrder || "asc",
       };
 
       if (searchQuery) {
-        // Only set one parameter based on searchType, others remain null
-        params[searchType] = searchQuery;
+        // For search endpoint, add the query parameter
+        params.query = searchQuery;
       }
 
       const endpoint = searchQuery ? "/lab/search" : "/lab";

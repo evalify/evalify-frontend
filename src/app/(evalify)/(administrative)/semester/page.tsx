@@ -1,18 +1,21 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { DataTable } from "@/components/data-table/data-table";
+import { AdminPageLayout } from "@/components/admin/common/admin-page-layout";
 import { getColumns } from "@/components/admin/semesters/semester-columns";
 import { Semester } from "@/types/types";
-import { SemesterHeader } from "@/components/admin/semesters/semester-header";
+import { CreateSemesterDialog } from "@/components/admin/semesters/create-semester-dialog";
 import { SemesterAlerts } from "@/components/admin/semesters/semester-alerts";
 import { SemesterDialogs } from "@/components/admin/semesters/semester-dialogs";
 import { useSemestersForDataTable } from "@/components/admin/semesters/hook/use-semesters-for-data-table";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import semesterQueries from "@/repo/semester-queries/semester-queries";
+import { useToast } from "@/hooks/use-toast";
+import { AxiosError } from "axios";
 
 export default function SemesterPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [selectedSemester, setSelectedSemester] =
     React.useState<Semester | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
@@ -29,6 +32,11 @@ export default function SemesterPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      toast("Semester created successfully");
+      setIsCreateDialogOpen(false);
+    },
+    onError: (error: AxiosError) => {
+      toast(error.message || "Failed to create semester");
     },
   });
 
@@ -39,6 +47,12 @@ export default function SemesterPage() {
     onSuccess: (data: Semester) => {
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
       queryClient.invalidateQueries({ queryKey: ["semester", data.id] });
+      toast("Semester updated successfully");
+      setIsEditDialogOpen(false);
+      setSelectedSemester(null);
+    },
+    onError: (error: AxiosError) => {
+      toast(error.message || "Failed to update semester");
     },
   });
 
@@ -48,6 +62,12 @@ export default function SemesterPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      toast("Semester deleted successfully");
+      setIsDeleteDialogOpen(false);
+      setSemesterToDelete(null);
+    },
+    onError: (error: AxiosError) => {
+      toast(error.message || "Failed to delete semester");
     },
   });
 
@@ -68,10 +88,13 @@ export default function SemesterPage() {
     router.push(`/semester/${semester.id}/courses`);
   };
 
+  const handleCreate = () => {
+    setIsCreateDialogOpen(true);
+  };
+
   const handleCreateSemester = async (data: Omit<Semester, "id">) => {
     try {
       await createSemester.mutateAsync(data);
-      setIsCreateDialogOpen(false);
     } catch (error) {
       console.error("Error creating semester:", error);
     }
@@ -86,8 +109,6 @@ export default function SemesterPage() {
         year: data.year as number,
         isActive: data.isActive as boolean,
       });
-      setIsEditDialogOpen(false);
-      setSelectedSemester(null);
     } catch (error) {
       console.error("Error updating semester:", error);
     }
@@ -97,21 +118,13 @@ export default function SemesterPage() {
     if (!semesterToDelete) return;
     try {
       await deleteSemester.mutateAsync(semesterToDelete.id);
-      setIsDeleteDialogOpen(false);
-      setSemesterToDelete(null);
     } catch (error) {
       console.error("Error deleting semester:", error);
     }
   };
 
   return (
-    <div className="container mx-auto py-10">
-      <SemesterHeader
-        isCreateDialogOpen={isCreateDialogOpen}
-        setIsCreateDialogOpen={setIsCreateDialogOpen}
-        onCreateSemester={handleCreateSemester}
-      />
-
+    <div className="space-y-6">
       <SemesterAlerts
         isCreating={createSemester.isPending}
         isUpdating={updateSemester.isPending}
@@ -121,13 +134,17 @@ export default function SemesterPage() {
         hasDeleteError={!!deleteSemester.error}
       />
 
-      <DataTable<Semester, unknown>
+      <AdminPageLayout
+        title="Semesters Management"
+        description="Manage academic semesters and their associated courses"
+        createButtonText="Add Semester"
+        onCreateClick={handleCreate}
         config={{
           enableUrlState: true,
           enableDateFilter: true,
           enableColumnFilters: true,
           enableColumnVisibility: true,
-          enableExport: true,
+          enableExport: false,
           enablePagination: true,
           enableSearch: true,
           enableToolbar: true,
@@ -145,7 +162,7 @@ export default function SemesterPage() {
             isActive: "Status",
           },
           columnWidths: [{ wch: 30 }, { wch: 15 }, { wch: 15 }],
-          headers: ["Semester Name", "Year", "Status"],
+          headers: ["name", "year", "isActive"],
         }}
         columnFilterOptions={[
           {
@@ -157,6 +174,12 @@ export default function SemesterPage() {
             ],
           },
         ]}
+      />
+
+      <CreateSemesterDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onSubmit={handleCreateSemester}
       />
 
       <SemesterDialogs
