@@ -311,7 +311,7 @@ export function UserDialog({
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || true}>
               {isLoading
                 ? isEditMode
                   ? "Updating..."

@@ -18,11 +18,11 @@ const semesterQueries = {
     columnFilters?: Record<string, string[]>,
   ): Promise<DataTableResponse> => {
     const isActiveFilter = columnFilters?.isActive?.[0];
-    let endpoint = "/semester";
+    let endpoint = "/api/semester";
     const params: { [key: string]: string } = {};
 
     if (searchQuery) {
-      endpoint = `/semester/search`;
+      endpoint = `/api/semester/search`;
       params.query = searchQuery;
       params.page = page.toString();
       params.size = size.toString();
@@ -83,7 +83,7 @@ const semesterQueries = {
   },
 
   getSemester: async (id: string): Promise<Semester> => {
-    const response = await axiosInstance.get(`/semester/${id}`);
+    const response = await axiosInstance.get(`/api/semester/${id}`);
     return response.data;
   },
 
@@ -106,25 +106,25 @@ const semesterQueries = {
   },
 
   getSemesterById: async (id: string): Promise<Semester> => {
-    const response = await axiosInstance.get(`/semester/${id}`);
+    const response = await axiosInstance.get(`/api/semester/${id}`);
     return response.data;
   },
 
   getCourseBySemesterId: async (id: string): Promise<Course[]> => {
-    const response = await axiosInstance.get(`/semester/${id}/courses`);
+    const response = await axiosInstance.get(`/api/semester/${id}/courses`);
     return response.data;
   },
 
   createCourseForSemester: async (semesterId: string, course: Course) => {
     const response = await axiosInstance.post(
-      `/semester/${semesterId}/courses`,
+      `/api/semester/${semesterId}/courses`,
       course,
     );
     return response.data;
   },
   deleteCourseFromSemester: async (semesterId: string, courseId: string) => {
     const response = await axiosInstance.delete(
-      `/semester/${semesterId}/courses/${courseId}`,
+      `/api/semester/${semesterId}/courses/${courseId}`,
     );
     return response.data;
   },
