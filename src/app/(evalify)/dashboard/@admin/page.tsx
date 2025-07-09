@@ -607,7 +607,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadDashboardData();
-  });
+  }, []);
 
   if (loading) {
     return (
