@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/axios/axios-client";
-import { User } from "@/components/admin/users/types/types";
+import { User } from "@/types/types";
 
 interface CreateUserData {
   name: string;
@@ -53,6 +53,29 @@ const userQueries = {
   fetchUserById: async (userId: string): Promise<User> => {
     const response = await axiosInstance.get(`/api/user/${userId}`);
     return response.data;
+  },
+
+  getAllUsers: async (
+    searchQuery?: string,
+    roleFilter?: string,
+  ): Promise<User[]> => {
+    const params: { [key: string]: string } = {};
+
+    if (searchQuery) {
+      params.query = searchQuery;
+    }
+
+    if (roleFilter && roleFilter !== "all") {
+      params.role = roleFilter.toUpperCase();
+    }
+
+    const endpoint = searchQuery ? "/api/user/search" : "/api/user";
+    const response = await axiosInstance.get(endpoint, { params });
+
+    // Handle both direct array response and paginated response
+    return Array.isArray(response.data)
+      ? response.data
+      : response.data.data || [];
   },
 };
 

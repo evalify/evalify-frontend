@@ -93,15 +93,15 @@ const administrationItems = [
 const externalServices = [
   {
     title: "System Logs",
-    url: "/logs",
+    url: `${process.env.NEXT_PUBLIC_LOGS}`,
     icon: FileText,
     description: "View application logs",
-    external: false,
+    external: true,
     color: "text-gray-600",
   },
   {
     title: "MinIO Storage",
-    url: "http://localhost:9001",
+    url: `${process.env.NEXT_PUBLIC_MINIO}`,
     icon: Database,
     description: "Object storage console",
     external: true,
@@ -109,15 +109,15 @@ const externalServices = [
   },
   {
     title: "Metrics Dashboard",
-    url: "/metrics",
+    url: `${process.env.NEXT_PUBLIC_METRICS}`,
     icon: BarChart3,
     description: "System performance metrics",
-    external: false,
+    external: true,
     color: "text-yellow-600",
   },
   {
     title: "Keycloak Admin",
-    url: "http://localhost:8080/admin",
+    url: `${process.env.NEXT_PUBLIC_AUTH}`,
     icon: Shield,
     description: "Authentication provider",
     external: true,
@@ -607,7 +607,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [loadDashboardData]);
 
   if (loading) {
     return (

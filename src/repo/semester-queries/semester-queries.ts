@@ -1,4 +1,4 @@
-import { Course, Semester } from "@/types/types";
+import { Course, Semester, User } from "@/types/types";
 import axiosInstance from "@/lib/axios/axios-client";
 
 export interface DataTableResponse {
@@ -125,6 +125,33 @@ const semesterQueries = {
   deleteCourseFromSemester: async (semesterId: string, courseId: string) => {
     const response = await axiosInstance.delete(
       `/api/semester/${semesterId}/courses/${courseId}`,
+    );
+    return response.data;
+  },
+
+  // Semester manager related queries
+  getSemesterManagers: async (semesterId: string): Promise<User[]> => {
+    const response = await axiosInstance.get(
+      `/api/semester/${semesterId}/managers`,
+    );
+    return response.data;
+  },
+
+  assignManagersToSemester: async (
+    semesterId: string,
+    managerIds: string[],
+  ) => {
+    const response = await axiosInstance.post(
+      `/api/semester/${semesterId}/managers`,
+      { managersId: managerIds },
+    );
+    return response.data;
+  },
+
+  removeManagerFromSemester: async (semesterId: string, managerId: string) => {
+    const response = await axiosInstance.delete(
+      `/api/semester/${semesterId}/managers`,
+      { data: { managersId: [managerId] } },
     );
     return response.data;
   },
