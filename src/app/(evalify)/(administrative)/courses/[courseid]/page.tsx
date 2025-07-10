@@ -94,7 +94,9 @@ export default function CoursePage() {
     React.useState<User | null>(null);
 
   const handleTabChange = (value: string) => {
-    router.push(`${pathname}?tab=${value}`);
+    router.push(`${pathname}?tab=${value}`, {
+      scroll: false,
+    });
   };
 
   const handleMutationSuccess = (message: string) => {
@@ -303,7 +305,7 @@ export default function CoursePage() {
   const activeQuizzes = 0; // This would come from your data
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-8 text-sm text-slate-600 dark:text-slate-400">
@@ -316,9 +318,8 @@ export default function CoursePage() {
         </div>
 
         {/* Course Header */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border mb-8 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 h-24"></div>
-          <div className="p-8 -mt-12">
+        <Card className="mb-8 shadow-sm overflow-hidden">
+          <CardContent className="p-8 -mt-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-6">
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg border">
@@ -344,8 +345,8 @@ export default function CoursePage() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
