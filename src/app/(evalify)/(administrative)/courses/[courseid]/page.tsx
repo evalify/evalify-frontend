@@ -351,7 +351,7 @@ export default function CoursePage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -374,7 +374,7 @@ export default function CoursePage() {
           </Card>
 
           <Card className="hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -397,7 +397,7 @@ export default function CoursePage() {
           </Card>
 
           <Card className="hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -420,7 +420,7 @@ export default function CoursePage() {
           </Card>
 
           <Card className="hover:shadow-md transition-all duration-200">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
