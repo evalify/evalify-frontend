@@ -93,4 +93,9 @@ export const courseQueries = {
     const courses = response.data;
     return courses.data || [];
   },
+
+  getCoursesHandledByUser: async (): Promise<Course[]> => {
+    const response = await axiosInstance.get(`/api/courses/instructors`);
+    return response.data ?? [];
+  },
 };
