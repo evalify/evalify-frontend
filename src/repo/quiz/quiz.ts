@@ -47,6 +47,10 @@ class Quiz {
     const response = await axiosInstance.delete(`/api/quiz/${quizId}`);
     return await response.data;
   }
-}
 
+  static async getQuizzesByCourseId(courseId: string) {
+    const response = await axiosInstance.get(`/api/quiz/course/${courseId}`);
+    return await response.data;
+  }
+}
 export default Quiz;
