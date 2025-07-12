@@ -646,6 +646,7 @@ export default function QuestionBankPage() {
     },
   });
 
+  // Filter and sort options
   const semesterOptions = semesters.map((semester) => ({
     value: semester.toString(),
     label: `Semester ${semester}`,
