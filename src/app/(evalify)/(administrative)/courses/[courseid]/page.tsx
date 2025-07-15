@@ -22,7 +22,26 @@ import { AssignInstructorDialog } from "@/components/admin/course/assign-instruc
 import { useCourseInstructors } from "@/components/admin/course/hooks/use-course-instructors";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { TrashIcon } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  TrashIcon,
+  UsersIcon,
+  BookOpenIcon,
+  GraduationCapIcon,
+  ChevronRightIcon,
+  CalendarIcon,
+  ClockIcon,
+  UserPlusIcon,
+  TrendingUpIcon,
+  BarChart3Icon,
+} from "lucide-react";
 
 export default function CoursePage() {
   const params = useParams();
@@ -37,14 +56,30 @@ export default function CoursePage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: [courseId],
+    queryKey: ["course", courseId],
     queryFn: () => {
       return courseQueries.getCourseById(courseId);
     },
-    refetchOnMount: true,
+    enabled: !!courseId,
   });
   const { data: instructors, isLoading: instructorsLoading } =
     useCourseInstructors(courseId);
+
+  // Calculate stats - using queries to get accurate counts
+  const { data: courseBatches } = useQuery({
+    queryKey: ["courseBatches", courseId],
+    queryFn: () =>
+      courseQueries.getCourseBatches?.(courseId) || Promise.resolve([]),
+    enabled: !!courseId,
+  });
+
+  const { data: courseStudents } = useQuery({
+    queryKey: ["courseStudents", courseId],
+    queryFn: () =>
+      courseQueries.getCourseStudents?.(courseId) || Promise.resolve([]),
+    enabled: !!courseId,
+  });
+
   const queryClient = useQueryClient();
 
   const [isAssignBatchOpen, setIsAssignBatchOpen] = React.useState(false);
@@ -59,7 +94,9 @@ export default function CoursePage() {
     React.useState<User | null>(null);
 
   const handleTabChange = (value: string) => {
-    router.push(`${pathname}?tab=${value}`);
+    router.push(`${pathname}?tab=${value}`, {
+      scroll: false,
+    });
   };
 
   const handleMutationSuccess = (message: string) => {
@@ -157,86 +194,415 @@ export default function CoursePage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/4" />
-        <Skeleton className="h-6 w-1/2" />
-        <div className="flex space-x-4">
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-24" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Skeleton className="h-6 w-16" />
+              <ChevronRightIcon className="h-4 w-4 text-slate-400" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-8">
+              <Skeleton className="h-10 w-80 mb-2" />
+              <Skeleton className="h-6 w-24 mb-4" />
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Skeleton className="h-8 w-8 rounded-lg mb-2" />
+                      <Skeleton className="h-6 w-16 mb-1" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <Skeleton className="h-8 w-12" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Instructors Section Skeleton */}
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div>
+                        <Skeleton className="h-4 w-24 mb-1" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tabs Skeleton */}
+          <Card>
+            <CardHeader>
+              <div className="flex space-x-4">
+                <Skeleton className="h-10 w-20" />
+                <Skeleton className="h-10 w-20" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-96 w-full" />
+            </CardContent>
+          </Card>
         </div>
-        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
   if (isError) {
-    return <div>Error loading course details.</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="text-red-600 dark:text-red-400">
+              Error
+            </CardTitle>
+            <CardDescription>Failed to load course details</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
+              className="mt-4"
+            >
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
+  const totalBatches = courseBatches?.length || 0;
+  const totalStudents = courseStudents?.length || 0;
+  const totalInstructors = instructors?.length || 0;
+  const activeQuizzes = 0; // This would come from your data
+
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold">{course?.name}</h1>
-      <p className="text-gray-500">{course?.code}</p>
-      <p className="mt-4">{course?.description}</p>
-      <div className="mt-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Instructors</h2>
-          <Button onClick={() => setIsAssignInstructorOpen(true)}>
-            Assign Instructor
-          </Button>
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-8 text-sm text-slate-600 dark:text-slate-400">
+          <BookOpenIcon className="h-4 w-4" />
+          <span>Courses</span>
+          <ChevronRightIcon className="h-4 w-4" />
+          <span className="text-slate-900 dark:text-slate-100 font-medium">
+            {course?.name}
+          </span>
         </div>
-        {instructorsLoading ? (
-          <p>Loading instructors...</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(instructors || []).map((instructor) => (
-              <div
-                key={instructor.id}
-                className="flex items-center justify-between p-2 border rounded-md"
-              >
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarImage src={instructor.image || ""} />
-                    <AvatarFallback>{instructor.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{instructor.name}</p>
-                    <p className="text-sm text-gray-500">{instructor.email}</p>
-                  </div>
+
+        {/* Course Header */}
+        <Card className="mb-8 shadow-sm overflow-hidden">
+          <CardContent className="p-8 -mt-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-6">
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg border">
+                  <BookOpenIcon className="h-8 w-8 text-blue-600" />
                 </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                    {course?.name}
+                  </h1>
+                  <div className="flex items-center gap-4 mb-3">
+                    <Badge variant="secondary" className="text-sm">
+                      {course?.code}
+                    </Badge>
+                    <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                      <CalendarIcon className="h-4 w-4" />
+                      <span className="text-sm">Active Course</span>
+                    </div>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+                    {course?.description ||
+                      "No description available for this course."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="hover:shadow-md transition-all duration-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                      <GraduationCapIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      Batches
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {totalBatches}
+                  </p>
+                </div>
+                <div className="text-green-600 dark:text-green-400 text-sm font-medium">
+                  <TrendingUpIcon className="h-4 w-4" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-all duration-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                      <UsersIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      Students
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {totalStudents}
+                  </p>
+                </div>
+                <div className="text-green-600 dark:text-green-400 text-sm font-medium">
+                  <TrendingUpIcon className="h-4 w-4" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-all duration-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                      <UserPlusIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      Instructors
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {totalInstructors}
+                  </p>
+                </div>
+                <div className="text-green-600 dark:text-green-400 text-sm font-medium">
+                  <TrendingUpIcon className="h-4 w-4" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-all duration-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                      <BarChart3Icon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                      Active Quizzes
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {activeQuizzes}
+                  </p>
+                </div>
+                <div className="text-slate-400 text-sm font-medium">
+                  <ClockIcon className="h-4 w-4" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Instructors Section */}
+        <Card className="mb-8 shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                  <UserPlusIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Course Instructors</CardTitle>
+                  <CardDescription>
+                    Manage teaching staff for this course
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                onClick={() => setIsAssignInstructorOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <UserPlusIcon className="h-4 w-4 mr-2" />
+                Add Instructor
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {instructorsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div>
+                        <Skeleton className="h-4 w-24 mb-1" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                ))}
+              </div>
+            ) : instructors && instructors.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {instructors.map((instructor) => (
+                  <div
+                    key={instructor.id}
+                    className="group flex items-center justify-between p-4 border rounded-xl hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-200 bg-white dark:bg-slate-800"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12 border-2 border-slate-200 dark:border-slate-700">
+                        <AvatarImage src={instructor.image || ""} />
+                        <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-semibold">
+                          {instructor.name?.charAt(0) || "I"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                          {instructor.name}
+                        </p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          {instructor.email}
+                        </p>
+                        <Badge variant="outline" className="text-xs mt-1">
+                          Instructor
+                        </Badge>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setInstructorToDelete(instructor)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-full w-fit mx-auto mb-4">
+                  <UserPlusIcon className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                  No Instructors Assigned
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  Start by adding instructors to teach this course.
+                </p>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setInstructorToDelete(instructor)}
+                  onClick={() => setIsAssignInstructorOpen(true)}
+                  variant="outline"
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <UserPlusIcon className="h-4 w-4 mr-2" />
+                  Add First Instructor
                 </Button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <Tabs value={tab} onValueChange={handleTabChange} className="mt-8">
-        <TabsList>
-          <TabsTrigger value="batches">Batches</TabsTrigger>
-          <TabsTrigger value="students">Students</TabsTrigger>
-        </TabsList>
-        <TabsContent value="batches">
-          <CourseBatchesTable
-            courseId={courseId}
-            onAssign={() => setIsAssignBatchOpen(true)}
-            onDelete={setBatchToDelete}
-          />
-        </TabsContent>
-        <TabsContent value="students">
-          <CourseStudentsTable
-            courseId={courseId}
-            onAssign={() => setIsAssignStudentOpen(true)}
-            onDelete={setStudentToDelete}
-          />
-        </TabsContent>
-      </Tabs>
+        {/* Main Content Tabs */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                <GraduationCapIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Course Management</CardTitle>
+                <CardDescription>
+                  Manage batches and students enrolled in this course
+                </CardDescription>
+              </div>
+            </div>
+            <Tabs
+              value={tab}
+              onValueChange={handleTabChange}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsTrigger
+                  value="batches"
+                  className="flex items-center gap-2"
+                >
+                  <GraduationCapIcon className="h-4 w-4" />
+                  Batches ({totalBatches})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="students"
+                  className="flex items-center gap-2"
+                >
+                  <UsersIcon className="h-4 w-4" />
+                  Students ({totalStudents})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={tab} onValueChange={handleTabChange}>
+              <TabsContent value="batches" className="mt-0">
+                <CourseBatchesTable
+                  courseId={courseId}
+                  onAssign={() => setIsAssignBatchOpen(true)}
+                  onDelete={setBatchToDelete}
+                />
+              </TabsContent>
+              <TabsContent value="students" className="mt-0">
+                <CourseStudentsTable
+                  courseId={courseId}
+                  onAssign={() => setIsAssignStudentOpen(true)}
+                  onDelete={setStudentToDelete}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
       <AssignBatchDialog
         isOpen={isAssignBatchOpen}
         onClose={() => setIsAssignBatchOpen(false)}

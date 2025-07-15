@@ -1,10 +1,11 @@
 import axiosInstance from "@/lib/axios/axios-client";
-import { User } from "@/components/admin/users/types/types";
+import { User } from "@/types/types";
 
 interface CreateUserData {
   name: string;
   email: string;
   phoneNumber: string;
+  profileId: string;
   role: string;
   isActive: boolean;
 }
@@ -15,7 +16,7 @@ interface UpdateUserData extends Omit<CreateUserData, "password"> {
 
 const userQueries = {
   createUser: async (data: CreateUserData): Promise<User> => {
-    const response = await axiosInstance.post("/user", data);
+    const response = await axiosInstance.post("/api/user", data);
     return response.data;
   },
 
@@ -57,6 +58,28 @@ const userQueries = {
   fetchAllStaff: async (): Promise<User[]> => {
     const response = await axiosInstance.get("/api/user/faculty/all");
     return response.data;
+    
+  getAllUsers: async (
+    searchQuery?: string,
+    roleFilter?: string,
+  ): Promise<User[]> => {
+    const params: { [key: string]: string } = {};
+
+    if (searchQuery) {
+      params.query = searchQuery;
+    }
+
+    if (roleFilter && roleFilter !== "all") {
+      params.role = roleFilter.toUpperCase();
+    }
+
+    const endpoint = searchQuery ? "/api/user/search" : "/api/user";
+    const response = await axiosInstance.get(endpoint, { params });
+
+    // Handle both direct array response and paginated response
+    return Array.isArray(response.data)
+      ? response.data
+      : response.data.data || [];
   },
 };
 

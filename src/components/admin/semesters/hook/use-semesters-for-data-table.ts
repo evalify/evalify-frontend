@@ -23,14 +23,14 @@ const useGetSemesters = (
     ],
     queryFn: async (): Promise<DataTableResponse> => {
       const isActiveFilter = columnFilters?.isActive?.[0];
-      let endpoint = "/semester";
+      let endpoint = "/api/semester";
       const params: { [key: string]: string | number } = {
         page: page.toString(),
         size: size.toString(),
       };
 
       if (searchQuery) {
-        endpoint = `/semester/search`;
+        endpoint = `/api/semester/search`;
         params.query = searchQuery;
       }
 

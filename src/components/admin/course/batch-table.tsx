@@ -68,7 +68,7 @@ export function CourseBatchesTable({
           enableUrlState: false,
           enableDateFilter: false,
           enableSearch: true,
-          enableExport: true,
+          enableExport: false,
         }}
         exportConfig={{
           entityName: "batches",

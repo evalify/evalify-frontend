@@ -162,11 +162,13 @@ export function BatchDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="mb-4">
-          {mode === "create" ? "Add Batch" : "Edit Batch"}
-        </Button>
-      </DialogTrigger>
+      {controlledIsOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button variant="default" className="mb-4">
+            {mode === "create" ? "Add Batch" : "Edit Batch"}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>

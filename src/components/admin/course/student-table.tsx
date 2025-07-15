@@ -49,7 +49,7 @@ export function CourseStudentsTable({
           enableUrlState: false,
           enableDateFilter: false,
           enableSearch: true,
-          enableExport: true,
+          enableExport: false,
         }}
         exportConfig={{
           entityName: "students",

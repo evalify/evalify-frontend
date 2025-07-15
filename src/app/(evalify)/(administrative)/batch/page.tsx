@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { DataTable } from "@/components/data-table/data-table";
+import { AdminPageLayout } from "@/components/admin/common/admin-page-layout";
 import { useBatches } from "@/components/admin/batch/hooks/use-batch";
 import { getColumns } from "@/components/admin/batch/batch-column";
 import { BatchDialog } from "@/components/admin/batch/batch-dialog";
@@ -35,6 +35,7 @@ useBatchesForDataTable.isQueryHook = true;
 
 export default function BatchesPage() {
   const [selectedBatch, setSelectedBatch] = useState<Batch | undefined>();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
@@ -58,6 +59,10 @@ export default function BatchesPage() {
       });
     },
   });
+
+  const handleCreate = () => {
+    setIsCreateDialogOpen(true);
+  };
 
   const handleEdit = (batch: Batch) => {
     setSelectedBatch(batch);
@@ -89,48 +94,58 @@ export default function BatchesPage() {
   ];
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Batches Management</h1>
-        <BatchDialog mode="create" />
-      </div>
-
-      <div>
-        <DataTable
-          config={{
-            enableUrlState: true,
-            enableDateFilter: true,
-            enableColumnFilters: true,
-            enableDelete: true,
-          }}
-          exportConfig={{
-            entityName: "batches",
-            columnMapping: {
-              name: "Batch Name",
-              graduationYear: "Graduation Year",
-              department: "Department",
-              section: "Section",
-              isActive: "Status",
-            },
-            columnWidths: [{ wch: 30 }, { wch: 15 }, { wch: 15 }],
-            headers: [
-              "Batch Name",
-              "Graduation Year",
-              "Department",
-              "Section",
-              "Status",
-            ],
-          }}
-          getColumns={columnsWrapper}
-          fetchDataFn={useBatchesForDataTable}
-          idField="id"
-          columnFilterOptions={columnFilterOptions}
-          deleteFn={
-            bulkDelete as (batchIds: (string | number)[]) => Promise<void>
-          }
-          onRowClick={handleRowClick}
-        />
-      </div>
+    <AdminPageLayout
+      title="Batches Management"
+      description="Manage student batches, graduation years, and department assignments"
+      createButtonText="Add Batch"
+      onCreateClick={handleCreate}
+      config={{
+        enableUrlState: true,
+        enableDateFilter: true,
+        enableColumnFilters: true,
+        enableDelete: true,
+        enableExport: false,
+        enablePagination: true,
+        enableSearch: true,
+        enableToolbar: true,
+        enableColumnVisibility: true,
+      }}
+      exportConfig={{
+        entityName: "batches",
+        columnMapping: {
+          name: "Batch Name",
+          graduationYear: "Graduation Year",
+          department: "Department",
+          section: "Section",
+          isActive: "Status",
+        },
+        columnWidths: [
+          { wch: 30 },
+          { wch: 15 },
+          { wch: 15 },
+          { wch: 10 },
+          { wch: 10 },
+        ],
+        headers: [
+          "name",
+          "graduationYear",
+          "department",
+          "section",
+          "isActive",
+        ],
+      }}
+      getColumns={columnsWrapper}
+      fetchDataFn={useBatchesForDataTable}
+      idField="id"
+      columnFilterOptions={columnFilterOptions}
+      deleteFn={bulkDelete as (batchIds: (string | number)[]) => Promise<void>}
+      onRowClick={handleRowClick}
+    >
+      <BatchDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        mode="create"
+      />
 
       {selectedBatch && (
         <BatchDialog
@@ -154,6 +169,6 @@ export default function BatchesPage() {
           }}
         />
       )}
-    </div>
+    </AdminPageLayout>
   );
 }

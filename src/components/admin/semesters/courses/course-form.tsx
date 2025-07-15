@@ -26,7 +26,7 @@ import {
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Course name is required." }),
-  code: z.string().optional(),
+  code: z.string().min(1, { message: "Course code is required." }),
   description: z.string().optional(),
   type: z.nativeEnum(CourseType),
 });
@@ -115,7 +115,7 @@ export function CourseForm({ onSubmit, isLoading, course }: CourseFormProps) {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Description (Optional)</FormLabel>
               <FormControl>
                 <Textarea placeholder="Course description" {...field} />
               </FormControl>

@@ -1,4 +1,4 @@
-import { Course, Semester } from "@/types/types";
+import { Course, Semester, User } from "@/types/types";
 import axiosInstance from "@/lib/axios/axios-client";
 
 export interface DataTableResponse {
@@ -18,11 +18,11 @@ const semesterQueries = {
     columnFilters?: Record<string, string[]>,
   ): Promise<DataTableResponse> => {
     const isActiveFilter = columnFilters?.isActive?.[0];
-    let endpoint = "/semester";
+    let endpoint = "/api/semester";
     const params: { [key: string]: string } = {};
 
     if (searchQuery) {
-      endpoint = `/semester/search`;
+      endpoint = `/api/semester/search`;
       params.query = searchQuery;
       params.page = page.toString();
       params.size = size.toString();
@@ -83,7 +83,7 @@ const semesterQueries = {
   },
 
   getSemester: async (id: string): Promise<Semester> => {
-    const response = await axiosInstance.get(`/semester/${id}`);
+    const response = await axiosInstance.get(`/api/semester/${id}`);
     return response.data;
   },
 
@@ -106,25 +106,52 @@ const semesterQueries = {
   },
 
   getSemesterById: async (id: string): Promise<Semester> => {
-    const response = await axiosInstance.get(`/semester/${id}`);
+    const response = await axiosInstance.get(`/api/semester/${id}`);
     return response.data;
   },
 
   getCourseBySemesterId: async (id: string): Promise<Course[]> => {
-    const response = await axiosInstance.get(`/semester/${id}/courses`);
+    const response = await axiosInstance.get(`/api/semester/${id}/courses`);
     return response.data;
   },
 
   createCourseForSemester: async (semesterId: string, course: Course) => {
     const response = await axiosInstance.post(
-      `/semester/${semesterId}/courses`,
+      `/api/semester/${semesterId}/courses`,
       course,
     );
     return response.data;
   },
   deleteCourseFromSemester: async (semesterId: string, courseId: string) => {
     const response = await axiosInstance.delete(
-      `/semester/${semesterId}/courses/${courseId}`,
+      `/api/semester/${semesterId}/courses/${courseId}`,
+    );
+    return response.data;
+  },
+
+  // Semester manager related queries
+  getSemesterManagers: async (semesterId: string): Promise<User[]> => {
+    const response = await axiosInstance.get(
+      `/api/semester/${semesterId}/managers`,
+    );
+    return response.data;
+  },
+
+  assignManagersToSemester: async (
+    semesterId: string,
+    managerIds: string[],
+  ) => {
+    const response = await axiosInstance.post(
+      `/api/semester/${semesterId}/managers`,
+      { managersId: managerIds },
+    );
+    return response.data;
+  },
+
+  removeManagerFromSemester: async (semesterId: string, managerId: string) => {
+    const response = await axiosInstance.delete(
+      `/api/semester/${semesterId}/managers`,
+      { data: { managersId: [managerId] } },
     );
     return response.data;
   },
