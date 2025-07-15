@@ -11,6 +11,23 @@ export interface ApiError {
   details?: Record<string, unknown>;
 }
 
+// Backend response interface for bank question details
+export interface BankQuestionDTO {
+  id: string;
+  question: string;
+  explanation: string | null;
+  hint: string | null;
+  marks: number;
+  bloomsTaxonomy: string;
+  co: number;
+  negativeMark: number | null;
+  difficulty: string;
+  topics: Array<{ id: string; name: string }>;
+  questionType: string;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
 interface QuestionCreationSettings {
   marks: number;
   difficulty: string;
@@ -25,6 +42,91 @@ interface CreateQuestionRequest {
   settings: QuestionCreationSettings;
 }
 
+// Backend DTO interfaces
+interface BaseQuestionDTO {
+  type: string;
+  question: string;
+  topicIds: string[];
+  explanation: string | null;
+  hint: string | null;
+  marks: number;
+  bloomsTaxonomy: string;
+  co: number;
+  negativeMark: number | null;
+  difficulty: string;
+}
+
+interface MCQQuestionDTO extends BaseQuestionDTO {
+  type: "MCQ" | "MMCQ";
+  options: Array<{
+    id?: string;
+    text: string;
+    isCorrect: boolean;
+  }>;
+}
+
+interface CodingQuestionDTO extends BaseQuestionDTO {
+  type: "CODING";
+  driverCode: string | null;
+  boilerCode: string | null;
+  functionName: string | null;
+  returnType: string | null;
+  params: string | null;
+  testcases: Array<{
+    input: Record<string, string>;
+    output: string;
+    isHidden: boolean;
+  }>;
+  language: string[];
+  answer: string | null;
+}
+
+interface FillupQuestionDTO extends BaseQuestionDTO {
+  type: "FILL_UP";
+  strictMatch: boolean;
+  llmEval: boolean;
+  template: string;
+  blanks: Array<{
+    id: string;
+    answers: string[];
+    position: number;
+  }>;
+}
+
+interface DescriptiveQuestionDTO extends BaseQuestionDTO {
+  type: "DESCRIPTIVE";
+  expectedAnswer: string | null;
+  strictness: number;
+  guidelines: string | null;
+}
+
+interface MatchFollowingQuestionDTO extends BaseQuestionDTO {
+  type: "MATCH_THE_FOLLOWING";
+  keys: Array<{
+    id: string;
+    leftPair: string;
+    rightPair: string;
+  }>;
+}
+
+interface TrueFalseQuestionDTO extends BaseQuestionDTO {
+  type: "TRUEFALSE";
+  answers: boolean | null;
+}
+
+interface FileUploadQuestionDTO extends BaseQuestionDTO {
+  type: "FILE_UPLOAD";
+}
+
+type QuestionDTO =
+  | MCQQuestionDTO
+  | CodingQuestionDTO
+  | FillupQuestionDTO
+  | DescriptiveQuestionDTO
+  | MatchFollowingQuestionDTO
+  | TrueFalseQuestionDTO
+  | FileUploadQuestionDTO;
+
 class QuestionsService {
   private isValidUUID(str: string): boolean {
     const uuidRegex =
@@ -35,7 +137,7 @@ class QuestionsService {
   private transformQuestionData(
     request: CreateQuestionRequest,
     isUpdate: boolean = false,
-  ): any {
+  ): QuestionDTO {
     const { type, data, settings } = request;
 
     // Extract topic IDs from settings
@@ -67,31 +169,31 @@ class QuestionsService {
       question: data.question,
       topicIds,
       explanation: data.explanation || null,
-      hint: null, // Not currently supported in frontend
+      hint: null,
       marks: settings.marks,
       bloomsTaxonomy: taxonomyMap[settings.bloomsTaxonomy] || "UNDERSTAND",
       co,
-      negativeMark: null, // Not currently supported in frontend
+      negativeMark: null,
       difficulty: difficultyMap[settings.difficulty] || "MEDIUM",
     };
 
-    // Add type-specific fields based on discriminated union
     switch (data.type) {
       case "mcq":
         return {
           ...baseDTO,
           type: data.allowMultipleCorrect ? "MMCQ" : "MCQ",
           options: (data.options || []).map((option) => {
-            const optionData: any = {
+            const optionData: {
+              id?: string;
+              text: string;
+              isCorrect: boolean;
+            } = {
               text: option.text,
               isCorrect: option.isCorrect,
             };
-
-            // Include id only for updates and only if it's a valid UUID
             if (isUpdate && this.isValidUUID(option.id)) {
               optionData.id = option.id;
             }
-            // For create operations or frontend-generated IDs, exclude id field
 
             return optionData;
           }),
@@ -101,13 +203,13 @@ class QuestionsService {
         return {
           ...baseDTO,
           type: "CODING",
-          driverCode: null, // Not currently used
+          driverCode: null,
           boilerCode: data.starterCode || null,
           functionName: data.functionName || null,
-          returnType: null, // Would need to be added to frontend
-          params: null, // Would need to be added to frontend
+          returnType: null,
+          params: null,
           testcases:
-            data.testCases?.map((tc: any) => ({
+            data.testCases?.map((tc) => ({
               input: tc.inputs,
               output: tc.expectedOutput,
               isHidden: tc.isHidden || false,
@@ -122,9 +224,9 @@ class QuestionsService {
           type: "FILL_UP",
           strictMatch: data.strictMatch || false,
           llmEval: data.useHybridEvaluation || false,
-          template: data.question, // Use question as template
+          template: data.question,
           blanks:
-            data.blanks?.map((blank: any) => ({
+            data.blanks?.map((blank) => ({
               id: blank.id,
               answers: blank.acceptedAnswers || [],
               position: blank.position || 0,
@@ -136,7 +238,7 @@ class QuestionsService {
           ...baseDTO,
           type: "DESCRIPTIVE",
           expectedAnswer: data.sampleAnswer || null,
-          strictness: 0.7, // Default strictness
+          strictness: 0.7,
           guidelines: data.gradingCriteria || null,
         };
 
@@ -145,13 +247,12 @@ class QuestionsService {
           ...baseDTO,
           type: "MATCH_THE_FOLLOWING",
           keys:
-            data.matchItems?.map((item: any) => {
-              const itemData: any = {
+            data.matchItems?.map((item) => {
+              return {
                 leftPair: item.leftText,
                 rightPair: item.rightText,
                 id: item.id,
               };
-              return itemData;
             }) || [],
         };
 
@@ -166,11 +267,15 @@ class QuestionsService {
         return {
           ...baseDTO,
           type: "FILE_UPLOAD",
-          // File upload specific fields would need to be added to backend DTO
         };
 
       default:
-        return baseDTO;
+        // Default to MCQ if type is unknown
+        return {
+          ...baseDTO,
+          type: "MCQ",
+          options: [],
+        };
     }
   }
 
@@ -181,7 +286,7 @@ class QuestionsService {
     try {
       const transformedData = this.transformQuestionData(questionData, false);
 
-      const response = await axiosInstance.post(
+      await axiosInstance.post(
         `/api/bank/${bankId}/questions`,
         transformedData,
       );
@@ -199,12 +304,15 @@ class QuestionsService {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        throw new Error(
-          errorData.message || errorData.error || "Failed to save question",
-        );
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { data?: ApiError } };
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data;
+          throw new Error(
+            errorData.message || errorData.error || "Failed to save question",
+          );
+        }
       }
       throw new Error("Network error: Unable to save question");
     }
@@ -216,12 +324,15 @@ class QuestionsService {
         `/api/bank/${bankId}/questions/${id}`,
       );
       return response.data;
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        throw new Error(
-          errorData.message || errorData.error || "Failed to fetch question",
-        );
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { data?: ApiError } };
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data;
+          throw new Error(
+            errorData.message || errorData.error || "Failed to fetch question",
+          );
+        }
       }
       throw new Error("Network error: Unable to fetch question");
     }
@@ -235,7 +346,7 @@ class QuestionsService {
     try {
       const transformedData = this.transformQuestionData(questionData, true);
 
-      const response = await axiosInstance.put(
+      await axiosInstance.put(
         `/api/bank/${bankId}/questions/${id}`,
         transformedData,
       );
@@ -253,12 +364,15 @@ class QuestionsService {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        throw new Error(
-          errorData.message || errorData.error || "Failed to update question",
-        );
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { data?: ApiError } };
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data;
+          throw new Error(
+            errorData.message || errorData.error || "Failed to update question",
+          );
+        }
       }
       throw new Error("Network error: Unable to update question");
     }
@@ -271,12 +385,15 @@ class QuestionsService {
     try {
       await axiosInstance.delete(`/api/bank/${bankId}/questions/${id}`);
       return { message: "Question deleted successfully" };
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        throw new Error(
-          errorData.message || errorData.error || "Failed to delete question",
-        );
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { data?: ApiError } };
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data;
+          throw new Error(
+            errorData.message || errorData.error || "Failed to delete question",
+          );
+        }
       }
       throw new Error("Network error: Unable to delete question");
     }
@@ -286,15 +403,177 @@ class QuestionsService {
     try {
       const response = await axiosInstance.get(`/api/bank/${bankId}/questions`);
       return response.data;
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        throw new Error(
-          errorData.message || errorData.error || "Failed to fetch questions",
-        );
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { data?: ApiError } };
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data;
+          throw new Error(
+            errorData.message || errorData.error || "Failed to fetch questions",
+          );
+        }
       }
       throw new Error("Network error: Unable to fetch questions");
     }
+  }
+
+  async getBankQuestionById(questionId: string): Promise<BankQuestionDTO> {
+    try {
+      const response = await axiosInstance.get(
+        `/api/bank/questions/${questionId}`,
+      );
+      return response.data;
+    } catch (error: unknown) {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as { response?: { data?: ApiError } };
+        if (axiosError.response?.data) {
+          const errorData = axiosError.response.data;
+          throw new Error(
+            errorData.message ||
+              errorData.error ||
+              "Failed to fetch question details",
+          );
+        }
+      }
+      throw new Error("Network error: Unable to fetch question details");
+    }
+  }
+
+  private transformBackendToFrontend(backendQuestion: BankQuestionDTO): {
+    questionData: QuestionData;
+    questionSettings: QuestionCreationSettings;
+  } {
+    const difficultyMap: Record<string, string> = {
+      EASY: "easy",
+      MEDIUM: "medium",
+      HARD: "hard",
+    };
+
+    // Map taxonomy from backend enum to frontend
+    const taxonomyMap: Record<string, string> = {
+      REMEMBER: "remember",
+      UNDERSTAND: "understand",
+      APPLY: "apply",
+      ANALYZE: "analyze",
+      EVALUATE: "evaluate",
+      CREATE: "create",
+    };
+
+    // Map question type from backend to frontend
+    const typeMap: Record<string, string> = {
+      MCQ: "mcq",
+      MMCQ: "mcq",
+      CODING: "coding",
+      FILL_UP: "fillup",
+      DESCRIPTIVE: "descriptive",
+      MATCH_THE_FOLLOWING: "match-following",
+      TRUE_FALSE: "true-false",
+      FILE_UPLOAD: "file-upload",
+    };
+
+    const frontendType = typeMap[backendQuestion.questionType] || "mcq";
+
+    // Base question data
+    const baseQuestionData = {
+      question: backendQuestion.question,
+      explanation: backendQuestion.explanation || "",
+      showExplanation: !!backendQuestion.explanation,
+    };
+
+    // Create question data based on type
+    let questionData: QuestionData;
+    switch (frontendType) {
+      case "mcq":
+        questionData = {
+          ...baseQuestionData,
+          type: "mcq",
+          allowMultipleCorrect: backendQuestion.questionType === "MMCQ",
+          options: [], // This would need to be fetched separately or included in the response
+        };
+        break;
+      case "coding":
+        questionData = {
+          ...baseQuestionData,
+          type: "coding",
+          language: "",
+          starterCode: "",
+          testCases: [],
+          timeLimit: 30,
+          memoryLimit: 256,
+          functionName: "",
+        };
+        break;
+      case "fillup":
+        questionData = {
+          ...baseQuestionData,
+          type: "fillup",
+          blanks: [],
+          strictMatch: false,
+          useHybridEvaluation: false,
+        };
+        break;
+      case "descriptive":
+        questionData = {
+          ...baseQuestionData,
+          type: "descriptive",
+          sampleAnswer: "",
+          wordLimit: 500,
+          gradingCriteria: "",
+        };
+        break;
+      case "match-following":
+        questionData = {
+          ...baseQuestionData,
+          type: "match-following",
+          matchItems: [],
+        };
+        break;
+      case "true-false":
+        questionData = {
+          ...baseQuestionData,
+          type: "true-false",
+          correctAnswer: null,
+        };
+        break;
+      case "file-upload":
+        questionData = {
+          ...baseQuestionData,
+          type: "file-upload",
+          allowedFileTypes: [],
+          maxFileSize: 10,
+          maxFiles: 1,
+        };
+        break;
+      default:
+        questionData = {
+          ...baseQuestionData,
+          type: "mcq",
+          allowMultipleCorrect: false,
+          options: [],
+        };
+    }
+
+    const questionSettings: QuestionCreationSettings = {
+      marks: backendQuestion.marks,
+      difficulty: difficultyMap[backendQuestion.difficulty] || "medium",
+      bloomsTaxonomy:
+        taxonomyMap[backendQuestion.bloomsTaxonomy] || "understand",
+      courseOutcome: backendQuestion.co.toString(),
+      topics: backendQuestion.topics.map((topic) => ({
+        value: topic.id,
+        label: topic.name,
+      })),
+    };
+
+    return { questionData, questionSettings };
+  }
+
+  async getQuestionForEdit(questionId: string): Promise<{
+    questionData: QuestionData;
+    questionSettings: QuestionCreationSettings;
+  }> {
+    const backendQuestion = await this.getBankQuestionById(questionId);
+    return this.transformBackendToFrontend(backendQuestion);
   }
 }
 
