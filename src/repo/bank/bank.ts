@@ -144,7 +144,7 @@ class Bank {
   static async getBankQuestions(
     bankId: string,
     topicIds: string[],
-  ): Promise<unknown[]> {
+  ): Promise<BankQuestion[]> {
     const params = new URLSearchParams();
     topicIds.forEach((id) => params.append("topicIds", id));
 

@@ -55,9 +55,9 @@ export function CopyMoveDialog({
 
   const handleSubmit = () => {
     if (targetBankIds.length === 0) return;
-    // For now, we'll use the first selected bank ID
-    // You might want to modify your API to handle multiple target banks
-    onCopyMove(targetBankIds[0], move, createNewTopic);
+    targetBankIds.forEach((bankId) => {
+      onCopyMove(bankId, move, createNewTopic);
+    });
   };
 
   const resetForm = () => {

@@ -11,6 +11,8 @@ import { questionsService } from "@/repo/question-queries/questions";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Bank from "@/repo/bank/bank";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface QuestionBaseSettings {
   marks: number;
@@ -55,6 +57,30 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     enabled: !!bankId,
   });
 
+  // Fetch question details for edit mode
+  const {
+    data: editQuestionData,
+    isLoading: isLoadingQuestion,
+    error: questionError,
+  } = useQuery({
+    queryKey: ["questionDetails", questionId],
+    queryFn: () => questionsService.getQuestionForEdit(questionId!),
+    enabled: isEdit && !!questionId,
+    retry: 1,
+  });
+
+  // Handle question loading error
+  React.useEffect(() => {
+    if (questionError) {
+      error("Failed to load question details", {
+        description:
+          questionError instanceof Error
+            ? questionError.message
+            : "Unknown error occurred",
+      });
+    }
+  }, [questionError, error]);
+
   // State for selected topics (from URL or initial props)
   const [selectedTopicIds, setSelectedTopicIds] = React.useState<string[]>(
     initialSelectedTopics,
@@ -69,6 +95,12 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
 
   // Derive topics for QuestionSettings directly using useMemo
   const currentTopicsForSettings = React.useMemo(() => {
+    // If we have fetched edit data, use its topics
+    if (editQuestionData?.questionSettings?.topics) {
+      return editQuestionData.questionSettings.topics;
+    }
+
+    // Otherwise, derive from selectedTopicIds and allTopics
     if (!allTopics.length || !selectedTopicIds.length) {
       return [];
     }
@@ -81,7 +113,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
         };
       })
       .filter((topic) => topic.label !== topic.value);
-  }, [selectedTopicIds, allTopics]);
+  }, [selectedTopicIds, allTopics, editQuestionData?.questionSettings?.topics]);
 
   // Update URL when selected topics change
   const updateTopicsInUrl = React.useCallback(
@@ -99,32 +131,35 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     [router, pathname, searchParams],
   );
 
-  // Initialize question type from initial data or default to "mcq"
+  // Initialize question type from fetched data, initial data, or default to "mcq"
   const [selectedType, setSelectedType] = React.useState<QuestionType>(
-    initialQuestionData?.type || "mcq",
+    editQuestionData?.questionData?.type || initialQuestionData?.type || "mcq",
   );
 
-  // Initialize question data from initial data or use defaults
+  // Initialize question data from fetched data, initial data, or use defaults
   const [questionData, setQuestionData] = React.useState<QuestionData>(
-    initialQuestionData || {
-      type: "mcq",
-      question: "",
-      explanation: "",
-      showExplanation: false,
-      allowMultipleCorrect: false,
-      options: [],
-    },
+    editQuestionData?.questionData ||
+      initialQuestionData || {
+        type: "mcq",
+        question: "",
+        explanation: "",
+        showExplanation: false,
+        allowMultipleCorrect: false,
+        options: [],
+      },
   );
 
-  // Initialize question settings from initial data or use defaults
+  // Initialize question settings from fetched data, initial data, or use defaults
   const [questionSettings, setQuestionSettings] =
     React.useState<QuestionBaseSettings>(() => {
-      return initialQuestionSettings
+      const sourceSettings =
+        editQuestionData?.questionSettings || initialQuestionSettings;
+      return sourceSettings
         ? {
-            marks: initialQuestionSettings.marks,
-            difficulty: initialQuestionSettings.difficulty,
-            bloomsTaxonomy: initialQuestionSettings.bloomsTaxonomy,
-            courseOutcome: initialQuestionSettings.courseOutcome,
+            marks: sourceSettings.marks,
+            difficulty: sourceSettings.difficulty,
+            bloomsTaxonomy: sourceSettings.bloomsTaxonomy,
+            courseOutcome: sourceSettings.courseOutcome,
           }
         : {
             marks: 1,
@@ -144,32 +179,38 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     },
   });
 
-  // Update initial state when props change
+  // Update initial state when fetched edit data or props change
   React.useEffect(() => {
-    if (isEdit && initialQuestionData && initialQuestionSettings) {
+    // Prioritize fetched edit data over initial props
+    const sourceQuestionData =
+      editQuestionData?.questionData || initialQuestionData;
+    const sourceQuestionSettings =
+      editQuestionData?.questionSettings || initialQuestionSettings;
+
+    if (isEdit && sourceQuestionData && sourceQuestionSettings) {
       const newInitialState = {
-        type: initialQuestionData.type,
-        data: initialQuestionData,
+        type: sourceQuestionData.type,
+        data: sourceQuestionData,
         settings: {
-          marks: initialQuestionSettings.marks,
-          difficulty: initialQuestionSettings.difficulty,
-          bloomsTaxonomy: initialQuestionSettings.bloomsTaxonomy,
-          courseOutcome: initialQuestionSettings.courseOutcome,
-          topics: initialQuestionSettings.topics,
+          marks: sourceQuestionSettings.marks,
+          difficulty: sourceQuestionSettings.difficulty,
+          bloomsTaxonomy: sourceQuestionSettings.bloomsTaxonomy,
+          courseOutcome: sourceQuestionSettings.courseOutcome,
+          topics: sourceQuestionSettings.topics,
         },
       };
       initialStateRef.current = newInitialState;
-      setSelectedType(initialQuestionData.type);
-      setQuestionData(initialQuestionData);
+      setSelectedType(sourceQuestionData.type);
+      setQuestionData(sourceQuestionData);
       setQuestionSettings({
-        marks: initialQuestionSettings.marks,
-        difficulty: initialQuestionSettings.difficulty,
-        bloomsTaxonomy: initialQuestionSettings.bloomsTaxonomy,
-        courseOutcome: initialQuestionSettings.courseOutcome,
+        marks: sourceQuestionSettings.marks,
+        difficulty: sourceQuestionSettings.difficulty,
+        bloomsTaxonomy: sourceQuestionSettings.bloomsTaxonomy,
+        courseOutcome: sourceQuestionSettings.courseOutcome,
       });
-      setSelectedTopicIds(initialQuestionSettings.topics.map((t) => t.value));
+      setSelectedTopicIds(sourceQuestionSettings.topics.map((t) => t.value));
     }
-  }, [isEdit, initialQuestionData, initialQuestionSettings]);
+  }, [isEdit, editQuestionData, initialQuestionData, initialQuestionSettings]);
 
   // Track if there are changes
   const hasChanges = React.useMemo(() => {
@@ -439,57 +480,139 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   };
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <QuestionTypeSelector
-        selectedType={selectedType}
-        onTypeSelect={handleTypeSelect}
-        onPreview={handlePreview}
-        onSave={handleSave}
-        isLoading={isLoading}
-        isEdit={isEdit}
-        hasChanges={hasChanges}
-      />
+      {/* Show error state when failed to fetch question details */}
+      {isEdit && questionError && !isLoadingQuestion && (
+        <div className="flex items-center justify-center min-h-screen">
+          <Card className="p-6 max-w-md">
+            <CardContent className="text-center space-y-4">
+              <div className="text-destructive text-xl">⚠️</div>
+              <h3 className="text-lg font-semibold">Failed to Load Question</h3>
+              <p className="text-muted-foreground">
+                {questionError instanceof Error
+                  ? questionError.message
+                  : "Unable to load question details"}
+              </p>
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={() => router.back()}
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+                >
+                  Go Back
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-      {/* Main Content Area - Two Column Layout */}
-      <div className="flex-grow flex flex-col lg:flex-row">
-        {/* Question Editor - Left Column (Full width on mobile, 2/3 on desktop) */}
-        <div className="flex-1 lg:w-2/3 order-1 lg:order-1">
-          <div className="p-4 lg:p-6 bg-background h-full">
-            <QuestionEditor
-              questionType={selectedType}
-              questionData={questionData}
-              onQuestionDataChange={setQuestionData}
-            />
+      {/* Show loading state when fetching question details for edit mode */}
+      {isEdit && isLoadingQuestion && (
+        <div className="min-h-screen flex flex-col bg-background">
+          {/* Question Type Selector Skeleton */}
+          <div className="border-b bg-background p-4">
+            <Skeleton className="h-12 w-full" />
+          </div>
+
+          {/* Main Content Skeleton */}
+          <div className="flex-grow flex flex-col lg:flex-row">
+            {/* Question Editor Skeleton */}
+            <div className="flex-1 lg:w-2/3 order-1 lg:order-1">
+              <div className="p-4 lg:p-6 bg-background h-full space-y-4">
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-8 w-1/4" />
+                <Skeleton className="h-24 w-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-6 w-3/4" />
+                </div>
+              </div>
+            </div>
+
+            {/* Question Settings Skeleton */}
+            <div className="lg:w-1/3 order-2 lg:order-2 lg:border-l bg-background">
+              <Card className="m-4">
+                <CardContent className="p-4 space-y-4">
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-6 w-1/2" />
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Question Settings - Right Column (Full width on mobile, 1/3 on desktop) */}
-        <div className="lg:w-1/3 order-2 lg:order-2 lg:border-l bg-background">
-          <QuestionSettings
-            marks={questionSettings.marks}
-            difficulty={questionSettings.difficulty}
-            bloomsTaxonomy={questionSettings.bloomsTaxonomy}
-            courseOutcome={questionSettings.courseOutcome}
-            topics={currentTopicsForSettings}
-            availableTopics={allTopics.map((topic) => ({
-              value: topic.id,
-              label: topic.name,
-            }))}
-            onMarksChange={handleMarksChange}
-            onDifficultyChange={handleDifficultyChange}
-            onBloomsTaxonomyChange={handleBloomsTaxonomyChange}
-            onCourseOutcomeChange={handleCourseOutcomeChange}
-            onTopicsChange={handleTopicsChange}
+      {/* Show content only when not loading, not in error state, or not in edit mode */}
+      {(!isEdit || (!isLoadingQuestion && !questionError)) && (
+        <>
+          <QuestionTypeSelector
+            selectedType={selectedType}
+            onTypeSelect={handleTypeSelect}
+            onPreview={handlePreview}
+            onSave={handleSave}
+            isLoading={isLoading}
+            isEdit={isEdit}
+            hasChanges={hasChanges}
           />
-        </div>
-      </div>
 
-      {/* Validation Error Modal */}
-      <ValidationErrorModal
-        isOpen={showValidationModal}
-        onClose={handleValidationModalClose}
-        errors={validationErrors}
-        questionType={selectedType}
-      />
+          {/* Main Content Area - Two Column Layout */}
+          <div className="flex-grow flex flex-col lg:flex-row">
+            {/* Question Editor - Left Column (Full width on mobile, 2/3 on desktop) */}
+            <div className="flex-1 lg:w-2/3 order-1 lg:order-1">
+              <div className="p-4 lg:p-6 bg-background h-full">
+                <QuestionEditor
+                  questionType={selectedType}
+                  questionData={questionData}
+                  onQuestionDataChange={setQuestionData}
+                />
+              </div>
+            </div>
+
+            {/* Question Settings - Right Column (Full width on mobile, 1/3 on desktop) */}
+            <div className="lg:w-1/3 order-2 lg:order-2 lg:border-l bg-background">
+              <QuestionSettings
+                marks={questionSettings.marks}
+                difficulty={questionSettings.difficulty}
+                bloomsTaxonomy={questionSettings.bloomsTaxonomy}
+                courseOutcome={questionSettings.courseOutcome}
+                topics={currentTopicsForSettings}
+                availableTopics={allTopics.map((topic) => ({
+                  value: topic.id,
+                  label: topic.name,
+                }))}
+                onMarksChange={handleMarksChange}
+                onDifficultyChange={handleDifficultyChange}
+                onBloomsTaxonomyChange={handleBloomsTaxonomyChange}
+                onCourseOutcomeChange={handleCourseOutcomeChange}
+                onTopicsChange={handleTopicsChange}
+              />
+            </div>
+          </div>
+
+          {/* Validation Error Modal */}
+          <ValidationErrorModal
+            isOpen={showValidationModal}
+            onClose={handleValidationModalClose}
+            errors={validationErrors}
+            questionType={selectedType}
+          />
+        </>
+      )}
     </div>
   );
 };
