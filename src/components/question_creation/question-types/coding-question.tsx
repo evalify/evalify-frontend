@@ -422,7 +422,7 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                 <div className="space-y-2">
                   {functionMetadata.parameters.map((param, index) => (
                     <div
-                      key={param.id}
+                      key={param.id || `param-${index}`}
                       className="flex items-center gap-2 p-2 border rounded"
                     >
                       <span className="text-sm text-muted-foreground w-8">
@@ -532,8 +532,8 @@ const CodingQuestion: React.FC<CodingQuestionProps> = ({
                             Input Parameters
                           </Label>
                           <div className="grid grid-cols-2 gap-2 mt-1">
-                            {functionMetadata.parameters.map((param) => (
-                              <div key={param.id}>
+                            {functionMetadata.parameters.map((param, index) => (
+                              <div key={param.id || `input-param-${index}`}>
                                 <Label className="text-xs text-muted-foreground">
                                   {param.name} ({param.type})
                                 </Label>
