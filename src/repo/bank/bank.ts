@@ -176,6 +176,13 @@ class Bank {
     return response.data;
   }
 
+  static async deleteBankQuestion(
+    bankId: string,
+    questionId: string,
+  ): Promise<void> {
+    await axiosInstance.delete(`/api/bank/${bankId}/questions/${questionId}`);
+  }
+
   static async shareBank(
     bankId: string,
     userIds: string[],
