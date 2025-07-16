@@ -40,17 +40,19 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
   };
 
   const isAnswerCorrect = (blankId: string, userAnswer: string) => {
-    const blank = question.blanks.find((b) => b.id === blankId);
+    const blanks = (question as any).blanks || [];
+    const blank = blanks.find((b: any) => b.id === blankId);
     if (!blank) return false;
 
-    if (question.strictMatch) {
+    const strictMatch = (question as any).strictMatch;
+    if (strictMatch) {
       return blank.answers.some(
-        (answer) =>
+        (answer: string) =>
           answer.toLowerCase().trim() === userAnswer.toLowerCase().trim(),
       );
     } else {
       return blank.answers.some(
-        (answer) =>
+        (answer: string) =>
           answer.toLowerCase().includes(userAnswer.toLowerCase().trim()) ||
           userAnswer.toLowerCase().trim().includes(answer.toLowerCase()),
       );
@@ -68,98 +70,104 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Template display if available */}
-      {question.template && (
-        <div className="mb-4">
-          <ContentPreview
-            content={question.template}
-            className="border-none p-0 bg-transparent"
-          />
+      {/* Early return if no blanks */}
+      {!(question as any).blanks || (question as any).blanks.length === 0 ? (
+        <div className="text-gray-500 italic">
+          No blanks available for this question.
         </div>
-      )}
-      {/* Individual blanks */}
-      <div className="space-y-4">
-        {question.blanks.map((blank, index) => (
-          <div key={blank.id} className="space-y-2">
-            <Label htmlFor={blank.id} className="text-sm font-medium">
-              Blank {index + 1}
-            </Label>
-            {/* User Answer Section */}
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  id={blank.id}
-                  value={answers[blank.id] || ""}
-                  onChange={(e) => handleAnswerChange(blank.id, e.target.value)}
-                  placeholder={`Enter answer for blank ${index + 1}`}
-                  disabled={config.readOnly}
-                  className={cn("pr-10", getInputClass(blank.id))}
-                />
-                {config.showCorrectAnswers && answers[blank.id] && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    {isAnswerCorrect(blank.id, answers[blank.id]) ? (
-                      <Check className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-red-600" />
+      ) : (
+        <>
+          {/* Individual blanks */}
+          <div className="space-y-4">
+            {(question as any).blanks.map((blank: any, index: number) => (
+              <div key={blank.id} className="space-y-2">
+                <Label htmlFor={blank.id} className="text-sm font-medium">
+                  Blank {index + 1}
+                </Label>
+                {/* User Answer Section */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Input
+                      id={blank.id}
+                      value={answers[blank.id] || ""}
+                      onChange={(e) =>
+                        handleAnswerChange(blank.id, e.target.value)
+                      }
+                      placeholder={`Enter answer for blank ${index + 1}`}
+                      disabled={config.readOnly}
+                      className={cn("pr-10", getInputClass(blank.id))}
+                    />
+                    {config.showCorrectAnswers && answers[blank.id] && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {isAnswerCorrect(blank.id, answers[blank.id]) ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                        )}
+                      </div>
                     )}
+                  </div>
+
+                  {/* Show user answer in student mode */}
+                  {config.mode === "student" && answers[blank.id] && (
+                    <div className="text-sm p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                      <p className="text-gray-600 dark:text-gray-400">
+                        <strong>Your answer:</strong>
+                        <span className="font-medium">{answers[blank.id]}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Expected answers in display modes */}
+                {config.showCorrectAnswers && (
+                  <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-1">
+                      Expected answer(s):
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {blank.answers.map(
+                        (answer: string, answerIndex: number) => (
+                          <Badge
+                            key={answerIndex}
+                            variant="outline"
+                            className="text-xs bg-green-100 dark:bg-green-800"
+                          >
+                            {answer}
+                          </Badge>
+                        ),
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
-
-              {/* Show user answer in student mode */}
-              {config.mode === "student" && answers[blank.id] && (
-                <div className="text-sm p-2 bg-gray-100 dark:bg-gray-800 rounded">
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <strong>Your answer:</strong>
-                    <span className="font-medium">{answers[blank.id]}</span>
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Expected answers in display modes */}
-            {config.showCorrectAnswers && (
-              <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-1">
-                  Expected answer(s):
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {blank.answers.map((answer, answerIndex) => (
-                    <Badge
-                      key={answerIndex}
-                      variant="outline"
-                      className="text-xs bg-green-100 dark:bg-green-800"
-                    >
-                      {answer}
-                    </Badge>
-                  ))}
-                </div>
+            ))}
+          </div>
+          {/* Show explanation in student mode */}
+          {config.mode === "student" && question.explanation && (
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4" />
+                Explanation
+              </h4>
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                <ContentPreview
+                  content={question.explanation}
+                  className="border-none p-0 bg-transparent"
+                />
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-      {/* Show explanation in student mode */}
-      {config.mode === "student" && question.explanation && (
-        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
-            <Lightbulb className="w-4 h-4" />
-            Explanation
-          </h4>
-          <div className="text-sm text-blue-800 dark:text-blue-200">
-            <ContentPreview
-              content={question.explanation}
-              className="border-none p-0 bg-transparent"
-            />
-          </div>
-        </div>
-      )}
-      {/* Evaluation method indicator */}
-      {!config.compact && (
-        <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex gap-4">
-          <span>Matching: {question.strictMatch ? "Strict" : "Flexible"}</span>
-          {question.llmEval && <span>LLM Evaluation: Enabled</span>}
-        </div>
+            </div>
+          )}
+          {/* Evaluation method indicator */}
+          {!config.compact && (
+            <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex gap-4">
+              <span>
+                Matching: {question.strictMatch ? "Strict" : "Flexible"}
+              </span>
+              {question.llmEval && <span>LLM Evaluation: Enabled</span>}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

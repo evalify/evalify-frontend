@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  evalify-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7070:7070"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=7070
+    env_file:
+      - .env
+    deploy:
+      replicas: 3
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:7070/api/health",
+        ]
+      interval: 60s
+      timeout: 3s
+      retries: 3
+      start_period: 30s

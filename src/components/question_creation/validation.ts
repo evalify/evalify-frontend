@@ -1,4 +1,4 @@
-import { QuestionData } from "./question-creation-types";
+import { QuestionData } from "./question-editor";
 
 // Extract specific question data types from the discriminated union
 type MCQData = Extract<QuestionData, { type: "mcq" }>;
@@ -153,8 +153,13 @@ function validateCodingQuestion(
   questionData: CodingData,
   errors: ValidationError[],
 ): void {
-  // Function name validation
-  const functionName = questionData.functionName;
+  // Function name validation - check if functionMetadata exists and has a valid name
+  // Note: For existing coding questions, the function metadata might be embedded differently
+  // We need to check for both the function name directly and through metadata
+
+  // Check if there's function metadata with name (from new coding question format)
+  const functionName =
+    questionData.functionName || questionData.functionMetadata?.name;
   if (!functionName || functionName.trim() === "") {
     errors.push({
       field: "functionName",
@@ -182,26 +187,23 @@ function validateCodingQuestion(
   } else {
     testCases.forEach((testCase, index: number) => {
       // Check if expected output is provided
-      if (!testCase.expected || String(testCase.expected).trim() === "") {
+      if (!testCase.expectedOutput || testCase.expectedOutput.trim() === "") {
         errors.push({
           field: "testCases",
           message: `Test case ${index + 1} expected output is required`,
         });
       }
 
-      // Check if input is provided
-      if (
-        !testCase.input ||
-        (Array.isArray(testCase.input) && testCase.input.length === 0)
-      ) {
+      // Check if input is provided (inputs should have at least one value)
+      if (!testCase.inputs || Object.keys(testCase.inputs).length === 0) {
         errors.push({
           field: "testCases",
           message: `Test case ${index + 1} must have input parameters`,
         });
-      } else if (Array.isArray(testCase.input)) {
+      } else {
         // Check if all input values are provided
-        const emptyInputs = testCase.input.filter(
-          (value) => !value || String(value).trim() === "",
+        const emptyInputs = Object.entries(testCase.inputs).filter(
+          ([, value]) => !value || value.trim() === "",
         );
         if (emptyInputs.length > 0) {
           errors.push({
@@ -214,10 +216,10 @@ function validateCodingQuestion(
   }
 
   // Language validation
-  if (!questionData.language || questionData.language.length === 0) {
+  if (!questionData.language || questionData.language.trim() === "") {
     errors.push({
       field: "language",
-      message: "At least one programming language is required",
+      message: "Programming language is required",
     });
   }
 }
@@ -238,13 +240,13 @@ function validateMatchFollowingQuestion(
 
   // All match items must have both left and right text
   matchItems.forEach((item, index: number) => {
-    if (!item.leftPair || item.leftPair.trim() === "") {
+    if (!item.leftText || item.leftText.trim() === "") {
       errors.push({
         field: "matchItems",
         message: `Match item ${index + 1} left text is required`,
       });
     }
-    if (!item.rightPair || item.rightPair.trim() === "") {
+    if (!item.rightText || item.rightText.trim() === "") {
       errors.push({
         field: "matchItems",
         message: `Match item ${index + 1} right text is required`,
@@ -285,7 +287,7 @@ function validateFillupQuestion(
     });
   } else {
     blanks.forEach((blank, index: number) => {
-      const acceptedAnswers = blank.answers || [];
+      const acceptedAnswers = blank.acceptedAnswers || [];
       if (acceptedAnswers.length === 0) {
         errors.push({
           field: "blanks",
@@ -294,7 +296,7 @@ function validateFillupQuestion(
       } else {
         // Check if all answers have text
         const emptyAnswers = acceptedAnswers.filter(
-          (answer: string) => !answer || answer.trim() === "",
+          (answer) => !answer || answer.trim() === "",
         );
         if (emptyAnswers.length > 0) {
           errors.push({

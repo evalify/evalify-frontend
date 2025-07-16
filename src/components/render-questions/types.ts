@@ -1,8 +1,8 @@
-// Question Types based on documentation
+// Question Types based on backend enum
 export enum QuestionTypes {
   MCQ = "MCQ",
   MMCQ = "MMCQ",
-  TRUE_FALSE = "TRUE_FALSE",
+  TRUEFALSE = "TRUEFALSE",
   FILL_UP = "FILL_UP",
   MATCH_THE_FOLLOWING = "MATCH_THE_FOLLOWING",
   DESCRIPTIVE = "DESCRIPTIVE",
@@ -31,12 +31,11 @@ export interface BaseQuestion {
   question: string;
   explanation?: string | null;
   hintText?: string | null;
-  bloomsTaxonomy: Taxonomy;
+  bloomsTaxonomy: string;
   co: number;
-  negativeMark?: number;
   difficulty: string;
+  marks: number;
   hint?: string;
-  marks?: number;
   bank?: {
     id: string;
     name: string;
@@ -49,7 +48,7 @@ export interface BaseQuestion {
 
 // MCQ Option Interface - backend format
 export interface MCQOption {
-  id?: string | null; // Backend might send null
+  id?: string | null;
   text: string;
   isCorrect: boolean;
 }
@@ -66,8 +65,8 @@ export interface MMCQQuestion extends BaseQuestion {
 }
 
 export interface TrueFalseQuestion extends BaseQuestion {
-  type: QuestionTypes.TRUE_FALSE;
-  answer: boolean;
+  type: QuestionTypes.TRUEFALSE;
+  answers: boolean;
 }
 
 export interface Blank {
@@ -171,7 +170,6 @@ export interface QuestionActions {
   onEdit?: (questionId: string) => void;
   onDelete?: (questionId: string) => void;
   onEditMarks?: (questionId: string, newMarks: number) => void;
-  onDuplicate?: (questionId: string) => void;
 }
 
 // Component Props

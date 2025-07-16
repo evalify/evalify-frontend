@@ -25,6 +25,40 @@ export interface CodingQuestionData {
   description: string;
 }
 
+// Question creation and response types
+export interface QuestionCreationRequest {
+  type: string;
+  data?: any; // Question-specific data (varies by question type)
+  settings?: {
+    marks: number;
+    difficulty: string;
+    bloomsTaxonomy: string;
+    courseOutcome: string;
+    topics: { value: string; label: string }[];
+  };
+  content?: string;
+  marks?: number;
+  difficulty?: string;
+  bloomsTaxonomy?: string;
+  courseOutcome?: string;
+  topics?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface QuestionResponse {
+  id: string;
+  type: string;
+  content: string;
+  marks: number;
+  difficulty: string;
+  bloomsTaxonomy: string;
+  courseOutcome: string;
+  topics: string[];
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Language configurations for boilerplate generation
 export const SUPPORTED_LANGUAGES = [
   "python",

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Counter from "@/components/ui/counter";
 import SelectBox from "@/components/ui/select-box";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Award as AwardIcon,
   BrainCircuit,
@@ -18,11 +19,12 @@ interface QuestionSettingsProps {
   bloomsTaxonomy: string;
   courseOutcome: string;
   topics: { value: string; label: string }[];
+  availableTopics?: { value: string; label: string }[];
   onMarksChange: (marks: number) => void;
   onDifficultyChange: (difficulty: string) => void;
   onBloomsTaxonomyChange: (bloomsTaxonomy: string) => void;
   onCourseOutcomeChange: (courseOutcome: string) => void;
-  onTopicsChange: (topics: { value: string; label: string }[]) => void;
+  onTopicsChange: (topicIds: string[]) => void;
 }
 
 const difficultyOptions = [
@@ -32,25 +34,19 @@ const difficultyOptions = [
 ];
 
 const bloomOptions = [
-  { value: "REMEMBER", label: "Remember" },
-  { value: "UNDERSTAND", label: "Understand" },
-  { value: "APPLY", label: "Apply" },
-  { value: "ANALYZE", label: "Analyze" },
-  { value: "EVALUATE", label: "Evaluate" },
-  { value: "CREATE", label: "Create" },
+  { value: "remember", label: "Remember" },
+  { value: "understand", label: "Understand" },
+  { value: "apply", label: "Apply" },
+  { value: "analyse", label: "Analyse" },
+  { value: "evaluate", label: "Evaluate" },
+  { value: "create", label: "Create" },
 ];
 
 const courseOutcomeOptions = [
-  { value: 1, label: "CO 1" },
-  { value: 2, label: "CO 2" },
-  { value: 3, label: "CO 3" },
-  { value: 4, label: "CO 4" },
-  { value: 5, label: "CO 5" },
-  { value: 6, label: "CO 6" },
-];
-
-const initialTopics: { value: string; label: string }[] = [
-  // Empty array - Topics will only show if populated from API/props
+  { value: "co1", label: "CO 1" },
+  { value: "co2", label: "CO 2" },
+  { value: "co3", label: "CO 3" },
+  { value: "co4", label: "CO 4" },
 ];
 
 const QuestionSettings = ({
@@ -59,13 +55,13 @@ const QuestionSettings = ({
   bloomsTaxonomy,
   courseOutcome,
   topics,
+  availableTopics = [],
   onMarksChange,
   onDifficultyChange,
   onBloomsTaxonomyChange,
   onCourseOutcomeChange,
   onTopicsChange,
 }: QuestionSettingsProps) => {
-  const [availableTopics] = useState(initialTopics);
   const [selectedTopics, setSelectedTopics] =
     useState<{ value: string; label: string }[]>(topics);
 
@@ -73,93 +69,113 @@ const QuestionSettings = ({
     setSelectedTopics(topics);
   }, [topics]);
 
-  // Topic selection is now handled directly in the SelectBox component
   return (
-    <div className="w-96 p-4 space-y-4">
-      <Card>
-        <CardContent className="p-5">
-          <div className="space-y-5">
-            <div className="flex justify-between gap-6">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <Hash className="h-4 w-4 text-primary" />
-                  <label>Marks</label>
-                </div>
-                <Counter initialValue={marks} onChange={onMarksChange} />
+    <div className="w-full p-4 lg:p-6 bg-background">
+      <Card className="w-full">
+        <CardContent className="p-4 lg:p-6">
+          <h3 className="text-lg font-semibold mb-4 text-foreground">
+            Question Settings
+          </h3>
+
+          {/* Main Settings - Stacked vertically for sidebar */}
+          <div className="space-y-6">
+            {/* Marks */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Hash className="h-4 w-4 text-primary" />
+                <label className="text-sm font-medium text-foreground">
+                  Marks
+                </label>
               </div>
               <div className="w-full">
-                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <AwardIcon className="h-4 w-4 text-primary" />
-                  <label>Difficulty Level</label>
-                </div>
-                <SelectBox
-                  id="difficulty"
-                  label=""
-                  placeholder="Select"
-                  options={difficultyOptions}
-                  value={difficulty}
-                  onValueChange={onDifficultyChange}
-                  allowMultiple={false}
-                />
+                <Counter initialValue={marks} onChange={onMarksChange} />
               </div>
             </div>
-            <div className="space-y-3">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <BrainCircuit className="h-4 w-4 text-primary" />
-                  <label>Bloom&apos;s Taxonomy</label>
-                </div>
-                <SelectBox
-                  id="blooms"
-                  label=""
-                  placeholder="Select"
-                  options={bloomOptions}
-                  value={bloomsTaxonomy}
-                  onValueChange={onBloomsTaxonomyChange}
-                  allowMultiple={false}
-                />
+
+            {/* Difficulty */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <AwardIcon className="h-4 w-4 text-primary" />
+                <label className="text-sm font-medium text-foreground">
+                  Difficulty Level
+                </label>
               </div>
-              <div>
-                <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-                  <Target className="h-4 w-4 text-primary" />
-                  <label>Course Outcome</label>
-                </div>
-                <SelectBox
-                  id="co"
-                  label=""
-                  placeholder="Select"
-                  options={courseOutcomeOptions}
-                  value={courseOutcome}
-                  onValueChange={onCourseOutcomeChange}
-                  allowMultiple={false}
-                />
+              <SelectBox
+                id="difficulty"
+                label=""
+                placeholder="Select difficulty"
+                options={difficultyOptions}
+                value={difficulty}
+                onValueChange={onDifficultyChange}
+                allowMultiple={false}
+              />
+            </div>
+
+            {/* Bloom's Taxonomy */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4 text-primary" />
+                <label className="text-sm font-medium text-foreground">
+                  Bloom&apos;s Taxonomy
+                </label>
               </div>
-              {availableTopics.length > 0 && (
-                <div>                  <div className="flex items-center gap-2 text-sm font-semibold mb-2">
+              <SelectBox
+                id="blooms"
+                label=""
+                placeholder="Select taxonomy"
+                options={bloomOptions}
+                value={bloomsTaxonomy}
+                onValueChange={onBloomsTaxonomyChange}
+                allowMultiple={false}
+              />
+            </div>
+
+            {/* Course Outcome */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" />
+                <label className="text-sm font-medium text-foreground">
+                  Course Outcome
+                </label>
+              </div>
+              <SelectBox
+                id="co"
+                label=""
+                placeholder="Select outcome"
+                options={courseOutcomeOptions}
+                value={courseOutcome}
+                onValueChange={onCourseOutcomeChange}
+                allowMultiple={false}
+              />
+            </div>
+
+            {/* Topics Section */}
+            {availableTopics.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
                   <Tags className="h-4 w-4 text-primary" />
-                  <label>Related Topics</label>
+                  <label className="text-sm font-medium text-foreground">
+                    Related Topics
+                  </label>
                 </div>
-                  <SelectBox
-                    id="topics"
-                    label=""
-                    placeholder="Select topics..."
-                    options={availableTopics}
-                    value={selectedTopics.map((t) => t.value)}
-                    onValueChange={(values: string[]) => {
-                      const selectedOptions = values.map(
-                        (v) =>
-                          availableTopics.find((t) => t.value === v) || {
-                            value: v,
-                            label: v,
-                          },
+                <MultiSelect
+                  options={availableTopics}
+                  selected={selectedTopics.map((t) => t.value)}
+                  onChange={(values) => {
+                    if (typeof values === "function") {
+                      const newValues = values(
+                        selectedTopics.map((t) => t.value),
                       );
-                      onTopicsChange(selectedOptions);
-                    }}
-                    allowMultiple={true}
-                  />
-                </div>
-              )}
-            </div>
+                      onTopicsChange(newValues);
+                    } else {
+                      onTopicsChange(values);
+                    }
+                  }}
+                  placeholder="Select topics..."
+                  className="w-full"
+                />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

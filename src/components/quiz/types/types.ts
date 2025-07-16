@@ -7,11 +7,11 @@ export interface BaseQuestion {
   topic?: string[];
 }
 export interface MCQQuestion extends BaseQuestion {
-  type: "MCQ";
+  type: "MCQ" | "TRUEFALSE";
   options: Option[] | ServerOption[];
 }
 export interface MultipleSelectQuestion extends BaseQuestion {
-  type: "MULTI_SELECT";
+  type: "MMCQ";
   options: Option[] | ServerOption[];
 }
 export interface CodingQuestion extends BaseQuestion {
@@ -33,12 +33,16 @@ export interface MatchtheFollowingQuestion extends BaseQuestion {
 }
 
 export interface FillInTheBlanksQuestion extends BaseQuestion {
-  type: "FILL_IN_THE_BLANKS";
+  type: "FILL_UP";
 }
 
 export interface DescriptiveQuestion extends BaseQuestion {
   type: "DESCRIPTIVE";
   maxWordLimit?: number;
+}
+
+export interface FileUploadQuestion extends BaseQuestion {
+  type: "FILE_UPLOAD";
 }
 
 export type Question =
@@ -47,7 +51,8 @@ export type Question =
   | CodingQuestion
   | MatchtheFollowingQuestion
   | FillInTheBlanksQuestion
-  | DescriptiveQuestion;
+  | DescriptiveQuestion
+  | FileUploadQuestion;
 
 export interface MatchTheFollowingAnswer {
   [key_id: string]: string;

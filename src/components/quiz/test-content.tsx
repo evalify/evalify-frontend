@@ -19,11 +19,13 @@ interface TestContentProps {
 }
 const questionTypes: Record<string, string> = {
   MCQ: "MCQ",
+  TRUEFALSE: "True/False",
   CODING: "Coding",
-  FILL_IN_THE_BLANKS: "Fill in the Blank",
+  FILL_UP: "Fill in the Blank",
   MATCH_THE_FOLLOWING: "Match the following",
   DESCRIPTIVE: "Descriptive",
-  MULTI_SELECT: "Multiple Select",
+  MMCQ: "Multiple Select",
+  FILE_UPLOAD: "File Upload",
 };
 export default function TestContent({
   data,

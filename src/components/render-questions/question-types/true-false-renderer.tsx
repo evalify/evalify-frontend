@@ -37,17 +37,45 @@ export const TrueFalseRenderer: React.FC<TrueFalseRendererProps> = ({
     }
   };
   const getOptionClass = (isTrue: boolean) => {
-    if (config.showCorrectAnswers) {
-      if (question.answer === isTrue) {
+    const isSelected = selectedAnswer === isTrue;
+    const isCorrect = question.answers === isTrue;
+    const showingAnswers =
+      config.showCorrectAnswers || config.highlightCorrectness;
+
+    if (showingAnswers) {
+      if (isCorrect && isSelected) {
+        // User selected correct answer
         return "border-green-500 bg-green-50 dark:bg-green-900/20";
       }
-      if (selectedAnswer === isTrue && question.answer !== isTrue) {
+      if (isCorrect && !isSelected) {
+        // Correct answer not selected
+        return "border-green-300 bg-green-25 dark:bg-green-900/10";
+      }
+      if (!isCorrect && isSelected) {
+        // User selected wrong answer
         return "border-red-500 bg-red-50 dark:bg-red-900/20";
       }
     }
-    return selectedAnswer === isTrue
+    return isSelected
       ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
       : "border-gray-200 dark:border-gray-700";
+  };
+
+  const getOptionIcon = (isTrue: boolean) => {
+    const isSelected = selectedAnswer === isTrue;
+    const isCorrect = question.answers === isTrue;
+    const showingAnswers =
+      config.showCorrectAnswers || config.highlightCorrectness;
+
+    if (showingAnswers) {
+      if (isCorrect) {
+        return <Check className="w-4 h-4 text-green-600" />;
+      }
+      if (!isCorrect && isSelected) {
+        return <X className="w-4 h-4 text-red-600" />;
+      }
+    }
+    return null;
   };
 
   return (
@@ -78,14 +106,8 @@ export const TrueFalseRenderer: React.FC<TrueFalseRendererProps> = ({
                 True
               </Label>
             </div>
-            {config.showCorrectAnswers && (
-              <div className="flex-shrink-0">
-                {question.answer === true ? (
-                  <Check className="w-5 h-5 text-green-600" />
-                ) : selectedAnswer === true ? (
-                  <X className="w-5 h-5 text-red-600" />
-                ) : null}
-              </div>
+            {(config.showCorrectAnswers || config.highlightCorrectness) && (
+              <div className="flex-shrink-0">{getOptionIcon(true)}</div>
             )}
           </div>
         </div>
@@ -111,14 +133,8 @@ export const TrueFalseRenderer: React.FC<TrueFalseRendererProps> = ({
                 False
               </Label>
             </div>
-            {config.showCorrectAnswers && (
-              <div className="flex-shrink-0">
-                {question.answer === false ? (
-                  <Check className="w-5 h-5 text-green-600" />
-                ) : selectedAnswer === false ? (
-                  <X className="w-5 h-5 text-red-600" />
-                ) : null}
-              </div>
+            {(config.showCorrectAnswers || config.highlightCorrectness) && (
+              <div className="flex-shrink-0">{getOptionIcon(false)}</div>
             )}
           </div>
         </div>

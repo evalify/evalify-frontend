@@ -71,7 +71,6 @@ interface DescriptiveData extends BaseQuestionData {
 }
 
 interface CodingData extends BaseQuestionData {
-  [x: string]: boolean;
   type: "coding";
   language: string;
   starterCode?: string;
@@ -421,9 +420,7 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
     );
   };
 
-  return (
-    <div className="h-full overflow-auto">{renderQuestionComponent()}</div>
-  );
+  return <div className="w-full">{renderQuestionComponent()}</div>;
 };
 
 export default QuestionEditor;

@@ -1,26 +1,19 @@
 import { QuestionCreationPage } from "@/components/question_creation";
 import { use } from "react";
 
-export default function EditQuestionPage({
+export default function CreateQuestionPage({
   params,
 }: {
   params: Promise<{
     bankId: string;
-    questionId: string;
   }>;
 }) {
   const param = use(params);
-  const { bankId, questionId } = param;
+  const { bankId } = param;
 
   if (!bankId) {
     throw new Error("Bank ID is required");
   }
 
-  return (
-    <QuestionCreationPage
-      questionId={questionId}
-      bankId={bankId}
-      isEdit={true}
-    />
-  );
+  return <QuestionCreationPage bankId={bankId} />;
 }

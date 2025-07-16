@@ -15,22 +15,11 @@ export { default as CodingQuestion } from "./question-types/coding-question";
 export { default as FileUploadQuestion } from "./question-types/file-upload-question";
 
 // Export types
+export type { QuestionType } from "./question-type-selector";
 export type {
-  QuestionType,
   QuestionData,
-  QuestionCreationSettings,
-  QuestionCreationPageProps,
-  QuestionEditorProps,
-  QuestionTypeSelectorProps,
-  QuestionSettingsProps,
-  ValidationError,
-  ValidationResult,
-  TopicOption,
-} from "./question-creation-types";
-
-export type {
-  MCQOptionComponent,
-  FillupBlankComponent,
-  MatchItemComponent,
-  TestCaseComponent,
+  MCQOption,
+  FillupBlank,
+  MatchItem,
+  TestCase,
 } from "./question-editor";

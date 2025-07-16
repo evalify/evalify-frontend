@@ -55,6 +55,10 @@ const userQueries = {
     return response.data;
   },
 
+  fetchAllStaff: async (): Promise<User[]> => {
+    const response = await axiosInstance.get("/api/user/faculty/all");
+    return response.data;
+    
   getAllUsers: async (
     searchQuery?: string,
     roleFilter?: string,

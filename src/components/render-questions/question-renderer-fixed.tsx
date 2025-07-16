@@ -10,7 +10,6 @@ import {
   Edit,
   Trash2,
   Hash,
-  Copy,
   Eye,
   EyeOff,
   Lightbulb,
@@ -86,7 +85,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
 
   // Type guard to check if question has marks property
   const hasMarks = (q: typeof question): q is QuestionWithMarks => {
-    return 'marks' in q && typeof q.marks === 'number';
+    return "marks" in q && typeof q.marks === "number";
   };
 
   const getQuestionMarks = (q: typeof question): number => {
@@ -116,13 +115,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     }
   };
 
-  const handleDuplicate = () => {
-    if (actions?.onDuplicate && question.id) {
-      actions.onDuplicate(question.id);
-      showSuccess("Question duplicated successfully");
-    }
-  };
-
   const renderQuestionContent = () => {
     switch (question.type) {
       case "MCQ":
@@ -141,7 +133,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             onAnswerChange={onAnswerChange}
           />
         );
-      case "TRUE_FALSE":
+      case "TRUEFALSE":
         return (
           <TrueFalseRenderer
             question={question}
@@ -218,7 +210,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 {config.showMarks && (
                   <Badge variant="outline" className="font-medium">
                     <Award className="w-3 h-3 mr-1" />
-                    {getQuestionMarks(question)} {getQuestionMarks(question) === 1 ? "mark" : "marks"}
+                    {getQuestionMarks(question)}{" "}
+                    {getQuestionMarks(question) === 1 ? "mark" : "marks"}
                   </Badge>
                 )}
               </div>
@@ -318,24 +311,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Edit Marks</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {actions.onDuplicate && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDuplicate}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Duplicate Question</p>
                     </TooltipContent>
                   </Tooltip>
                 )}

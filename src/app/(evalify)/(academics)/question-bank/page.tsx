@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/pagination";
 
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MoreHorizontal,
@@ -58,19 +59,24 @@ import {
   Search,
   SlidersHorizontal,
   Files,
+  Download,
+  Upload,
+  Copy,
+  Minus,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Bank from "@/repo/bank/bank";
 import { useRouter } from "next/navigation";
+import ShareDialog from "@/components/bank/ShareDialog";
 
+// Types and Interfaces
 interface QuestionBank {
   id: string;
   name: string;
   courseCode: string;
-  semester: number;
-  description: string;
-  topics: string[];
+  semester: string;
+  topics: number;
   questionCount: number;
   lastUpdated: string;
 }
@@ -83,9 +89,77 @@ interface BankApiResponse {
   semester?: string;
   questions?: number;
   created_at?: string;
+  topics?: number;
 }
 
-const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
+// Constants
+const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_SORT_FIELD = "name" as const;
+const DEFAULT_SORT_DIRECTION = "asc" as const;
+
+// Utility functions
+const transformApiResponseToQuestionBank = (
+  bank: BankApiResponse,
+): QuestionBank => ({
+  id: bank.id || bank.bankId || "",
+  name: bank.name || "",
+  courseCode: bank.courseCode || "",
+  semester: bank.semester || "1", // Default to "1" instead of "S1"
+  topics: bank?.topics || 0,
+  questionCount: bank.questions || 0,
+  lastUpdated: bank.created_at || new Date().toISOString(),
+});
+
+const filterBanks = (
+  banks: QuestionBank[],
+  searchTerm: string,
+  semesterFilter: number | null,
+): QuestionBank[] => {
+  let filtered = banks;
+
+  if (searchTerm) {
+    filtered = filtered.filter(
+      (bank) =>
+        bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bank.courseCode &&
+          bank.courseCode.toLowerCase().includes(searchTerm.toLowerCase())),
+    );
+  }
+
+  if (semesterFilter !== null) {
+    filtered = filtered.filter(
+      (bank) => parseInt(bank.semester) === semesterFilter,
+    );
+  }
+
+  return filtered;
+};
+
+const sortBanks = (
+  banks: QuestionBank[],
+  sortField: keyof QuestionBank,
+  sortDirection: "asc" | "desc",
+): QuestionBank[] => {
+  return [...banks].sort((a, b) => {
+    const aValue = a[sortField];
+    const bValue = b[sortField];
+
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      return sortDirection === "asc"
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    }
+
+    if (typeof aValue === "number" && typeof bValue === "number") {
+      return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+    }
+
+    return 0;
+  });
+};
+
+const semesters = SEMESTERS;
 
 const BankDialog = ({
   mode,
@@ -97,33 +171,31 @@ const BankDialog = ({
   onClose: () => void;
 }) => {
   const [open, setOpen] = useState(true);
-  const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
-    bank?.courseCode || "",
-  );
-  const [selectedSemester, setSelectedSemester] = useState<number | undefined>(
-    bank?.semester,
-  );
-  const [bankName, setBankName] = useState<string>(bank?.name || "");
-  const description = bank?.description || "";
+
+  const [formData, setFormData] = useState({
+    name: bank?.name || "",
+    courseCode: bank?.courseCode || "",
+    semester: bank?.semester ? parseInt(bank.semester.toString()) : undefined,
+  });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const semesterOptions = semesters.map((semester) => ({
     value: semester.toString(),
-    label: semester.toString(),
+    label: `Semester ${semester}`,
   }));
 
   const createBankMutation = useMutation({
     mutationFn: async (data: {
       name: string;
+      courseCode: string;
       semester: number;
-      description: string;
     }) => {
       const payload = {
         name: data.name,
-        semester: data.semester.toString(),
-        courseCode: data.description,
+        courseCode: data.courseCode,
+        semester: data.semester.toString(), // Convert to string for the API
         topics: 0,
         questions: 0,
         access: [],
@@ -138,8 +210,7 @@ const BankDialog = ({
       toast("Question bank created successfully");
       handleClose();
     },
-    onError: (error) => {
-      console.error("Error creating question bank:", error);
+    onError: () => {
       toast("Failed to create question bank. Please try again.");
     },
   });
@@ -149,13 +220,12 @@ const BankDialog = ({
       id: string;
       name: string;
       courseCode: string;
-      description: string;
       semester?: number;
     }) => {
       const payload = {
         name: data.name,
-        description: data.courseCode,
-        ...(data.semester ? { semester: data.semester.toString() } : {}),
+        courseCode: data.courseCode,
+        ...(data.semester ? { semester: data.semester.toString() } : {}), // Convert to string for the API
       };
       return await Bank.updateBank(data.id, payload);
     },
@@ -164,41 +234,39 @@ const BankDialog = ({
       toast("Question bank updated successfully");
       handleClose();
     },
-    onError: (error) => {
+    onError: () => {
       toast("Failed to update question bank. Please try again.");
-      console.error("Edit error:", error);
     },
   });
 
   const handleSubmit = () => {
-    if (!bankName.trim()) {
+    if (!formData.name.trim()) {
       toast("Please enter a bank name");
       return;
     }
 
-    if (!selectedCourseCode) {
+    if (!formData.courseCode.trim()) {
       toast("Please enter a course code");
       return;
     }
 
-    if (!selectedSemester) {
+    if (!formData.semester) {
       toast("Please select a semester");
       return;
     }
 
     if (mode === "add") {
       createBankMutation.mutate({
-        name: bankName,
-        semester: selectedSemester,
-        description: selectedCourseCode,
+        name: formData.name,
+        courseCode: formData.courseCode,
+        semester: formData.semester,
       });
     } else if (mode === "edit" && bank) {
       editBankMutation.mutate({
         id: bank.id,
-        name: bankName,
-        courseCode: selectedCourseCode,
-        description: description,
-        semester: selectedSemester,
+        name: formData.name,
+        courseCode: formData.courseCode,
+        semester: formData.semester,
       });
     }
   };
@@ -227,8 +295,10 @@ const BankDialog = ({
             <Input
               id="bank-name"
               placeholder="e.g., Programming Fundamentals MCQs"
-              value={bankName}
-              onChange={(e) => setBankName(e.target.value)}
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -237,8 +307,13 @@ const BankDialog = ({
               <Input
                 id="course-code"
                 placeholder="e.g., CS101"
-                value={selectedCourseCode}
-                onChange={(e) => setSelectedCourseCode(e.target.value)}
+                value={formData.courseCode}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    courseCode: e.target.value,
+                  }))
+                }
               />
             </div>
 
@@ -246,10 +321,16 @@ const BankDialog = ({
               <Label htmlFor="semester">Semester</Label>
               <SearchableSelect
                 options={semesterOptions}
-                value={selectedSemester?.toString() ?? ""}
+                value={formData.semester?.toString() || ""}
                 onValueChange={(val) => {
-                  const parsed = parseInt(val);
-                  if (!isNaN(parsed)) setSelectedSemester(parsed);
+                  if (val === "") {
+                    setFormData((prev) => ({ ...prev, semester: undefined }));
+                  } else {
+                    const parsed = parseInt(val);
+                    if (!isNaN(parsed)) {
+                      setFormData((prev) => ({ ...prev, semester: parsed }));
+                    }
+                  }
                 }}
                 placeholder="Select semester"
               />
@@ -282,19 +363,156 @@ const BankDialog = ({
   );
 };
 
+// Memoized components for better performance
+const BankTableRow = React.memo(
+  ({
+    bank,
+    onEdit,
+    onDelete,
+    onShare,
+    onView,
+    isSelected,
+    onSelect,
+  }: {
+    bank: QuestionBank;
+    onEdit: (bank: QuestionBank) => void;
+    onDelete: (bankId: string) => void;
+    onShare: (bank: QuestionBank) => (e: React.MouseEvent) => void;
+    onView: (bankId: string) => void;
+    isSelected: boolean;
+    onSelect: (bankId: string, selected: boolean) => void;
+  }) => (
+    <TableRow
+      key={bank.id}
+      onClick={() => onView(bank.id)}
+      className="cursor-pointer hover:bg-muted/50"
+    >
+      <TableCell className="w-[50px]">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect(bank.id, checked as boolean)}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </TableCell>
+      <TableCell>
+        <div className="font-medium">{bank.name}</div>
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant="outline"
+          className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800"
+        >
+          {bank.courseCode || "N/A"}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant="outline"
+          className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+        >
+          Semester {bank.semester}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant="outline"
+          className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+        >
+          {bank.topics}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <Files size={14} className="text-muted-foreground" />
+          {bank.questionCount}
+        </div>
+      </TableCell>
+      <TableCell className="text-center">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="rounded-full"
+          onClick={onShare(bank)}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="lucide lucide-share"
+          >
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" x2="12" y1="2" y2="15" />
+          </svg>
+          <span className="sr-only">Share</span>
+        </Button>
+      </TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild className="ml-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(bank);
+              }}
+            >
+              Edit Bank
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(bank.id);
+              }}
+            >
+              Delete Bank
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  ),
+);
+
+BankTableRow.displayName = "BankTableRow";
+
 export default function QuestionBankPage() {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [searchTerm, setSearchTerm] = useState("");
   const [semesterFilter, setSemesterFilter] = useState<number | null>(null);
-  const [sortField, setSortField] = useState<keyof QuestionBank>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortField, setSortField] =
+    useState<keyof QuestionBank>(DEFAULT_SORT_FIELD);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">(
+    DEFAULT_SORT_DIRECTION,
+  );
   const [filterOpen, setFilterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentBank, setCurrentBank] = useState<QuestionBank | null>(null);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedBanks, setSelectedBanks] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -334,68 +552,30 @@ export default function QuestionBankPage() {
         const response = await Bank.getAllBanks(queryParams);
 
         // Transform API response to match QuestionBank interface
-        let filteredBanks: QuestionBank[] = response.content.map(
-          (bank: BankApiResponse) => ({
-            id: bank.id || bank.bankId || "",
-            name: bank.name || "",
-            courseCode: bank.courseCode || "",
-            semester: parseInt(bank.semester || "0") || 0,
-            description: bank.courseCode || "", // Use courseCode as description fallback
-            topics: [],
-            questionCount: bank.questions || 0,
-            lastUpdated: bank.created_at || new Date().toISOString(),
-          }),
+        const transformedBanks: QuestionBank[] = response.content.map(
+          transformApiResponseToQuestionBank,
         );
 
-        if (searchTerm) {
-          filteredBanks = filteredBanks.filter(
-            (bank) =>
-              bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              (bank.courseCode &&
-                bank.courseCode
-                  .toLowerCase()
-                  .includes(searchTerm.toLowerCase())),
-          );
-        }
-
-        if (semesterFilter !== null) {
-          filteredBanks = filteredBanks.filter(
-            (bank) => bank.semester === semesterFilter,
-          );
-        }
-
-        // Apply client-side sorting if needed
-        // This helps when server-side sorting doesn't work as expected
-        filteredBanks.sort((a, b) => {
-          const aValue = a[sortField];
-          const bValue = b[sortField];
-
-          if (typeof aValue === "string" && typeof bValue === "string") {
-            return sortDirection === "asc"
-              ? aValue.localeCompare(bValue)
-              : bValue.localeCompare(aValue);
-          }
-
-          if (typeof aValue === "number" && typeof bValue === "number") {
-            return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-          }
-
-          return 0;
-        });
+        // Apply client-side filtering and sorting
+        const filteredBanks = filterBanks(
+          transformedBanks,
+          searchTerm,
+          semesterFilter,
+        );
+        const sortedBanks = sortBanks(filteredBanks, sortField, sortDirection);
 
         // Get pagination info from response
         const totalBanks = response.totalElements || 0;
         const totalPages = response.totalPages || 0;
 
         return {
-          banks: filteredBanks,
+          banks: sortedBanks,
           totalBanks,
           totalPages,
         };
       } catch (error: unknown) {
         // Properly type the error and provide more descriptive messages based on error type
         if (error instanceof Error) {
-          console.error("Error fetching question banks:", error.message);
           toast(`Failed to load question banks: ${error.message}`);
         } else if (typeof error === "object" && error && "response" in error) {
           // Axios error
@@ -403,13 +583,8 @@ export default function QuestionBankPage() {
             response?: { status: number; data?: unknown };
           };
           const statusCode = axiosError.response?.status;
-          console.error(
-            `API Error (${statusCode}):`,
-            axiosError.response?.data,
-          );
           toast(`Failed to load question banks: Server returned ${statusCode}`);
         } else {
-          console.error("Unknown error fetching question banks:", error);
           toast("Failed to load question banks: Unknown error");
         }
 
@@ -422,21 +597,7 @@ export default function QuestionBankPage() {
     },
   });
 
-  const handleSort = (field: keyof QuestionBank) => {
-    if (field === sortField) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const getSortIndicator = (field: keyof QuestionBank) => {
-    if (field !== sortField) return null;
-    return sortDirection === "asc" ? " ↑" : " ↓";
-  };
-
-  const generatePageNumbers = () => {
+  const generatePageNumbers = useMemo(() => {
     const pages = [];
     const totalPages = data?.totalPages || 0;
     const currentPage = page;
@@ -469,15 +630,21 @@ export default function QuestionBankPage() {
     }
 
     return pages;
-  };
+  }, [data?.totalPages, page]);
 
-  // Filter options
-  // Course code now uses an input field, so we don't need options
-
-  // const semesterOptions = semesters.map(semester => ({
-  //   value: semester,
-  //   label: semester
-  // }));
+  // Single delete action
+  const deleteBankMutation = useMutation({
+    mutationFn: async (bankId: string) => {
+      return await Bank.deleteBank(bankId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["questionBanks"] });
+      toast("Question bank deleted successfully.");
+    },
+    onError: () => {
+      toast("Failed to delete question bank. Please try again.");
+    },
+  });
 
   const semesterOptions = semesters.map((semester) => ({
     value: semester.toString(),
@@ -495,30 +662,96 @@ export default function QuestionBankPage() {
     { value: "lastUpdated-asc", label: "Oldest Updated" },
   ];
 
-  const queryClient = useQueryClient();
-
-  // Single delete action
-  const deleteBankMutation = useMutation({
-    mutationFn: async (bankId: string) => {
-      return await Bank.deleteBank(bankId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionBanks"] });
-      toast(`Question bank deleted successfully.`);
-    },
-    onError: (error) => {
-      toast(`Failed to delete question bank. Please try again.`);
-      console.error("Delete error:", error);
-    },
-  });
-
-  const handleEditBank = (bank: QuestionBank) => {
+  // Handlers with useCallback for performance
+  const handleEditBank = useCallback((bank: QuestionBank) => {
     setCurrentBank(bank);
     setDialogMode("edit");
     setDialogOpen(true);
-  };
+  }, []);
 
-  const router = useRouter();
+  const handleShare = useCallback(
+    (bank: QuestionBank) => (e: React.MouseEvent) => {
+      setCurrentBank(bank);
+      e.preventDefault();
+      e.stopPropagation();
+      setIsShareDialogOpen(true);
+    },
+    [],
+  );
+
+  const handleViewBank = useCallback(
+    (bankId: string) => {
+      router.push(`/question-bank/${bankId}`);
+    },
+    [router],
+  );
+
+  const handleDeleteBank = useCallback(
+    (bankId: string) => {
+      deleteBankMutation.mutate(bankId);
+    },
+    [deleteBankMutation],
+  );
+
+  const handleSort = useCallback(
+    (field: keyof QuestionBank) => {
+      if (field === sortField) {
+        setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      } else {
+        setSortField(field);
+        setSortDirection("asc");
+      }
+    },
+    [sortField, sortDirection],
+  );
+
+  const getSortIndicator = useCallback(
+    (field: keyof QuestionBank) => {
+      if (field !== sortField) return null;
+      return sortDirection === "asc" ? " ↑" : " ↓";
+    },
+    [sortField, sortDirection],
+  );
+
+  const handleResetFilters = useCallback(() => {
+    setSemesterFilter(null);
+    setSearchTerm("");
+  }, []);
+
+  const handleBankSelect = useCallback((bankId: string, selected: boolean) => {
+    setSelectedBanks((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(bankId);
+      } else {
+        newSet.delete(bankId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        const allBankIds = new Set(data?.banks.map((bank) => bank.id) || []);
+        setSelectedBanks(allBankIds);
+      } else {
+        setSelectedBanks(new Set());
+      }
+    },
+    [data?.banks],
+  );
+
+  const isAllSelected = useMemo(() => {
+    const bankIds = data?.banks.map((bank) => bank.id) || [];
+    return bankIds.length > 0 && bankIds.every((id) => selectedBanks.has(id));
+  }, [data?.banks, selectedBanks]);
+
+  const isIndeterminate = useMemo(() => {
+    const bankIds = data?.banks.map((bank) => bank.id) || [];
+    const selectedCount = bankIds.filter((id) => selectedBanks.has(id)).length;
+    return selectedCount > 0 && selectedCount < bankIds.length;
+  }, [data?.banks, selectedBanks]);
 
   return (
     <div className="container mx-auto py-6">
@@ -530,15 +763,63 @@ export default function QuestionBankPage() {
               Manage your question banks for quizzes and assessments
             </CardDescription>
           </div>
-          <Button
-            onClick={() => {
-              setDialogMode("add");
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Bank
-          </Button>
+          <div className="flex items-center gap-2">
+            {selectedBanks.size > 0 && (
+              <>
+                <div className="flex items-center gap-2 mr-4">
+                  <span className="text-sm text-muted-foreground">
+                    {selectedBanks.size} selected
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Add download functionality for selected banks
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Add upload functionality for selected banks
+                    }}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Add copy functionality for selected banks
+                    }}
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedBanks(new Set())}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </>
+            )}
+            <Button
+              onClick={() => {
+                setDialogMode("add");
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Bank
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
@@ -618,11 +899,7 @@ export default function QuestionBankPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => {
-                    // setSubjectFilter(null);
-                    setSemesterFilter(null);
-                    setSearchTerm("");
-                  }}
+                  onClick={handleResetFilters}
                 >
                   Reset Filters
                 </Button>
@@ -633,6 +910,19 @@ export default function QuestionBankPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <div className="relative">
+                        <Checkbox
+                          checked={isAllSelected}
+                          onCheckedChange={handleSelectAll}
+                          className="h-5 w-5"
+                          aria-label="Select all"
+                        />
+                        {isIndeterminate && (
+                          <Minus className="absolute inset-0 h-3 w-3 m-auto text-primary-foreground" />
+                        )}
+                      </div>
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("name")}
@@ -658,7 +948,6 @@ export default function QuestionBankPage() {
                     >
                       Questions{getSortIndicator("questionCount")}
                     </TableHead>
-                    <TableHead className="w-[70px] text-center">View</TableHead>
                     <TableHead className="w-[70px] text-center">
                       Share
                     </TableHead>
@@ -671,6 +960,9 @@ export default function QuestionBankPage() {
                   {isLoading ? (
                     Array.from({ length: pageSize }).map((_, index) => (
                       <TableRow key={`loading-${index}`}>
+                        <TableCell>
+                          <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </TableCell>
                         <TableCell>
                           <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                         </TableCell>
@@ -692,9 +984,6 @@ export default function QuestionBankPage() {
                         <TableCell>
                           <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse" />
                         </TableCell>
-                        <TableCell>
-                          <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse" />
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : data?.banks.length === 0 ? (
@@ -705,106 +994,16 @@ export default function QuestionBankPage() {
                     </TableRow>
                   ) : (
                     data?.banks.map((bank) => (
-                      <TableRow
+                      <BankTableRow
                         key={bank.id}
-                        onClick={() => {
-                          router.push(`/question-bank/${bank.id}`);
-                        }}
-                      >
-                        <TableCell>
-                          <div className="font-medium">{bank.name}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800"
-                          >
-                            {bank.courseCode || "N/A"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{bank.semester}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
-                          >
-                            {bank.topics.length} topics
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Files
-                              size={14}
-                              className="text-muted-foreground"
-                            />
-                            {bank.questionCount}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-full"
-                          >
-                            <Files className="h-4 w-4" />
-                            <span className="sr-only">View</span>
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-full"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="lucide lucide-share"
-                            >
-                              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                              <polyline points="16 6 12 2 8 6" />
-                              <line x1="12" x2="12" y1="2" y2="15" />
-                            </svg>
-                            <span className="sr-only">Share</span>
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild className="ml-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleEditBank(bank)}
-                              >
-                                Edit Bank
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-red-600"
-                                onClick={() =>
-                                  deleteBankMutation.mutate(bank.id)
-                                }
-                              >
-                                Delete Bank
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                        bank={bank}
+                        onEdit={handleEditBank}
+                        onDelete={handleDeleteBank}
+                        onShare={handleShare}
+                        onView={handleViewBank}
+                        isSelected={selectedBanks.has(bank.id)}
+                        onSelect={handleBankSelect}
+                      />
                     ))
                   )}
                 </TableBody>
@@ -834,25 +1033,27 @@ export default function QuestionBankPage() {
                     />
                   </PaginationItem>
 
-                  {generatePageNumbers().map((pageNumber, index) => (
-                    <PaginationItem key={index}>
-                      {pageNumber === "ellipsis-start" ||
-                      pageNumber === "ellipsis-end" ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setPage(pageNumber as number);
-                          }}
-                          isActive={pageNumber === page}
-                        >
-                          {pageNumber}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
+                  {generatePageNumbers.map(
+                    (pageNumber: string | number, index: number) => (
+                      <PaginationItem key={index}>
+                        {pageNumber === "ellipsis-start" ||
+                        pageNumber === "ellipsis-end" ? (
+                          <PaginationEllipsis />
+                        ) : (
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPage(pageNumber as number);
+                            }}
+                            isActive={pageNumber === page}
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ),
+                  )}
 
                   <PaginationItem>
                     <PaginationNext
@@ -879,6 +1080,14 @@ export default function QuestionBankPage() {
           mode={dialogMode}
           bank={currentBank || undefined}
           onClose={() => setDialogOpen(false)}
+        />
+      )}
+
+      {isShareDialogOpen && (
+        <ShareDialog
+          bankId={currentBank?.id || ""}
+          open={isShareDialogOpen}
+          onClose={() => setIsShareDialogOpen(false)}
         />
       )}
     </div>

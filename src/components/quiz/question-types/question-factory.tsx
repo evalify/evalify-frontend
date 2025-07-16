@@ -21,7 +21,7 @@ type QuestionFactoryProps = {
 function QuestionFactory({ question }: QuestionFactoryProps) {
   switch (question.type) {
     case "MCQ":
-    case "TRUE_FALSE":
+    case "TRUEFALSE":
       return <MCQ question={question as MCQQuestion} />;
     case "CODING":
       return <Coding question={question as CodingQuestion} />;
@@ -37,9 +37,9 @@ function QuestionFactory({ question }: QuestionFactoryProps) {
           question={question as DescriptiveQuestion}
         />
       );
-    case "MULTI_SELECT":
+    case "MMCQ":
       return <MultipleSelect question={question as MultipleSelectQuestion} />;
-    case "FILL_IN_THE_BLANKS":
+    case "FILL_UP":
       return <FillInTheBlanks question={question} />;
     case "FILE_UPLOAD":
       return <div>File Upload</div>;

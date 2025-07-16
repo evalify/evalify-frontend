@@ -1,36 +1,35 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
 import QuestionTypeSelector, { QuestionType } from "./question-type-selector";
 import QuestionEditor, { QuestionData } from "./question-editor";
 import QuestionSettings from "./question-settings";
 import ValidationErrorModal from "./validation-error-modal";
 import { validateQuestionData, ValidationError } from "./validation";
 import { useToast } from "@/hooks/use-toast";
-import { questionsService } from "@/app/api/services/questions";
+import { questionsService } from "@/repo/question-queries/questions";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import Bank from "@/repo/bank/bank";
-import { transformQuestionDataForAPI } from "./question-transformer";
 
-interface QuestionCreationSettings {
+interface QuestionBaseSettings {
   marks: number;
   difficulty: string;
   bloomsTaxonomy: string;
   courseOutcome: string;
-  topics: { value: string; label: string }[];
 }
 
-type QuestionMode = "bank" | "quiz";
+interface QuestionCreationSettings extends QuestionBaseSettings {
+  topics: { value: string; label: string }[];
+}
 
 interface QuestionCreationPageProps {
   isEdit?: boolean;
   initialQuestionData?: QuestionData;
   initialQuestionSettings?: QuestionCreationSettings;
   questionId?: string;
-  mode?: QuestionMode;
   bankId?: string;
-  quizId?: string;
+  selectedTopics?: string[];
 }
 
 const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
@@ -38,12 +37,67 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   initialQuestionData,
   initialQuestionSettings,
   questionId,
-  mode = "bank",
   bankId,
-  quizId,
+  selectedTopics: initialSelectedTopics = [],
 }) => {
+  // Initialize router and URL params for topic management
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Initialize toast hook
   const { info, success, error } = useToast();
+
+  // Fetch all available topics for the bank
+  const { data: allTopics = [] } = useQuery({
+    queryKey: ["bankTopics", bankId],
+    queryFn: () => Bank.getBankTopics(bankId!),
+    enabled: !!bankId,
+  });
+
+  // State for selected topics (from URL or initial props)
+  const [selectedTopicIds, setSelectedTopicIds] = React.useState<string[]>(
+    initialSelectedTopics,
+  );
+
+  // Sync selected topics with URL changes
+  React.useEffect(() => {
+    const topicsParam = searchParams.get("topics");
+    const urlTopics = topicsParam ? topicsParam.split(",") : [];
+    setSelectedTopicIds(urlTopics);
+  }, [searchParams]);
+
+  // Derive topics for QuestionSettings directly using useMemo
+  const currentTopicsForSettings = React.useMemo(() => {
+    if (!allTopics.length || !selectedTopicIds.length) {
+      return [];
+    }
+    return selectedTopicIds
+      .map((topicId) => {
+        const topic = allTopics.find((t) => t.id === topicId);
+        return {
+          value: topicId,
+          label: topic?.name || topicId,
+        };
+      })
+      .filter((topic) => topic.label !== topic.value);
+  }, [selectedTopicIds, allTopics]);
+
+  // Update URL when selected topics change
+  const updateTopicsInUrl = React.useCallback(
+    (topicIds: string[]) => {
+      const params = new URLSearchParams(searchParams);
+
+      if (topicIds.length > 0) {
+        params.set("topics", topicIds.join(","));
+      } else {
+        params.delete("topics");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`);
+    },
+    [router, pathname, searchParams],
+  );
 
   // Initialize question type from initial data or default to "mcq"
   const [selectedType, setSelectedType] = React.useState<QuestionType>(
@@ -64,21 +118,30 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
 
   // Initialize question settings from initial data or use defaults
   const [questionSettings, setQuestionSettings] =
-    React.useState<QuestionCreationSettings>(
-      initialQuestionSettings || {
-        marks: 1,
-        difficulty: "medium",
-        bloomsTaxonomy: "",
-        courseOutcome: "",
-        topics: [],
-      },
-    );
+    React.useState<QuestionBaseSettings>(() => {
+      return initialQuestionSettings
+        ? {
+            marks: initialQuestionSettings.marks,
+            difficulty: initialQuestionSettings.difficulty,
+            bloomsTaxonomy: initialQuestionSettings.bloomsTaxonomy,
+            courseOutcome: initialQuestionSettings.courseOutcome,
+          }
+        : {
+            marks: 1,
+            difficulty: "medium",
+            bloomsTaxonomy: "",
+            courseOutcome: "",
+          };
+    });
 
   // Store initial state for change tracking
   const initialStateRef = React.useRef({
     type: selectedType,
     data: questionData,
-    settings: questionSettings,
+    settings: {
+      ...questionSettings,
+      topics: currentTopicsForSettings, // Include derived topics for initial state tracking
+    },
   });
 
   // Update initial state when props change
@@ -87,12 +150,24 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       const newInitialState = {
         type: initialQuestionData.type,
         data: initialQuestionData,
-        settings: initialQuestionSettings,
+        settings: {
+          marks: initialQuestionSettings.marks,
+          difficulty: initialQuestionSettings.difficulty,
+          bloomsTaxonomy: initialQuestionSettings.bloomsTaxonomy,
+          courseOutcome: initialQuestionSettings.courseOutcome,
+          topics: initialQuestionSettings.topics,
+        },
       };
       initialStateRef.current = newInitialState;
       setSelectedType(initialQuestionData.type);
       setQuestionData(initialQuestionData);
-      setQuestionSettings(initialQuestionSettings);
+      setQuestionSettings({
+        marks: initialQuestionSettings.marks,
+        difficulty: initialQuestionSettings.difficulty,
+        bloomsTaxonomy: initialQuestionSettings.bloomsTaxonomy,
+        courseOutcome: initialQuestionSettings.courseOutcome,
+      });
+      setSelectedTopicIds(initialQuestionSettings.topics.map((t) => t.value));
     }
   }, [isEdit, initialQuestionData, initialQuestionSettings]);
 
@@ -103,68 +178,26 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     const current = {
       type: selectedType,
       data: questionData,
-      settings: questionSettings,
+      settings: {
+        ...questionSettings,
+        topics: currentTopicsForSettings,
+      },
     };
 
     return JSON.stringify(current) !== JSON.stringify(initialStateRef.current);
-  }, [isEdit, selectedType, questionData, questionSettings]);
+  }, [
+    isEdit,
+    selectedType,
+    questionData,
+    questionSettings,
+    currentTopicsForSettings,
+  ]);
 
   // Validation state
   const [validationErrors, setValidationErrors] = React.useState<
     ValidationError[]
   >([]);
-  const [showValidationModal, setShowValidationModal] = React.useState(false);
-
-  // Mutation for saving questions to bank
-  const saveQuestionToBankMutation = useMutation({
-    mutationFn: async (data: any) => {
-      if (!bankId) throw new Error("Bank ID is required");
-      const transformedData = transformQuestionDataForAPI(questionData, questionSettings);
-      return await Bank.addQuestionToBank(bankId, transformedData);
-    },
-    onSuccess: (response, variables, context) => {
-      success("Question added to bank successfully!", {
-        description: "Question has been saved to the question bank",
-      });
-    },
-    onError: (err: any) => {
-      console.error("Error saving question to bank:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to save question to bank";
-      error("Failed to save question", { description: errorMessage });
-    },
-  });
-
-  // Mutation for updating questions
-  const updateQuestionMutation = useMutation({
-    mutationFn: async () => {
-      if (!questionId) throw new Error("Question ID is required");
-      return await questionsService.updateQuestion(questionId, {
-        type: selectedType,
-        data: questionData,
-        settings: questionSettings,
-      });
-    },
-    onSuccess: (response) => {
-      success("Question updated successfully!", {
-        description: `Question ID: ${response.id}`,
-      });
-      // Update initial state ref to reflect the new saved state
-      initialStateRef.current = {
-        type: selectedType,
-        data: questionData,
-        settings: questionSettings,
-      };
-    },
-    onError: (err: any) => {
-      console.error("Error updating question:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to update question";
-      error("Failed to update question", { description: errorMessage });
-    },
-  });
-
-  const isLoading = saveQuestionToBankMutation.isPending || updateQuestionMutation.isPending;
-
-  // Handle question type change
+  const [showValidationModal, setShowValidationModal] = React.useState(false); // Handle question type change
   const handleTypeSelect = (type: QuestionType) => {
     if (isEdit) {
       // In edit mode, don't allow type changes
@@ -260,7 +293,10 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     console.log("Preview question:", {
       type: selectedType,
       data: questionData,
-      settings: questionSettings,
+      settings: {
+        ...questionSettings,
+        topics: currentTopicsForSettings,
+      },
     });
     // Show info toast instead of alert
     info("Preview functionality will be implemented soon!");
@@ -281,13 +317,15 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       difficulty: "medium",
       bloomsTaxonomy: "",
       courseOutcome: "",
-      topics: [],
     });
+    setSelectedTopicIds([]); // Reset selected topic IDs
     setValidationErrors([]);
     setShowValidationModal(false);
   };
-  // Validate and prepare data
-  const validateAndPrepareData = () => {
+  // Handle save
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const handleSave = async () => {
     // Comprehensive validation using the validation system
     const validationResult = validateQuestionData(
       questionData,
@@ -297,93 +335,77 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     if (!validationResult.isValid) {
       setValidationErrors(validationResult.errors);
       setShowValidationModal(true);
-      return false;
+      return;
     }
 
-    // Validate required IDs based on mode
-    if (mode === "bank" && !bankId) {
-      error("Bank ID is required for adding questions to bank");
-      return false;
+    if (!bankId) {
+      error("Bank ID is required", {
+        description: "Cannot save question without a valid bank ID",
+      });
+      return;
     }
 
-    if (mode === "quiz" && !quizId) {
-      error("Quiz ID is required for adding questions to quiz");
-      return false;
-    }
-
-    return true;
-  };
-
-  // Handle save (redirect to bank after save)
-  const handleSave = async () => {
-    if (!validateAndPrepareData()) return;
+    setIsLoading(true);
 
     try {
+      let response;
+
+      const questionToSave = {
+        type: selectedType,
+        data: questionData,
+        settings: {
+          ...questionSettings,
+          topics: currentTopicsForSettings, // Ensure topics are included in saved data
+        },
+      };
+
       if (isEdit && questionId) {
-        await updateQuestionMutation.mutateAsync();
-      } else {
-        if (mode === "bank" && bankId) {
-          await saveQuestionToBankMutation.mutateAsync({});
+        // Update existing question
+        response = await questionsService.updateQuestion(
+          questionId,
+          questionToSave,
+          bankId,
+        );
 
-          // Redirect to bank questions page after successful save
-          router.push(`/question-bank/${bankId}`);
-        } else if (mode === "quiz" && quizId) {
-          // TODO: Implement quiz API call when available
-          // For now, use the existing questionsService
-          const response = await questionsService.createQuestion({
-            type: selectedType,
-            data: questionData,
-            settings: questionSettings,
-          });
+        console.log("Question updated successfully:", response);
 
-          success("Question added to quiz successfully!", {
-            description: `Question ID: ${response.id}`,
-          });
-
-          // Redirect to quiz questions page (when available)
-          // router.push(`/quiz/${quizId}`);
-        }
-      }
-    } catch (err) {
-      // Error handling is done in the mutations
-      console.error("Save operation failed:", err);
-    }
-  };
-
-  // Handle save and add new (reset form for new question)
-  const handleSaveAndAddNew = async () => {
-    if (!validateAndPrepareData()) return;
-
-    try {
-      if (mode === "bank" && bankId) {
-        await saveQuestionToBankMutation.mutateAsync({});
-
-        // Reset form for new question
-        resetForm();
-
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (mode === "quiz" && quizId) {
-        // TODO: Implement quiz API call when available
-        const response = await questionsService.createQuestion({
-          type: selectedType,
-          data: questionData,
-          settings: questionSettings,
-        });
-
-        success("Question added to quiz successfully!", {
+        // Show success toast
+        success("Question updated successfully!", {
           description: `Question ID: ${response.id}`,
         });
 
-        // Reset form for new question
-        resetForm();
+        // Update initial state ref to reflect the new saved state
+        initialStateRef.current = questionToSave;
+      } else {
+        // Create new question
+        response = await questionsService.createQuestion(
+          questionToSave,
+          bankId,
+        );
 
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        console.log("Question saved successfully:", response);
+
+        // Show success toast
+        success("Question saved successfully!", {
+          description: `Question ID: ${response.id}`,
+        });
+
+        // Reset the form after successful save (only for create mode)
+        resetForm();
       }
     } catch (err) {
-      // Error handling is done in the mutations
-      console.error("Save and add new operation failed:", err);
+      console.error(`Error ${isEdit ? "updating" : "saving"} question:`, err);
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : `Failed to ${isEdit ? "update" : "save"} question. Please try again.`;
+
+      error(`Failed to ${isEdit ? "update" : "save"} question`, {
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -409,40 +431,49 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     setQuestionSettings((prev) => ({ ...prev, courseOutcome }));
   };
 
-  const handleTopicsChange = (topics: { value: string; label: string }[]) => {
-    setQuestionSettings((prev) => ({ ...prev, topics }));
+  const handleTopicsChange = (topicIds: string[]) => {
+    // This will update selectedTopicIds, which then causes currentTopicsForSettings to re-memoize.
+    // QuestionSettings will then re-render with the new currentTopicsForSettings.
+    setSelectedTopicIds(topicIds);
+    updateTopicsInUrl(topicIds);
   };
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <QuestionTypeSelector
         selectedType={selectedType}
         onTypeSelect={handleTypeSelect}
         onPreview={handlePreview}
         onSave={handleSave}
-        onSaveAndAddNew={handleSaveAndAddNew}
         isLoading={isLoading}
         isEdit={isEdit}
         hasChanges={hasChanges}
       />
-      {/* Main Content Area - Fixed Layout */}
-      <div className="flex-1 overflow-hidden flex">
-        {/* Left Panel - Question Editor (fixed width) */}
-        <div className="flex-1 min-w-0 p-6 overflow-auto bg-background">
-          <QuestionEditor
-            questionType={selectedType}
-            questionData={questionData}
-            onQuestionDataChange={setQuestionData}
-          />
+
+      {/* Main Content Area - Two Column Layout */}
+      <div className="flex-grow flex flex-col lg:flex-row">
+        {/* Question Editor - Left Column (Full width on mobile, 2/3 on desktop) */}
+        <div className="flex-1 lg:w-2/3 order-1 lg:order-1">
+          <div className="p-4 lg:p-6 bg-background h-full">
+            <QuestionEditor
+              questionType={selectedType}
+              questionData={questionData}
+              onQuestionDataChange={setQuestionData}
+            />
+          </div>
         </div>
-        </div>
-        {/* Right Panel - Question Settings (fixed width) */}
-        <div className="w-96 border-l overflow-hidden">
+
+        {/* Question Settings - Right Column (Full width on mobile, 1/3 on desktop) */}
+        <div className="lg:w-1/3 order-2 lg:order-2 lg:border-l bg-background">
           <QuestionSettings
             marks={questionSettings.marks}
             difficulty={questionSettings.difficulty}
             bloomsTaxonomy={questionSettings.bloomsTaxonomy}
             courseOutcome={questionSettings.courseOutcome}
-            topics={questionSettings.topics}
+            topics={currentTopicsForSettings}
+            availableTopics={allTopics.map((topic) => ({
+              value: topic.id,
+              label: topic.name,
+            }))}
             onMarksChange={handleMarksChange}
             onDifficultyChange={handleDifficultyChange}
             onBloomsTaxonomyChange={handleBloomsTaxonomyChange}
@@ -451,6 +482,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
           />
         </div>
       </div>
+
       {/* Validation Error Modal */}
       <ValidationErrorModal
         isOpen={showValidationModal}

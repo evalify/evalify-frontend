@@ -1,39 +1,24 @@
-"use client";
-
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  FileText,
-  CheckCircle,
-  SquareCheck,
-  Type,
-  Edit3,
-  Code,
-  Link,
-  Upload,
   Eye,
   Save,
-  Plus,
-  ChevronDown,
-  Archive,
-  Loader2,
+  CircleDot,
+  FileInput,
+  Network,
+  FileText,
+  ToggleLeft,
+  Code,
+  Upload,
 } from "lucide-react";
 
 export type QuestionType =
   | "mcq"
-  | "true-false"
   | "fillup"
-  | "descriptive"
-  | "coding"
   | "match-following"
+  | "descriptive"
+  | "true-false"
+  | "coding"
   | "file-upload";
 
 interface QuestionTypeSelectorProps {
@@ -41,55 +26,50 @@ interface QuestionTypeSelectorProps {
   onTypeSelect: (type: QuestionType) => void;
   onPreview: () => void;
   onSave: () => void;
-  onSaveAndAddNew: () => void;
   isLoading?: boolean;
   isEdit?: boolean;
   hasChanges?: boolean;
-  mode?: "bank" | "quiz";
 }
 
-const questionTypes = [
+const questionTypes: {
+  type: QuestionType;
+  label: string;
+  icon: React.ReactNode;
+}[] = [
   {
-    type: "mcq" as QuestionType,
+    type: "mcq",
     label: "Multiple Choice",
-    icon: CheckCircle,
-    description: "Single or multiple correct answers",
+    icon: <CircleDot className="h-4 w-4" />,
   },
   {
-    type: "true-false" as QuestionType,
-    label: "True/False",
-    icon: SquareCheck,
-    description: "Binary choice questions",
-  },
-  {
-    type: "fillup" as QuestionType,
+    type: "fillup",
     label: "Fill in the Blanks",
-    icon: Type,
-    description: "Complete the missing parts",
+    icon: <FileInput className="h-4 w-4" />,
   },
   {
-    type: "descriptive" as QuestionType,
+    type: "match-following",
+    label: "Match the Following",
+    icon: <Network className="h-4 w-4" />,
+  },
+  {
+    type: "descriptive",
     label: "Descriptive",
-    icon: Edit3,
-    description: "Long-form text answers",
+    icon: <FileText className="h-4 w-4" />,
   },
   {
-    type: "coding" as QuestionType,
-    label: "Coding",
-    icon: Code,
-    description: "Programming challenges",
+    type: "true-false",
+    label: "True or False",
+    icon: <ToggleLeft className="h-4 w-4" />,
   },
   {
-    type: "match-following" as QuestionType,
-    label: "Match Following",
-    icon: Link,
-    description: "Connect related items",
+    type: "coding",
+    label: "Coding Question",
+    icon: <Code className="h-4 w-4" />,
   },
   {
-    type: "file-upload" as QuestionType,
+    type: "file-upload",
     label: "File Upload",
-    icon: Upload,
-    description: "Document submissions",
+    icon: <Upload className="h-4 w-4" />,
   },
 ];
 
@@ -98,43 +78,25 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
   onTypeSelect,
   onPreview,
   onSave,
-  onSaveAndAddNew,
   isLoading = false,
   isEdit = false,
   hasChanges = false,
-  mode = "bank",
 }) => {
-  const selectedTypeInfo = questionTypes.find((type) => type.type === selectedType);
-
-  const getModeText = () => {
-    return mode === "bank" ? "Add to Bank" : "Add to Quiz";
-  };
-
-  const getModeIcon = () => {
-    return mode === "bank" ? <Archive className="h-4 w-4" /> : <FileText className="h-4 w-4" />;
-  };
-
-  const getSaveButtonText = () => {
-    if (isEdit) {
-      return hasChanges ? "Update Question" : "No Changes";
-    }
-    return "Save Question";
-  };
-
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
       {/* Left side - Question types */}
       <div className="flex flex-wrap gap-2">
         {questionTypes.map(({ type, label, icon }) => (
           <Button
-            onClick={onPreview}
-            variant="outline"
+            key={type}
+            variant={selectedType === type ? "default" : "outline"}
             size="sm"
-            className="flex items-center gap-2"
-            disabled={isLoading}
+            onClick={() => onTypeSelect(type)}
+            className="min-w-fit flex items-center gap-2"
+            disabled={isEdit}
           >
-            <Eye className="h-4 w-4" />
-            Preview
+            {icon}
+            {label}
           </Button>
         ))}
       </div>

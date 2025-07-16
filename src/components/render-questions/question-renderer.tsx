@@ -1,5 +1,15 @@
 import React from "react";
-import { QuestionRendererProps } from "./types";
+import {
+  QuestionRendererProps,
+  MCQQuestion,
+  MMCQQuestion,
+  TrueFalseQuestion,
+  FillUpQuestion,
+  MatchTheFollowingQuestion,
+  DescriptiveQuestion,
+  FileUploadQuestion,
+  CodingQuestion,
+} from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -10,7 +20,6 @@ import {
   Edit,
   Trash2,
   Hash,
-  Copy,
   Eye,
   EyeOff,
   Lightbulb,
@@ -36,8 +45,8 @@ import { DescriptiveRenderer } from "./question-types/descriptive-renderer";
 import { FileUploadRenderer } from "./question-types/file-upload-renderer";
 import { CodingRenderer } from "./question-types/coding-renderer";
 
-const getDifficultyColor = (difficulty: string) => {
-  switch (difficulty) {
+const getDifficultyColor = (difficultyLevel: string) => {
+  switch (difficultyLevel) {
     case "EASY":
       return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
     case "MEDIUM":
@@ -96,23 +105,30 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
 
   const handleEdit = () => {
     if (actions?.onEdit) {
-      actions.onEdit(question.id || `question-${questionNumber || 1}`);
+      const questionId = (question as unknown as Record<string, unknown>)
+        .questionId as string;
+      actions.onEdit(questionId || `question-${questionNumber || 1}`);
     }
   };
 
   const handleDelete = () => {
     if (actions?.onDelete) {
-      actions.onDelete(question.id || `question-${questionNumber || 1}`);
+      const questionId = (question as unknown as Record<string, unknown>)
+        .questionId as string;
+      actions.onDelete(questionId || `question-${questionNumber || 1}`);
     }
   };
 
   const handleEditMarks = () => {
     if (actions?.onEditMarks) {
-      const currentMarks = question.marks;
+      const currentMarks = (question as unknown as Record<string, unknown>)
+        .marks;
+      const questionId = (question as unknown as Record<string, unknown>)
+        .questionId as string;
       const newMarks = prompt("Enter new marks:", currentMarks?.toString());
       if (newMarks && !isNaN(Number(newMarks))) {
         actions.onEditMarks(
-          question.id || `question-${questionNumber || 1}`,
+          questionId || `question-${questionNumber || 1}`,
           Number(newMarks),
         );
         showSuccess("Marks updated successfully");
@@ -120,14 +136,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     }
   };
 
-  const handleDuplicate = () => {
-    if (actions?.onDuplicate) {
-      actions.onDuplicate(question.id || `question-${questionNumber || 1}`);
-      showSuccess("Question duplicated successfully");
-    }
-  };
   const renderQuestionContent = () => {
-    // Create enhanced config for child components
     const enhancedConfig = {
       ...config,
       showCorrectAnswers: shouldShowCorrectAnswers,
@@ -140,7 +149,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       case "MCQ":
         return (
           <MCQRenderer
-            question={question}
+            question={question as MCQQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
@@ -148,15 +157,15 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       case "MMCQ":
         return (
           <MMCQRenderer
-            question={question}
+            question={question as MMCQQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
         );
-      case "TRUE_FALSE":
+      case "TRUEFALSE":
         return (
           <TrueFalseRenderer
-            question={question}
+            question={question as TrueFalseQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
@@ -164,7 +173,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       case "FILL_UP":
         return (
           <FillUpRenderer
-            question={question}
+            question={question as FillUpQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
@@ -172,7 +181,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       case "MATCH_THE_FOLLOWING":
         return (
           <MatchTheFollowingRenderer
-            question={question}
+            question={question as MatchTheFollowingQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
@@ -180,7 +189,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       case "DESCRIPTIVE":
         return (
           <DescriptiveRenderer
-            question={question}
+            question={question as DescriptiveQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
@@ -188,7 +197,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       case "FILE_UPLOAD":
         return (
           <FileUploadRenderer
-            question={question}
+            question={question as FileUploadQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
@@ -196,7 +205,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       case "CODING":
         return (
           <CodingRenderer
-            question={question}
+            question={question as CodingQuestion}
             config={enhancedConfig}
             onAnswerChange={onAnswerChange}
           />
@@ -231,8 +240,13 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 {config.showMarks && (
                   <Badge variant="outline" className="font-medium text-xs">
                     <Award className="w-3 h-3 mr-1" />
-                    {question.markValue}
-                    {question.markValue === 1 ? "mark" : "marks"}
+                    {String(
+                      (question as unknown as Record<string, unknown>).marks,
+                    )}
+                    {(question as unknown as Record<string, unknown>).marks ===
+                    1
+                      ? " mark"
+                      : " marks"}
                   </Badge>
                 )}
               </div>
@@ -263,12 +277,20 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                       <TooltipTrigger>
                         <Badge
                           className={cn(
-                            getTaxonomyColor(question.bloomsTaxonomy),
+                            getTaxonomyColor(
+                              String(
+                                (question as unknown as Record<string, unknown>)
+                                  .bloomsTaxonomy || "",
+                              ),
+                            ),
                             "text-xs",
                           )}
                         >
                           <BookOpen className="w-3 h-3 mr-1" />
-                          {question.bloomsTaxonomy}
+                          {String(
+                            (question as unknown as Record<string, unknown>)
+                              .bloomsTaxonomy || "",
+                          )}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -277,28 +299,43 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     </Tooltip>
                   )}
 
-                  {question.co && (
+                  {(question as unknown as Record<string, unknown>).co !==
+                    undefined &&
+                  (question as unknown as Record<string, unknown>).co !==
+                    null ? (
                     <Tooltip>
                       <TooltipTrigger>
                         <Badge variant="outline" className="text-xs">
-                          CO-{question.co}
+                          CO-
+                          {String(
+                            (question as unknown as Record<string, unknown>).co,
+                          )}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Course Outcome {question.co}</p>
                       </TooltipContent>
                     </Tooltip>
-                  )}
+                  ) : null}
 
                   {config.showTopics &&
-                    question.topics?.map((topic) => (
-                      <Badge
-                        key={topic.id}
-                        variant="outline"
-                        className="text-xs"
-                      >
-                        {topic.name}
-                      </Badge>
+                    question.topics &&
+                    question.topics.length > 0 &&
+                    question.topics.map((topic) => (
+                      <Tooltip key={topic.id}>
+                        <TooltipTrigger>
+                          <Badge
+                            variant="default"
+                            className="text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                          >
+                            <BookOpen className="w-3 h-3 mr-1" />
+                            {topic.name}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Topic: {topic.name}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                 </div>
               )}
@@ -355,24 +392,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Edit Marks</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-
-                  {actions.onDuplicate && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleDuplicate}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Duplicate Question</p>
                       </TooltipContent>
                     </Tooltip>
                   )}

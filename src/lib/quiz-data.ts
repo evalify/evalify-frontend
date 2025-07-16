@@ -91,7 +91,7 @@ export async function getQuizData(
         id: 3,
         question: "___ and ___ are the largest planets in our solar system?",
         marks: 2,
-        type: "FILL_IN_THE_BLANKS",
+        type: "FILL_UP",
         sectionId: 1,
       },
       {
@@ -151,7 +151,7 @@ export async function getQuizData(
         id: 7,
         question: "Select all the planets in our solar system.",
         marks: 5,
-        type: "MULTI_SELECT",
+        type: "MMCQ",
         sectionId: 2,
         options: [
           { text: "Mercury", correct: true },
@@ -182,7 +182,11 @@ export function processQuizData(
 
   // Process questions to transform ServerOption to Option
   const processedQuestions = rawData.questions.map((question) => {
-    if (question.type === "MCQ" || question.type === "MULTI_SELECT") {
+    if (
+      question.type === "MCQ" ||
+      question.type === "MMCQ" ||
+      question.type === "TRUEFALSE"
+    ) {
       return {
         ...question,
         options: transformOptions(question.options as ServerOption[]),

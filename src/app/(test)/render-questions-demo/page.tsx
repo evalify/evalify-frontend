@@ -269,9 +269,6 @@ export default function QuestionRendererDemo() {
     onEditMarks: (questionId: string, newMarks: number) => {
       showSuccess(`Marks updated to ${newMarks} for question: ${questionId}`);
     },
-    onDuplicate: (questionId: string) => {
-      showSuccess(`Duplicate action triggered for question: ${questionId}`);
-    },
   };
 
   const handleAnswerChange = (answer: unknown) => {

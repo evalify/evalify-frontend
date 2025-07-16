@@ -35,11 +35,21 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
   };
 
   const displayOptions = config.shuffleOptions
-    ? [...question.options].sort(() => Math.random() - 0.5)
-    : question.options;
+    ? [...((question as any).options || (question as any).choices || [])].sort(
+        () => Math.random() - 0.5,
+      )
+    : (question as any).options || (question as any).choices || [];
+
+  if (!displayOptions || displayOptions.length === 0) {
+    return (
+      <div className="text-gray-500 italic">
+        No options available for this question.
+      </div>
+    );
+  }
 
   const getOptionKey = (option: MCQOption, index: number): string => {
-    return option.id || `opt-${index + 1}`;
+    return option.id && option.id.trim() ? option.id : `option-${index}`;
   };
 
   const getOptionClass = (option: MCQOption, index: number) => {
@@ -95,7 +105,7 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
         onValueChange={handleSelectionChange}
         disabled={config.readOnly}
       >
-        {displayOptions.map((option, index) => {
+        {displayOptions.map((option: any, index: number) => {
           const optionKey = getOptionKey(option, index);
           const optionIcon = getOptionIcon(option, index);
 
