@@ -19,9 +19,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Bank, { BankSchema } from "@/repo/bank/bank";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, MoreVertical, Edit2, Trash2, Copy, X } from "lucide-react";
+import {
+  Plus,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  Copy,
+  X,
+  AlertTriangle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { use, useState, useMemo, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -89,7 +105,6 @@ function TopicSidebar({
   const getDisplayName = (name: string) => {
     return name.length > 30 ? `${name.slice(0, 30)}...` : name;
   };
-
   return (
     <TooltipProvider>
       <Card className="w-80 h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] flex flex-col">
@@ -100,7 +115,6 @@ function TopicSidebar({
           <Separator />
         </CardHeader>
 
-        {/* Bank Metadata Section */}
         {bank && (
           <div className="px-4 pb-4 flex-shrink-0">
             <div className="space-y-2 text-xs text-muted-foreground">
@@ -330,18 +344,64 @@ const VirtualizedQuestionsList = React.forwardRef<
 ) {
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Use TanStack Virtual with dynamic height measurement only
   const virtualizer = useVirtualizer({
     count: questions.length,
     getScrollElement: () => parentRef.current,
-    // Minimal estimate - actual heights will be measured dynamically
     estimateSize: () => 50,
-    // Let TanStack Virtual measure the actual height of each question dynamically
     measureElement: (element) => element.getBoundingClientRect().height,
     overscan: 3,
     getItemKey: (index) =>
       `question-${(questions[index] as Record<string, unknown>)?.questionId || index}`,
   });
+
+  const deleteQnMutation = useMutation({
+    mutationFn: ({
+      questionId,
+      bankId,
+    }: {
+      questionId: string;
+      bankId: string;
+    }) => Bank.deleteBankQuestion(bankId, questionId),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bankQuestions", bankId] });
+      queryClient.invalidateQueries({ queryKey: ["bank", bankId] });
+    },
+  });
+  const queryClient = useQueryClient();
+  const { success, error } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
+
+  const handleDeleteQuestion = (questionId: string) => {
+    setQuestionToDelete(questionId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (questionToDelete) {
+      deleteQnMutation.mutate(
+        { questionId: questionToDelete, bankId },
+        {
+          onSuccess: () => {
+            success("Question deleted successfully");
+            setDeleteDialogOpen(false);
+            setQuestionToDelete(null);
+          },
+          onError: () => {
+            error("Failed to delete question");
+            setDeleteDialogOpen(false);
+            setQuestionToDelete(null);
+          },
+        },
+      );
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setQuestionToDelete(null);
+  };
 
   React.useImperativeHandle(ref, () => virtualizer, [virtualizer]);
 
@@ -533,8 +593,8 @@ const VirtualizedQuestionsList = React.forwardRef<
                                 `/question-bank/${bankId}/question/${questionId}`,
                               );
                             },
-                            onDelete: () => {
-                              // Add delete functionality here
+                            onDelete: (questionId) => {
+                              handleDeleteQuestion(questionId);
                             },
                           }}
                         />
@@ -547,6 +607,42 @@ const VirtualizedQuestionsList = React.forwardRef<
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="flex-1">
+                <DialogTitle>Delete Question</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Are you sure you want to delete this question? This action
+                  cannot be undone.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={cancelDelete}
+              disabled={deleteQnMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteQnMutation.isPending}
+            >
+              {deleteQnMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 });
