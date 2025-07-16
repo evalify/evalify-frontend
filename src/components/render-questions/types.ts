@@ -108,16 +108,18 @@ export interface FileUploadQuestion extends BaseQuestion {
 }
 
 export interface FunctionParam {
-  name: string; // Changed from 'param' to 'name' to match usage
+  param: string; // Backend sends 'param' field
   type: string;
   description?: string;
 }
 
 export interface TestCase {
   id?: string;
-  input: string; // Changed from unknown[] to string to match sample data
-  expectedOutput: string; // Changed from 'expected' to 'expectedOutput' and type to string
-  isHidden?: boolean;
+  input: unknown[]; // Backend sends array format like [2, 3]
+  expected: unknown; // Backend sends direct value like 5
+  tags?: string; // Backend sends tags like "HIDDEN", "SAMPLE"
+  isMinimal?: boolean;
+  language?: string;
   points?: number;
 }
 
@@ -239,9 +241,9 @@ export interface CodingAnswer {
 export interface TestResult {
   testCaseId: string;
   passed: boolean;
-  input: string; // Changed from unknown[] to string
-  expectedOutput: string; // Changed from 'expected' to 'expectedOutput'
-  actual?: string; // Changed from unknown to string
+  input: unknown[]; // Backend format
+  expected: unknown; // Backend format
+  actual?: unknown; // Backend format
   error?: string;
 }
 
