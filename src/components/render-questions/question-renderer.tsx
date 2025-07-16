@@ -299,10 +299,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     </Tooltip>
                   )}
 
-                  {(question as unknown as Record<string, unknown>).co !==
-                    undefined &&
-                  (question as unknown as Record<string, unknown>).co !==
-                    null ? (
+                  {typeof (question as unknown as Record<string, unknown>)
+                    .co === "number" ? (
                     <Tooltip>
                       <TooltipTrigger>
                         <Badge variant="outline" className="text-xs">
@@ -313,7 +311,12 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Course Outcome {question.co}</p>
+                        <p>
+                          Course Outcome{" "}
+                          {String(
+                            (question as unknown as Record<string, unknown>).co,
+                          )}
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   ) : null}

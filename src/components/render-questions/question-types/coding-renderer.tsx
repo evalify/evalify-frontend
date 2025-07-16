@@ -101,7 +101,7 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
   }, [config.userAnswers]);
 
   const visibleTestCases =
-    question.testcases?.filter((tc) => !tc.isHidden) || [];
+    question.testcases?.filter((tc) => tc.tags !== "HIDDEN") || [];
   const passedTests = testResults.filter((tr) => tr.passed).length;
   const totalTests = testResults.length;
 
@@ -133,15 +133,19 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
               </>
             )}
           </div>
-          {question.params && question.params.length > 0 && (
-            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-              {question.params.map((param, index) => (
-                <div key={`param-desc-${index}`}>
-                  <strong>{param.param}</strong>: {param.description}
-                </div>
-              ))}
-            </div>
-          )}
+          {question.params &&
+            question.params.length > 0 &&
+            question.params.some((param) => param.description) && (
+              <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                {question.params.map((param, index) =>
+                  param.description ? (
+                    <div key={`param-desc-${index}`}>
+                      <strong>{param.param}</strong>: {param.description}
+                    </div>
+                  ) : null,
+                )}
+              </div>
+            )}
         </div>
       )}
       <Tabs defaultValue="code" className="w-full">

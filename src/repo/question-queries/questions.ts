@@ -11,21 +11,73 @@ export interface ApiError {
   details?: Record<string, unknown>;
 }
 
-// Backend response interface for bank question details
+// Backend response interface for bank question details - updated to match actual backend response
 export interface BankQuestionDTO {
-  id: string;
+  id?: string;
+  questionId?: string; // Backend sometimes uses questionId field
   question: string;
-  explanation: string | null;
-  hint: string | null;
+  explanation?: string | null;
+  hint?: string | null;
   marks: number;
   bloomsTaxonomy: string;
   co: number;
-  negativeMark: number | null;
+  negativeMark?: number | null;
   difficulty: string;
-  topics: Array<{ id: string; name: string }>;
-  questionType: string;
-  updatedAt: string;
-  updatedBy: string | null;
+  topics?: Array<{ id: string; name: string }>;
+  questionType?: string;
+  type?: string; // Backend uses both questionType and type
+  updatedAt?: string;
+  updatedBy?: string | null;
+
+  // MCQ/MMCQ specific fields
+  options?: Array<{
+    id?: string | null;
+    text: string;
+    isCorrect: boolean;
+  }>;
+
+  // TRUE/FALSE specific fields
+  answers?: boolean;
+
+  // CODING specific fields
+  functionName?: string;
+  returnType?: string;
+  params?: Array<{
+    param: string;
+    type: string;
+  }>;
+  language?: string[];
+  driverCode?: string;
+  boilerCode?: string;
+  testcases?: Array<{
+    input: unknown[];
+    expected: unknown;
+    tags?: string;
+    isMinimal?: boolean;
+    language?: string;
+  }>;
+  answer?: string | null;
+
+  // FILL_UP specific fields
+  strictMatch?: boolean;
+  llmEval?: boolean | null;
+  template?: string;
+  blanks?: Array<{
+    id: string;
+    answers: string[];
+  }>;
+
+  // DESCRIPTIVE specific fields
+  expectedAnswer?: string;
+  strictness?: number;
+  guidelines?: string;
+
+  // MATCH_THE_FOLLOWING specific fields
+  keys?: Array<{
+    id?: string;
+    leftPair: string;
+    rightPair: string;
+  }>;
 }
 
 interface QuestionCreationSettings {
@@ -143,8 +195,8 @@ class QuestionsService {
     // Extract topic IDs from settings
     const topicIds = settings.topics.map((topic) => topic.value);
 
-    // Parse course outcome to integer
-    const co = parseInt(settings.courseOutcome) || 0;
+    // Parse course outcome to integer (extract number from "co1", "co2", etc.)
+    const co = parseInt(settings.courseOutcome.replace(/^co/i, "")) || 0;
 
     // Map difficulty to backend enum
     const difficultyMap: Record<string, string> = {
@@ -467,11 +519,13 @@ class QuestionsService {
       FILL_UP: "fillup",
       DESCRIPTIVE: "descriptive",
       MATCH_THE_FOLLOWING: "match-following",
-      TRUE_FALSE: "true-false",
+      TRUEFALSE: "true-false", // Fixed: backend sends TRUEFALSE, not TRUE_FALSE
       FILE_UPLOAD: "file-upload",
     };
 
-    const frontendType = typeMap[backendQuestion.questionType] || "mcq";
+    const frontendType =
+      typeMap[backendQuestion.questionType || backendQuestion.type || "MCQ"] ||
+      "mcq";
 
     // Base question data
     const baseQuestionData = {
@@ -487,20 +541,70 @@ class QuestionsService {
         questionData = {
           ...baseQuestionData,
           type: "mcq",
-          allowMultipleCorrect: backendQuestion.questionType === "MMCQ",
-          options: [], // This would need to be fetched separately or included in the response
+          allowMultipleCorrect:
+            (backendQuestion.questionType || backendQuestion.type) === "MMCQ",
+          options: (backendQuestion.options || []).map((option, index) => ({
+            id: option.id || `opt-${index}`,
+            text: option.text,
+            isCorrect: option.isCorrect,
+          })),
         };
         break;
       case "coding":
         questionData = {
           ...baseQuestionData,
           type: "coding",
-          language: "",
-          starterCode: "",
-          testCases: [],
+          language:
+            backendQuestion.language && backendQuestion.language.length > 0
+              ? backendQuestion.language[0]
+              : "javascript",
+          starterCode: backendQuestion.boilerCode || "",
+          testCases: (backendQuestion.testcases || []).map((tc, index) => {
+            // Convert array input to key-value format expected by frontend
+            const inputs: Record<string, string> = {};
+            if (Array.isArray(tc.input)) {
+              // Map inputs based on function parameters if available
+              if (backendQuestion.params) {
+                tc.input.forEach((val, idx) => {
+                  const paramName =
+                    backendQuestion.params?.[idx]?.param || `param${idx}`;
+                  inputs[paramName] = String(val);
+                });
+              } else {
+                tc.input.forEach((val, idx) => {
+                  inputs[`param${idx}`] = String(val);
+                });
+              }
+            } else {
+              inputs["param0"] = String(tc.input);
+            }
+
+            return {
+              id: `test-${index}`,
+              inputs,
+              expectedOutput: String(tc.expected),
+              isHidden: tc.tags === "HIDDEN",
+            };
+          }),
           timeLimit: 30,
           memoryLimit: 256,
-          functionName: "",
+          functionName: backendQuestion.functionName || "",
+          functionMetadata: backendQuestion.params
+            ? {
+                name: backendQuestion.functionName || "",
+                returnType: backendQuestion.returnType || "void",
+                language:
+                  backendQuestion.language &&
+                  backendQuestion.language.length > 0
+                    ? backendQuestion.language[0]
+                    : "javascript",
+                parameters: backendQuestion.params.map((p, idx) => ({
+                  id: `param-${idx}`,
+                  name: p.param,
+                  type: p.type,
+                })),
+              }
+            : undefined,
         };
         break;
       case "fillup":
@@ -532,7 +636,10 @@ class QuestionsService {
         questionData = {
           ...baseQuestionData,
           type: "true-false",
-          correctAnswer: null,
+          correctAnswer:
+            backendQuestion.answers !== undefined
+              ? backendQuestion.answers
+              : null,
         };
         break;
       case "file-upload":
@@ -558,8 +665,8 @@ class QuestionsService {
       difficulty: difficultyMap[backendQuestion.difficulty] || "medium",
       bloomsTaxonomy:
         taxonomyMap[backendQuestion.bloomsTaxonomy] || "understand",
-      courseOutcome: backendQuestion.co.toString(),
-      topics: backendQuestion.topics.map((topic) => ({
+      courseOutcome: `co${backendQuestion.co}`,
+      topics: (backendQuestion.topics || []).map((topic) => ({
         value: topic.id,
         label: topic.name,
       })),

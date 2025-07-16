@@ -47,6 +47,8 @@ const courseOutcomeOptions = [
   { value: "co2", label: "CO 2" },
   { value: "co3", label: "CO 3" },
   { value: "co4", label: "CO 4" },
+  { value: "co5", label: "CO 5" },
+  { value: "co6", label: "CO 6" },
 ];
 
 const QuestionSettings = ({

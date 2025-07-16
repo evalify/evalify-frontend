@@ -25,7 +25,7 @@ type BankQuestion = {
   type: string;
   marks?: number;
   difficulty?: string;
-  created_at: string;
+  created_at?: string;
   topics?: BankTopic[];
 
   // Additional fields that should be included for proper rendering
