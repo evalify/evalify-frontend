@@ -3,6 +3,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -187,6 +209,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-size: var(--base-font-size);
@@ -212,23 +235,23 @@
   }
 
   /* Apply density to spacing */
-  .space-y-1 > * + * {
+  .space-y-1>*+* {
     margin-top: calc(0.25rem * var(--layout-density));
   }
 
-  .space-y-2 > * + * {
+  .space-y-2>*+* {
     margin-top: calc(0.5rem * var(--layout-density));
   }
 
-  .space-y-3 > * + * {
+  .space-y-3>*+* {
     margin-top: calc(0.75rem * var(--layout-density));
   }
 
-  .space-y-4 > * + * {
+  .space-y-4>*+* {
     margin-top: calc(1rem * var(--layout-density));
   }
 
-  .space-y-6 > * + * {
+  .space-y-6>*+* {
     margin-top: calc(1.5rem * var(--layout-density));
   }
 
@@ -245,6 +268,7 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -288,12 +312,12 @@
     margin-top: 0;
   }
 
-  h1.tiptap-heading + h2.tiptap-heading,
-  h1.tiptap-heading + h3.tiptap-heading,
-  h2.tiptap-heading + h1.tiptap-heading,
-  h2.tiptap-heading + h3.tiptap-heading,
-  h3.tiptap-heading + h1.tiptap-heading,
-  h3.tiptap-heading + h2.tiptap-heading {
+  h1.tiptap-heading+h2.tiptap-heading,
+  h1.tiptap-heading+h3.tiptap-heading,
+  h2.tiptap-heading+h1.tiptap-heading,
+  h2.tiptap-heading+h3.tiptap-heading,
+  h3.tiptap-heading+h1.tiptap-heading,
+  h3.tiptap-heading+h2.tiptap-heading {
     margin-top: 0;
   }
 
