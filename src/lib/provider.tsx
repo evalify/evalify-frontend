@@ -11,7 +11,20 @@ export interface ProvidersProps {
   theme?: ThemeProviderProps;
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 3, // Retry failed queries three times
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
+      staleTime: 1000 * 60 * 1, // 1 minute fresh
+    },
+    mutations: {
+      retry: false, // still no retry for POST/PUT/DELETE unless needed
+    },
+  },
+});
 
 export function Providers({ children }: ProvidersProps) {
   return (
