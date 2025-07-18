@@ -19,6 +19,9 @@ import { format, differenceInMinutes } from "date-fns";
 import { QuizParticipant, QuizParticipantData } from "./quiz-participant";
 import type { Student, Batch, Course, Lab } from "@/lib/types";
 import Quiz from "@/repo/quiz/quiz";
+import { useQuery } from "@tanstack/react-query";
+import { courseQueries } from "@/repo/course-queries/course-queries";
+import labQueries from "@/repo/lab-queries/lab-queries";
 
 // Define the data structure for each component
 type QuizCreationData = {
@@ -374,7 +377,7 @@ export function QuizCreationTabs(
         instructions: meta.instructions,
         startTime,
         endTime,
-        durationInMinutes: duration,
+        duration: duration,
         password: meta.settings.passwordProtected ? meta.settings.password : "",
         fullScreen: meta.settings.fullScreen,
         shuffleQuestions: meta.settings.shuffleQuestions,
@@ -385,10 +388,10 @@ export function QuizCreationTabs(
         publishResult: meta.settings.publishResult,
         publishQuiz: meta.settings.publishQuiz,
         section: [],
-        courseIds: participantData.courses,
-        studentIds: participantData.students,
-        labIds: participantData.labs,
-        batchIds: participantData.batches,
+        course: participantData.courses,
+        student: participantData.students,
+        lab: participantData.labs,
+        batch: participantData.batches,
         createdAt: now,
         createdBy: "",
       };
@@ -416,6 +419,21 @@ export function QuizCreationTabs(
     }
   };
 
+  const { data: labsData } = useQuery({
+    queryKey: ["labs"],
+    queryFn: labQueries.getLabs,
+  });
+  const { data: coursesData } = useQuery({
+    queryKey: ["courses"],
+    queryFn: courseQueries.getCoursesHandledByUser,
+  });
+
+  // const {data: batchesData} = useQuery(
+  //   {
+  //     queryKey: ["batches"],
+  //     queryFn: batchQueries,
+  //   }
+  // )
   return (
     <div className="w-full">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
@@ -440,7 +458,10 @@ export function QuizCreationTabs(
             </Button>
           </div>
         </div>
-
+        <pre>
+          {JSON.stringify(labsData, null, 2)}
+          {JSON.stringify(coursesData, null, 2)}
+        </pre>
         <Tabs
           value={currentTab}
           onValueChange={handleTabChange}
