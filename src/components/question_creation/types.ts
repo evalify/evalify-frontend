@@ -1,34 +1,25 @@
-export interface FunctionParameter {
+export interface CodingTestCase {
   id: string;
-  name: string;
-  type: string;
-}
-
-export interface TestCase {
-  id: string;
-  inputs: Record<string, string>; // parameter name -> value
-  expectedOutput: string;
-  isHidden: boolean;
-}
-
-export interface FunctionMetadata {
-  name: string;
-  parameters: FunctionParameter[];
-  returnType: string;
+  code: string;
+  tags: "SAMPLE" | "HIDDEN";
+  isMinimal: boolean;
   language: string;
 }
 
 export interface CodingQuestionData {
-  functionMetadata: FunctionMetadata;
-  testCases: TestCase[];
+  testCases: CodingTestCase[];
   boilerplateCode: string;
+  driverCode: string;
   description: string;
+  strictMatch: boolean;
+  llmEval: boolean;
+  languages: string[];
 }
 
 // Question creation and response types
 export interface QuestionCreationRequest {
   type: string;
-  data?: any; // Question-specific data (varies by question type)
+  data?: Record<string, unknown>; // Question-specific data (varies by question type)
   settings?: {
     marks: number;
     difficulty: string;
@@ -42,7 +33,7 @@ export interface QuestionCreationRequest {
   bloomsTaxonomy?: string;
   courseOutcome?: string;
   topics?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface QuestionResponse {
@@ -54,7 +45,7 @@ export interface QuestionResponse {
   bloomsTaxonomy: string;
   courseOutcome: string;
   topics: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

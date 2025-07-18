@@ -9,7 +9,7 @@ import DescriptiveQuestion from "./question-types/descriptive-question";
 import CodingQuestion from "./question-types/coding-question";
 import MatchFollowingQuestion from "./question-types/match-following-question";
 import FileUploadQuestion from "./question-types/file-upload-question";
-import { FunctionMetadata } from "./types";
+import { CodingTestCase } from "./types";
 
 // Type definitions for different question data
 interface MCQOption {
@@ -24,17 +24,15 @@ interface FillupBlank {
   acceptedAnswers: string[];
 }
 
-interface MatchItem {
+interface MatchPairItem {
   id: string;
-  leftText: string;
-  rightText: string;
+  text: string;
 }
 
-interface TestCase {
+interface MatchItem {
   id: string;
-  inputs: Record<string, string>;
-  expectedOutput: string;
-  isHidden: boolean;
+  leftPair: MatchPairItem;
+  rightPair: MatchPairItem;
 }
 
 // Base question data interface
@@ -74,11 +72,11 @@ interface CodingData extends BaseQuestionData {
   type: "coding";
   language: string;
   starterCode?: string;
-  testCases: TestCase[];
-  timeLimit?: number;
-  memoryLimit?: number;
-  functionName?: string;
-  functionMetadata?: FunctionMetadata;
+  driverCode?: string;
+  testCases: CodingTestCase[];
+  strictMatch?: boolean;
+  llmEval?: boolean;
+  languages?: string[];
 }
 
 interface MatchFollowingData extends BaseQuestionData {
@@ -164,18 +162,19 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           type: "coding",
           language: "python",
           starterCode: "",
+          driverCode: "",
           testCases: [
-            { id: "test-1", inputs: {}, expectedOutput: "", isHidden: false },
+            {
+              id: "test-1",
+              code: "print('Test case 1')",
+              tags: "SAMPLE",
+              isMinimal: false,
+              language: "python",
+            },
           ],
-          timeLimit: undefined,
-          memoryLimit: undefined,
-          functionName: "",
-          functionMetadata: {
-            name: "",
-            parameters: [],
-            returnType: "int",
-            language: "python",
-          },
+          strictMatch: true,
+          llmEval: false,
+          languages: ["python"],
         };
 
       case "match-following":
@@ -183,8 +182,16 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
           ...baseData,
           type: "match-following",
           matchItems: [
-            { id: "match-1", leftText: "", rightText: "" },
-            { id: "match-2", leftText: "", rightText: "" },
+            {
+              id: "match-1",
+              leftPair: { id: "left-1", text: "" },
+              rightPair: { id: "right-1", text: "" },
+            },
+            {
+              id: "match-2",
+              leftPair: { id: "left-2", text: "" },
+              rightPair: { id: "right-2", text: "" },
+            },
           ],
         };
 
@@ -334,25 +341,27 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
               question={questionData.question}
               language={questionData.language}
               starterCode={questionData.starterCode}
+              driverCode={questionData.driverCode}
               testCases={questionData.testCases}
               explanation={questionData.explanation}
               showExplanation={questionData.showExplanation}
-              functionName={questionData.functionName}
-              functionMetadata={questionData.functionMetadata}
+              strictMatch={questionData.strictMatch}
+              llmEval={questionData.llmEval}
+              languages={questionData.languages}
               onQuestionChange={(question) => updateData({ question })}
               onLanguageChange={(language) => updateData({ language })}
               onStarterCodeChange={(starterCode) => updateData({ starterCode })}
+              onDriverCodeChange={(driverCode) =>
+                updateData({ driverCode: driverCode || undefined })
+              }
               onTestCasesChange={(testCases) => updateData({ testCases })}
               onExplanationChange={(explanation) => updateData({ explanation })}
               onShowExplanationChange={(showExplanation) =>
                 updateData({ showExplanation })
               }
-              onFunctionMetadataChange={(functionMetadata) =>
-                updateData({
-                  functionMetadata,
-                  functionName: functionMetadata.name,
-                })
-              }
+              onStrictMatchChange={(strictMatch) => updateData({ strictMatch })}
+              onLlmEvalChange={(llmEval) => updateData({ llmEval })}
+              onLanguagesChange={(languages) => updateData({ languages })}
             />
           );
         }
@@ -424,4 +433,4 @@ const QuestionEditor: React.FC<QuestionEditorProps> = ({
 };
 
 export default QuestionEditor;
-export type { QuestionData, MCQOption, FillupBlank, MatchItem, TestCase };
+export type { QuestionData, MCQOption, FillupBlank, MatchItem, CodingTestCase };

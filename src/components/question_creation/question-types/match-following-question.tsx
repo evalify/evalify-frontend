@@ -16,10 +16,15 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface MatchItem {
+interface MatchPairItem {
   id: string;
-  leftText: string;
-  rightText: string;
+  text: string;
+}
+
+interface MatchItem {
+  id: string; // Keep ID for UI management
+  leftPair: MatchPairItem;
+  rightPair: MatchPairItem;
 }
 
 interface MatchFollowingQuestionProps {
@@ -52,8 +57,14 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
   const addMatchItem = () => {
     const newItem: MatchItem = {
       id: `match-${Date.now()}`,
-      leftText: "",
-      rightText: "",
+      leftPair: {
+        id: `left-${Date.now()}`,
+        text: "",
+      },
+      rightPair: {
+        id: `right-${Date.now()}`,
+        text: "",
+      },
     };
     onMatchItemsChange([...matchItems, newItem]);
   };
@@ -71,12 +82,24 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
 
   const updateMatchItem = (
     itemId: string,
-    field: "leftText" | "rightText",
+    field: "leftPair" | "rightPair",
     value: string,
   ) => {
     onMatchItemsChange(
       matchItems.map((item) =>
-        item.id === itemId ? { ...item, [field]: value } : item,
+        item.id === itemId
+          ? {
+              ...item,
+              leftPair:
+                field === "leftPair"
+                  ? { ...item.leftPair, text: value }
+                  : item.leftPair,
+              rightPair:
+                field === "rightPair"
+                  ? { ...item.rightPair, text: value }
+                  : item.rightPair,
+            }
+          : item,
       ),
     );
   };
@@ -280,9 +303,9 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
                       <div className="space-y-2">
                         <Label className="text-sm">{index + 1}. Item A</Label>
                         <Input
-                          value={item.leftText}
+                          value={item.leftPair.text}
                           onChange={(e) =>
-                            updateMatchItem(item.id, "leftText", e.target.value)
+                            updateMatchItem(item.id, "leftPair", e.target.value)
                           }
                           placeholder="Enter left column item"
                         />
@@ -292,11 +315,11 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
                           {generateColumnBLabel(index)}. Item B
                         </Label>
                         <Input
-                          value={item.rightText}
+                          value={item.rightPair.text}
                           onChange={(e) =>
                             updateMatchItem(
                               item.id,
-                              "rightText",
+                              "rightPair",
                               e.target.value,
                             )
                           }
@@ -355,7 +378,7 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
                       key={`left-${item.id}`}
                       className="p-2 border rounded text-sm"
                     >
-                      {index + 1}. {item.leftText || "Enter item text"}
+                      {index + 1}. {item.leftPair.text || "Enter item text"}
                     </div>
                   ))}
                 </div>
@@ -371,7 +394,7 @@ const MatchFollowingQuestion: React.FC<MatchFollowingQuestionProps> = ({
                       className="p-2 border rounded text-sm"
                     >
                       {generateColumnBLabel(index)}.
-                      {item.rightText || "Enter item text"}
+                      {item.rightPair.text || "Enter item text"}
                     </div>
                   ))}
                 </div>

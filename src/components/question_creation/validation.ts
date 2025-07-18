@@ -153,30 +153,6 @@ function validateCodingQuestion(
   questionData: CodingData,
   errors: ValidationError[],
 ): void {
-  // Function name validation - check if functionMetadata exists and has a valid name
-  // Note: For existing coding questions, the function metadata might be embedded differently
-  // We need to check for both the function name directly and through metadata
-
-  // Check if there's function metadata with name (from new coding question format)
-  const functionName =
-    questionData.functionName || questionData.functionMetadata?.name;
-  if (!functionName || functionName.trim() === "") {
-    errors.push({
-      field: "functionName",
-      message: "Function name is required for coding questions",
-    });
-  } else {
-    // Validate function name format (should be a valid identifier)
-    const functionNamePattern = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
-    if (!functionNamePattern.test(functionName.trim())) {
-      errors.push({
-        field: "functionName",
-        message:
-          "Function name must be a valid identifier (letters, numbers, underscore, starting with letter or underscore)",
-      });
-    }
-  }
-
   // Test cases validation - must have at least one test case
   const testCases = questionData.testCases || [];
   if (testCases.length === 0) {
@@ -186,31 +162,28 @@ function validateCodingQuestion(
     });
   } else {
     testCases.forEach((testCase, index: number) => {
-      // Check if expected output is provided
-      if (!testCase.expectedOutput || testCase.expectedOutput.trim() === "") {
+      // Check if test code is provided
+      if (!testCase.code || testCase.code.trim() === "") {
         errors.push({
           field: "testCases",
-          message: `Test case ${index + 1} expected output is required`,
+          message: `Test case ${index + 1} code is required`,
         });
       }
 
-      // Check if input is provided (inputs should have at least one value)
-      if (!testCase.inputs || Object.keys(testCase.inputs).length === 0) {
+      // Check if language is specified
+      if (!testCase.language || testCase.language.trim() === "") {
         errors.push({
           field: "testCases",
-          message: `Test case ${index + 1} must have input parameters`,
+          message: `Test case ${index + 1} language is required`,
         });
-      } else {
-        // Check if all input values are provided
-        const emptyInputs = Object.entries(testCase.inputs).filter(
-          ([, value]) => !value || value.trim() === "",
-        );
-        if (emptyInputs.length > 0) {
-          errors.push({
-            field: "testCases",
-            message: `Test case ${index + 1} has empty input parameters`,
-          });
-        }
+      }
+
+      // Check if tags are valid
+      if (testCase.tags !== "SAMPLE" && testCase.tags !== "HIDDEN") {
+        errors.push({
+          field: "testCases",
+          message: `Test case ${index + 1} must have valid tags (SAMPLE or HIDDEN)`,
+        });
       }
     });
   }
@@ -220,6 +193,25 @@ function validateCodingQuestion(
     errors.push({
       field: "language",
       message: "Programming language is required",
+    });
+  }
+
+  // Languages array validation (for multi-language support)
+  if (questionData.languages && questionData.languages.length === 0) {
+    errors.push({
+      field: "languages",
+      message: "At least one programming language must be supported",
+    });
+  }
+
+  // Starter code validation (optional but if provided, should not be empty)
+  if (
+    questionData.starterCode !== undefined &&
+    questionData.starterCode.trim() === ""
+  ) {
+    errors.push({
+      field: "starterCode",
+      message: "Starter code should not be empty if provided",
     });
   }
 }
@@ -240,13 +232,13 @@ function validateMatchFollowingQuestion(
 
   // All match items must have both left and right text
   matchItems.forEach((item, index: number) => {
-    if (!item.leftText || item.leftText.trim() === "") {
+    if (!item.leftPair?.text || item.leftPair.text.trim() === "") {
       errors.push({
         field: "matchItems",
         message: `Match item ${index + 1} left text is required`,
       });
     }
-    if (!item.rightText || item.rightText.trim() === "") {
+    if (!item.rightPair?.text || item.rightPair.text.trim() === "") {
       errors.push({
         field: "matchItems",
         message: `Match item ${index + 1} right text is required`,

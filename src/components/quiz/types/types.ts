@@ -16,19 +16,34 @@ export interface MultipleSelectQuestion extends BaseQuestion {
 }
 export interface CodingQuestion extends BaseQuestion {
   type: "CODING";
-  driverCode: string;
-  boilerTemplate: string;
+  language: string;
+  languages?: string[];
+  starterCode?: string;
+  driverCode?: string;
+  testCases: Array<{
+    id: string;
+    code: string;
+    tags: "SAMPLE" | "HIDDEN";
+    isMinimal: boolean;
+    language: string;
+  }>;
+  explanation?: string;
+  showExplanation: boolean;
+  strictMatch?: boolean;
+  llmEval?: boolean;
 }
 
 export interface MatchtheFollowingQuestion extends BaseQuestion {
   type: "MATCH_THE_FOLLOWING";
-  key: {
-    id: string;
-    text: string;
-  }[];
-  value: {
-    id: string;
-    text: string;
+  keys: {
+    leftPair: {
+      id?: string;
+      text: string;
+    };
+    rightPair: {
+      id?: string;
+      text: string;
+    };
   }[];
 }
 

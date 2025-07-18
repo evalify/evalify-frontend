@@ -50,8 +50,9 @@ export interface BankQuestionDTO {
   driverCode?: string;
   boilerCode?: string;
   testcases?: Array<{
-    input: unknown[];
-    expected: unknown;
+    code?: string;
+    input?: unknown[];
+    expected?: unknown;
     tags?: string;
     isMinimal?: boolean;
     language?: string;
@@ -74,9 +75,14 @@ export interface BankQuestionDTO {
 
   // MATCH_THE_FOLLOWING specific fields
   keys?: Array<{
-    id?: string;
-    leftPair: string;
-    rightPair: string;
+    leftPair: {
+      id?: string;
+      text: string;
+    };
+    rightPair: {
+      id?: string;
+      text: string;
+    };
   }>;
 }
 
@@ -88,7 +94,7 @@ interface QuestionCreationSettings {
   topics: { value: string; label: string }[];
 }
 
-interface CreateQuestionRequest {
+export interface CreateQuestionRequest {
   type: QuestionCreationRequest["type"];
   data: QuestionData;
   settings: QuestionCreationSettings;
@@ -125,9 +131,10 @@ interface CodingQuestionDTO extends BaseQuestionDTO {
   returnType: string | null;
   params: string | null;
   testcases: Array<{
-    input: Record<string, string>;
-    output: string;
-    isHidden: boolean;
+    code: string;
+    tags: "SAMPLE" | "HIDDEN";
+    isMinimal: boolean;
+    language: string;
   }>;
   language: string[];
   answer: string | null;
@@ -155,9 +162,12 @@ interface DescriptiveQuestionDTO extends BaseQuestionDTO {
 interface MatchFollowingQuestionDTO extends BaseQuestionDTO {
   type: "MATCH_THE_FOLLOWING";
   keys: Array<{
-    id: string;
-    leftPair: string;
-    rightPair: string;
+    leftPair: {
+      text: string;
+    };
+    rightPair: {
+      text: string;
+    };
   }>;
 }
 
@@ -255,18 +265,19 @@ class QuestionsService {
         return {
           ...baseDTO,
           type: "CODING",
-          driverCode: null,
+          driverCode: data.driverCode || null,
           boilerCode: data.starterCode || null,
-          functionName: data.functionName || null,
+          functionName: null,
           returnType: null,
           params: null,
           testcases:
             data.testCases?.map((tc) => ({
-              input: tc.inputs,
-              output: tc.expectedOutput,
-              isHidden: tc.isHidden || false,
+              code: tc.code,
+              tags: tc.tags,
+              isMinimal: tc.isMinimal || false,
+              language: tc.language,
             })) || [],
-          language: data.language ? [data.language] : [],
+          language: data.languages || (data.language ? [data.language] : []),
           answer: null,
         };
 
@@ -301,9 +312,12 @@ class QuestionsService {
           keys:
             data.matchItems?.map((item) => {
               return {
-                leftPair: item.leftText,
-                rightPair: item.rightText,
-                id: item.id,
+                leftPair: {
+                  text: item.leftPair.text,
+                },
+                rightPair: {
+                  text: item.rightPair.text,
+                },
               };
             }) || [],
         };
@@ -322,7 +336,6 @@ class QuestionsService {
         };
 
       default:
-        // Default to MCQ if type is unknown
         return {
           ...baseDTO,
           type: "MCQ",
@@ -342,10 +355,8 @@ class QuestionsService {
         `/api/bank/${bankId}/questions`,
         transformedData,
       );
-
-      // Since backend returns 201 with no body, we'll create a mock response
       return {
-        id: `temp-${Date.now()}`, // Temporary ID until backend returns the actual ID
+        id: `temp-${Date.now()}`,
         type: questionData.type,
         content: questionData.data.question,
         marks: questionData.settings.marks,
@@ -398,12 +409,10 @@ class QuestionsService {
     try {
       const transformedData = this.transformQuestionData(questionData, true);
 
-      await axiosInstance.put(
+      await axiosInstance.patch(
         `/api/bank/${bankId}/questions/${id}`,
         transformedData,
       );
-
-      // Backend returns 200 OK with no body on successful update
       return {
         id: id,
         type: questionData.type,
@@ -501,7 +510,6 @@ class QuestionsService {
       HARD: "hard",
     };
 
-    // Map taxonomy from backend enum to frontend
     const taxonomyMap: Record<string, string> = {
       REMEMBER: "remember",
       UNDERSTAND: "understand",
@@ -519,7 +527,7 @@ class QuestionsService {
       FILL_UP: "fillup",
       DESCRIPTIVE: "descriptive",
       MATCH_THE_FOLLOWING: "match-following",
-      TRUEFALSE: "true-false", // Fixed: backend sends TRUEFALSE, not TRUE_FALSE
+      TRUEFALSE: "true-false",
       FILE_UPLOAD: "file-upload",
     };
 
@@ -527,14 +535,12 @@ class QuestionsService {
       typeMap[backendQuestion.questionType || backendQuestion.type || "MCQ"] ||
       "mcq";
 
-    // Base question data
     const baseQuestionData = {
       question: backendQuestion.question,
       explanation: backendQuestion.explanation || "",
       showExplanation: !!backendQuestion.explanation,
     };
 
-    // Create question data based on type
     let questionData: QuestionData;
     switch (frontendType) {
       case "mcq":
@@ -558,53 +564,23 @@ class QuestionsService {
             backendQuestion.language && backendQuestion.language.length > 0
               ? backendQuestion.language[0]
               : "javascript",
+          languages: backendQuestion.language || ["javascript"],
           starterCode: backendQuestion.boilerCode || "",
-          testCases: (backendQuestion.testcases || []).map((tc, index) => {
-            // Convert array input to key-value format expected by frontend
-            const inputs: Record<string, string> = {};
-            if (Array.isArray(tc.input)) {
-              // Map inputs based on function parameters if available
-              if (backendQuestion.params) {
-                tc.input.forEach((val, idx) => {
-                  const paramName =
-                    backendQuestion.params?.[idx]?.param || `param${idx}`;
-                  inputs[paramName] = String(val);
-                });
-              } else {
-                tc.input.forEach((val, idx) => {
-                  inputs[`param${idx}`] = String(val);
-                });
-              }
-            } else {
-              inputs["param0"] = String(tc.input);
-            }
-
-            return {
-              id: `test-${index}`,
-              inputs,
-              expectedOutput: String(tc.expected),
-              isHidden: tc.tags === "HIDDEN",
-            };
-          }),
-          timeLimit: 30,
-          memoryLimit: 256,
-          functionName: backendQuestion.functionName || "",
-          functionMetadata: backendQuestion.params
-            ? {
-                name: backendQuestion.functionName || "",
-                returnType: backendQuestion.returnType || "void",
-                language:
-                  backendQuestion.language &&
-                  backendQuestion.language.length > 0
-                    ? backendQuestion.language[0]
-                    : "javascript",
-                parameters: backendQuestion.params.map((p, idx) => ({
-                  id: `param-${idx}`,
-                  name: p.param,
-                  type: p.type,
-                })),
-              }
-            : undefined,
+          driverCode: backendQuestion.driverCode || "",
+          testCases: (backendQuestion.testcases || []).map((tc, index) => ({
+            id: `test-${index}`,
+            // Handle both old and new testcase formats
+            code: tc.code || `# Test case ${index + 1}`,
+            tags: (tc.tags === "HIDDEN" ? "HIDDEN" : "SAMPLE") as
+              | "SAMPLE"
+              | "HIDDEN",
+            isMinimal: tc.isMinimal || false,
+            language: tc.language || "javascript",
+          })),
+          explanation: backendQuestion.explanation || "",
+          showExplanation: false,
+          strictMatch: true,
+          llmEval: false,
         };
         break;
       case "fillup":
@@ -629,7 +605,17 @@ class QuestionsService {
         questionData = {
           ...baseQuestionData,
           type: "match-following",
-          matchItems: [],
+          matchItems: (backendQuestion.keys || []).map((key, index) => ({
+            id: `match-${index}`,
+            leftPair: {
+              id: key.leftPair.id || `left-${index}`,
+              text: key.leftPair.text,
+            },
+            rightPair: {
+              id: key.rightPair.id || `right-${index}`,
+              text: key.rightPair.text,
+            },
+          })),
         };
         break;
       case "true-false":

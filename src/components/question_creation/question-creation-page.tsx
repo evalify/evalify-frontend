@@ -7,9 +7,12 @@ import QuestionSettings from "./question-settings";
 import ValidationErrorModal from "./validation-error-modal";
 import { validateQuestionData, ValidationError } from "./validation";
 import { useToast } from "@/hooks/use-toast";
-import { questionsService } from "@/repo/question-queries/questions";
+import {
+  questionsService,
+  CreateQuestionRequest,
+} from "@/repo/question-queries/questions";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import Bank from "@/repo/bank/bank";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,7 +51,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   const searchParams = useSearchParams();
 
   // Initialize toast hook
-  const { info, success, error } = useToast();
+  const { success, error } = useToast();
 
   // Fetch all available topics for the bank
   const { data: allTopics = [] } = useQuery({
@@ -81,12 +84,92 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     }
   }, [questionError, error]);
 
+  // Reset form function
+  const resetForm = React.useCallback(() => {
+    setSelectedType("mcq");
+    setQuestionData({
+      type: "mcq",
+      question: "",
+      explanation: "",
+      showExplanation: false,
+      allowMultipleCorrect: false,
+      options: [],
+    });
+    setQuestionSettings({
+      marks: 1,
+      difficulty: "medium",
+      bloomsTaxonomy: "",
+      courseOutcome: "",
+    });
+    setSelectedTopicIds([]); // Reset selected topic IDs
+    setValidationErrors([]);
+    setShowValidationModal(false);
+  }, []);
+
+  // Mutations for create and update operations
+  const createQuestionMutation = useMutation({
+    mutationFn: async (questionToSave: CreateQuestionRequest) => {
+      return await questionsService.createQuestion(questionToSave, bankId!);
+    },
+    onSuccess: (response) => {
+      console.log("Question saved successfully:", response);
+      success("Question saved successfully!", {
+        description: `Question ID: ${response.id}`,
+      });
+      resetForm();
+    },
+    onError: (err) => {
+      console.error("Error saving question:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to save question. Please try again.";
+      error("Failed to save question", {
+        description: errorMessage,
+      });
+    },
+  });
+
+  const updateQuestionMutation = useMutation({
+    mutationFn: async (questionToSave: CreateQuestionRequest) => {
+      return await questionsService.updateQuestion(
+        questionId!,
+        questionToSave,
+        bankId!,
+      );
+    },
+    onSuccess: (response) => {
+      console.log("Question updated successfully:", response);
+      success("Question updated successfully!", {
+        description: `Question ID: ${response.id}`,
+      });
+      const questionToSave = {
+        type: selectedType,
+        data: questionData,
+        settings: {
+          ...questionSettings,
+          topics: currentTopicsForSettings,
+        },
+      };
+      initialStateRef.current = questionToSave;
+    },
+    onError: (err) => {
+      console.error("Error updating question:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to update question. Please try again.";
+      error("Failed to update question", {
+        description: errorMessage,
+      });
+    },
+  });
+
   // State for selected topics (from URL or initial props)
   const [selectedTopicIds, setSelectedTopicIds] = React.useState<string[]>(
     initialSelectedTopics,
   );
 
-  // Sync selected topics with URL changes
   React.useEffect(() => {
     const topicsParam = searchParams.get("topics");
     const urlTopics = topicsParam ? topicsParam.split(",") : [];
@@ -179,9 +262,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     },
   });
 
-  // Update initial state when fetched edit data or props change
   React.useEffect(() => {
-    // Prioritize fetched edit data over initial props
     const sourceQuestionData =
       editQuestionData?.questionData || initialQuestionData;
     const sourceQuestionSettings =
@@ -303,9 +384,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
           language: "",
           starterCode: "",
           testCases: [],
-          timeLimit: 30,
-          memoryLimit: 256,
-          functionName: "",
         };
         break;
       case "file-upload":
@@ -329,42 +407,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     setQuestionData(newQuestionData);
   };
 
-  // Handle preview
-  const handlePreview = () => {
-    console.log("Preview question:", {
-      type: selectedType,
-      data: questionData,
-      settings: {
-        ...questionSettings,
-        topics: currentTopicsForSettings,
-      },
-    });
-    // Show info toast instead of alert
-    info("Preview functionality will be implemented soon!");
-  };
-
-  const resetForm = () => {
-    setSelectedType("mcq");
-    setQuestionData({
-      type: "mcq",
-      question: "",
-      explanation: "",
-      showExplanation: false,
-      allowMultipleCorrect: false,
-      options: [],
-    });
-    setQuestionSettings({
-      marks: 1,
-      difficulty: "medium",
-      bloomsTaxonomy: "",
-      courseOutcome: "",
-    });
-    setSelectedTopicIds([]); // Reset selected topic IDs
-    setValidationErrors([]);
-    setShowValidationModal(false);
-  };
-  // Handle save
-  const [isLoading, setIsLoading] = React.useState(false);
+  const handleSaveAndNext = () => {};
 
   const handleSave = async () => {
     // Comprehensive validation using the validation system
@@ -386,67 +429,21 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       return;
     }
 
-    setIsLoading(true);
+    const questionToSave = {
+      type: selectedType,
+      data: questionData,
+      settings: {
+        ...questionSettings,
+        topics: currentTopicsForSettings, // Ensure topics are included in saved data
+      },
+    };
 
-    try {
-      let response;
-
-      const questionToSave = {
-        type: selectedType,
-        data: questionData,
-        settings: {
-          ...questionSettings,
-          topics: currentTopicsForSettings, // Ensure topics are included in saved data
-        },
-      };
-
-      if (isEdit && questionId) {
-        // Update existing question
-        response = await questionsService.updateQuestion(
-          questionId,
-          questionToSave,
-          bankId,
-        );
-
-        console.log("Question updated successfully:", response);
-
-        // Show success toast
-        success("Question updated successfully!", {
-          description: `Question ID: ${response.id}`,
-        });
-
-        // Update initial state ref to reflect the new saved state
-        initialStateRef.current = questionToSave;
-      } else {
-        // Create new question
-        response = await questionsService.createQuestion(
-          questionToSave,
-          bankId,
-        );
-
-        console.log("Question saved successfully:", response);
-
-        // Show success toast
-        success("Question saved successfully!", {
-          description: `Question ID: ${response.id}`,
-        });
-
-        // Reset the form after successful save (only for create mode)
-        resetForm();
-      }
-    } catch (err) {
-      console.error(`Error ${isEdit ? "updating" : "saving"} question:`, err);
-
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : `Failed to ${isEdit ? "update" : "save"} question. Please try again.`;
-
-      error(`Failed to ${isEdit ? "update" : "save"} question`, {
-        description: errorMessage,
-      });
-    } finally {
-      setIsLoading(false);
+    if (isEdit && questionId) {
+      // Update existing question using mutation
+      updateQuestionMutation.mutate(questionToSave);
+    } else {
+      // Create new question using mutation
+      createQuestionMutation.mutate(questionToSave);
     }
   };
 
@@ -563,9 +560,12 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
           <QuestionTypeSelector
             selectedType={selectedType}
             onTypeSelect={handleTypeSelect}
-            onPreview={handlePreview}
+            onSaveAndNext={handleSaveAndNext}
             onSave={handleSave}
-            isLoading={isLoading}
+            isLoading={
+              createQuestionMutation.isPending ||
+              updateQuestionMutation.isPending
+            }
             isEdit={isEdit}
             hasChanges={hasChanges}
           />
