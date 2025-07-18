@@ -407,9 +407,14 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     setQuestionData(newQuestionData);
   };
 
-  const handleSaveAndNext = () => {};
+  const handleSaveAndBack = async () => {
+    const success = await handleSave();
+    if (success) {
+      router.push(`/question-bank/${bankId}`);
+    }
+  };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     // Comprehensive validation using the validation system
     const validationResult = validateQuestionData(
       questionData,
@@ -419,14 +424,14 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     if (!validationResult.isValid) {
       setValidationErrors(validationResult.errors);
       setShowValidationModal(true);
-      return;
+      return false;
     }
 
     if (!bankId) {
       error("Bank ID is required", {
         description: "Cannot save question without a valid bank ID",
       });
-      return;
+      return false;
     }
 
     const questionToSave = {
@@ -438,12 +443,18 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       },
     };
 
-    if (isEdit && questionId) {
-      // Update existing question using mutation
-      updateQuestionMutation.mutate(questionToSave);
-    } else {
-      // Create new question using mutation
-      createQuestionMutation.mutate(questionToSave);
+    try {
+      if (isEdit && questionId) {
+        // Update existing question using mutation
+        await updateQuestionMutation.mutateAsync(questionToSave);
+      } else {
+        // Create new question using mutation
+        await createQuestionMutation.mutateAsync(questionToSave);
+      }
+      return true;
+    } catch (err) {
+      console.error("Error saving question:", err);
+      return false;
     }
   };
 
@@ -560,7 +571,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
           <QuestionTypeSelector
             selectedType={selectedType}
             onTypeSelect={handleTypeSelect}
-            onSaveAndNext={handleSaveAndNext}
+            onSaveAndBack={handleSaveAndBack}
             onSave={handleSave}
             isLoading={
               createQuestionMutation.isPending ||

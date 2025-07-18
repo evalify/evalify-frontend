@@ -23,7 +23,7 @@ export type QuestionType =
 interface QuestionTypeSelectorProps {
   selectedType: QuestionType;
   onTypeSelect: (type: QuestionType) => void;
-  onSaveAndNext: () => void;
+  onSaveAndBack: () => void;
   onSave: () => void;
   isLoading?: boolean;
   isEdit?: boolean;
@@ -75,7 +75,7 @@ const questionTypes: {
 const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
   selectedType,
   onTypeSelect,
-  onSaveAndNext,
+  onSaveAndBack,
   onSave,
   isLoading = false,
   isEdit = false,
@@ -99,14 +99,10 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
           </Button>
         ))}
       </div>
-      {/* Right side - Action buttons */}
       <div className="flex gap-2">
-        <Button
-          variant="outline"
-          onClick={onSaveAndNext}
-          className="flex items-center gap-2"
-        >
-          Save & Next
+        <Button onClick={onSaveAndBack} className="flex items-center gap-2">
+          <Save className="h-4 w-4" />
+          Save & Back
         </Button>
         <Button
           onClick={onSave}
