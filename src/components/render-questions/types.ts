@@ -82,10 +82,14 @@ export interface FillUpQuestion extends BaseQuestion {
   blanks: Blank[];
 }
 
-export interface MatchPair {
+export interface MatchPairItem {
   id?: string;
-  leftPair: string;
-  rightPair: string;
+  text: string;
+}
+
+export interface MatchPair {
+  leftPair: MatchPairItem;
+  rightPair: MatchPairItem;
 }
 
 export interface MatchTheFollowingQuestion extends BaseQuestion {
@@ -107,32 +111,22 @@ export interface FileUploadQuestion extends BaseQuestion {
   guidelines?: string;
 }
 
-export interface FunctionParam {
-  param: string; // Backend sends 'param' field
-  type: string;
-  description?: string;
-}
-
 export interface TestCase {
-  id?: string;
-  input: unknown[]; // Backend sends array format like [2, 3]
-  expected: unknown; // Backend sends direct value like 5
-  tags?: string; // Backend sends tags like "HIDDEN", "SAMPLE"
-  isMinimal?: boolean;
-  language?: string;
-  points?: number;
+  code: string; // Backend sends code to execute
+  tags: string; // Backend sends tags like "HIDDEN", "SAMPLE"
+  isMinimal: boolean; // Backend sends isMinimal flag
+  language: string; // Backend sends language for each test case
 }
 
 export interface CodingQuestion extends BaseQuestion {
   type: QuestionTypes.CODING;
   driverCode?: string;
   boilerCode?: string;
-  functionName?: string;
-  returnType?: string;
-  params?: FunctionParam[];
   testcases?: TestCase[];
   language?: string[];
-  answer?: string;
+  answer?: string | null;
+  strictMatch?: boolean;
+  llmEval?: boolean;
 }
 
 // Union type for all questions
@@ -210,8 +204,8 @@ export interface FillUpAnswer {
 }
 
 export interface MatchTheFollowingAnswer {
-  matches: { [leftId: string]: string };
-  correctMatches?: { [leftId: string]: string };
+  matches: { [leftPairId: string]: string };
+  correctMatches?: { [leftPairId: string]: string };
   score?: number;
 }
 
@@ -239,11 +233,9 @@ export interface CodingAnswer {
 }
 
 export interface TestResult {
-  testCaseId: string;
+  testCase: TestCase;
   passed: boolean;
-  input: unknown[]; // Backend format
-  expected: unknown; // Backend format
-  actual?: unknown; // Backend format
+  output?: string;
   error?: string;
 }
 

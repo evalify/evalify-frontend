@@ -113,7 +113,6 @@ const QuestionSettings = ({
               />
             </div>
 
-            {/* Bloom's Taxonomy */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <BrainCircuit className="h-4 w-4 text-primary" />

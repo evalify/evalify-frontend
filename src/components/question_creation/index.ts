@@ -21,5 +21,4 @@ export type {
   MCQOption,
   FillupBlank,
   MatchItem,
-  TestCase,
 } from "./question-editor";

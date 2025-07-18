@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { FillUpQuestion, QuestionConfig, FillUpAnswer } from "../types";
+import React from "react";
+import { FillUpQuestion, QuestionConfig, FillUpAnswer, Blank } from "../types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ContentPreview } from "@/components/rich-text-editor/content-preview";
@@ -13,12 +13,14 @@ interface FillUpRendererProps {
   onAnswerChange?: (answer: FillUpAnswer) => void;
 }
 
-export function FillUpRenderer({
+export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
   question,
   config,
   onAnswerChange,
-}: FillUpRendererProps) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+}) => {
+  const [answers, setAnswers] = React.useState<{ [blankId: string]: string }>(
+    {},
+  );
 
   // Initialize answers from config if provided (for display mode)
   React.useEffect(() => {
@@ -39,7 +41,7 @@ export function FillUpRenderer({
 
   const isAnswerCorrect = (blankId: string, userAnswer: string) => {
     const blanks = question.blanks || [];
-    const blank = blanks.find((b) => b.id === blankId);
+    const blank = blanks.find((b: Blank) => b.id === blankId);
     if (!blank) return false;
 
     const strictMatch = question.strictMatch;
@@ -77,7 +79,7 @@ export function FillUpRenderer({
         <>
           {/* Individual blanks */}
           <div className="space-y-4">
-            {question.blanks.map((blank, index: number) => (
+            {question.blanks.map((blank: Blank, index: number) => (
               <div key={blank.id} className="space-y-2">
                 <Label htmlFor={blank.id} className="text-sm font-medium">
                   Blank {index + 1}
@@ -169,4 +171,4 @@ export function FillUpRenderer({
       )}
     </div>
   );
-}
+};

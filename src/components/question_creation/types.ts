@@ -1,28 +1,19 @@
-export interface FunctionParameter {
+export interface CodingTestCase {
   id: string;
-  name: string;
-  type: string;
-}
-
-export interface TestCase {
-  id: string;
-  inputs: Record<string, string>; // parameter name -> value
-  expectedOutput: string;
-  isHidden: boolean;
-}
-
-export interface FunctionMetadata {
-  name: string;
-  parameters: FunctionParameter[];
-  returnType: string;
+  code: string;
+  tags: "SAMPLE" | "HIDDEN";
+  isMinimal: boolean;
   language: string;
 }
 
 export interface CodingQuestionData {
-  functionMetadata: FunctionMetadata;
-  testCases: TestCase[];
+  testCases: CodingTestCase[];
   boilerplateCode: string;
+  driverCode: string;
   description: string;
+  strictMatch: boolean;
+  llmEval: boolean;
+  languages: string[];
 }
 
 // Question creation and response types

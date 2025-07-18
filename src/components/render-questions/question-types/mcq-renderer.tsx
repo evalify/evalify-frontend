@@ -35,12 +35,8 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
   };
 
   const displayOptions = config.shuffleOptions
-    ? [
-        ...(question.options ||
-          (question as { choices?: MCQOption[] }).choices ||
-          []),
-      ].sort(() => Math.random() - 0.5)
-    : question.options || (question as { choices?: MCQOption[] }).choices || [];
+    ? [...(question.options || [])].sort(() => Math.random() - 0.5)
+    : question.options || [];
 
   if (!displayOptions || displayOptions.length === 0) {
     return (
