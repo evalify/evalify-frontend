@@ -1,7 +1,13 @@
-import React from "react";
-import { CodingQuestion, QuestionConfig, CodingAnswer } from "../types";
+import React, { useState, useEffect } from "react";
+import {
+  CodingQuestion,
+  QuestionConfig,
+  CodingAnswer,
+  TestResult,
+} from "../types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -9,22 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import {
-  Code,
-  Play,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Settings,
-  FileCode,
-  Terminal,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ContentPreview } from "@/components/rich-text-editor/content-preview";
+import { Code, Play, TestTube, Eye, EyeOff } from "lucide-react";
 
 interface CodingRendererProps {
   question: CodingQuestion;
@@ -37,31 +31,40 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
   config,
   onAnswerChange,
 }) => {
-  const [selectedLanguage, setSelectedLanguage] = React.useState<string>(
-    question.language?.[0] || "javascript",
-  );
-  const [code, setCode] = React.useState<string>(question.boilerCode || "");
-  const [isRunning, setIsRunning] = React.useState(false);
-  const [showSolution, setShowSolution] = React.useState(false);
-  const [testResults, setTestResults] = React.useState<
-    Array<{
-      id?: string;
-      input: unknown[];
-      expected: unknown;
-      isHidden?: boolean;
-      points?: number;
-      passed: boolean;
-      actualOutput: string;
-      executionTime: number;
-    }>
-  >([]);
+  const [code, setCode] = useState<string>("");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
+  const [showSampleTests, setShowSampleTests] = useState<boolean>(true);
+  const [testResults, setTestResults] = useState<{
+    passed: number;
+    total: number;
+    details?: TestResult[];
+  } | null>(null);
 
-  const handleCodeChange = (value: string) => {
+  // Initialize from existing answer or boilerplate
+  useEffect(() => {
+    if (config.userAnswers && "code" in config.userAnswers) {
+      setCode(config.userAnswers.code);
+      setSelectedLanguage(config.userAnswers.language || "");
+    } else if (question.boilerCode) {
+      setCode(question.boilerCode);
+    }
+
+    // Set default language
+    if (question.language && question.language.length > 0) {
+      setSelectedLanguage(question.language[0]);
+    }
+  }, [config.userAnswers, question.boilerCode, question.language]);
+
+  const handleCodeChange = (newCode: string) => {
     if (config.readOnly) return;
 
-    setCode(value);
+    setCode(newCode);
     if (onAnswerChange) {
-      onAnswerChange({ code: value, language: selectedLanguage });
+      onAnswerChange({
+        code: newCode,
+        language: selectedLanguage,
+        testResults: testResults || undefined,
+      });
     }
   };
 
@@ -70,328 +73,220 @@ export const CodingRenderer: React.FC<CodingRendererProps> = ({
 
     setSelectedLanguage(language);
     if (onAnswerChange) {
-      onAnswerChange({ code, language });
+      onAnswerChange({
+        code,
+        language,
+        testResults: testResults || undefined,
+      });
     }
   };
 
-  const handleRunCode = async () => {
-    setIsRunning(true);
-    // Simulate code execution
-    setTimeout(() => {
-      const mockResults =
-        question.testcases?.map((tc) => ({
-          ...tc,
-          passed: Math.random() > 0.3, // Random pass/fail for demo
-          actualOutput: String(tc.expected || ""), // Mock output using backend format
-          executionTime: Math.round(Math.random() * 100),
-        })) || [];
-      setTestResults(mockResults);
-      setIsRunning(false);
-    }, 2000);
+  const runTests = () => {
+    // This would typically call an API to run the code
+    console.log("Running tests for:", { code, language: selectedLanguage });
+    // Mock test results - simplified for demo
+    const mockResults = {
+      passed: 2,
+      total: 4,
+    };
+    setTestResults(mockResults);
   };
 
-  // Load user answers if available
-  React.useEffect(() => {
-    if (config.userAnswers && "code" in config.userAnswers) {
-      setCode(config.userAnswers.code);
-      if ("language" in config.userAnswers && config.userAnswers.language) {
-        setSelectedLanguage(config.userAnswers.language);
-      }
-    }
-  }, [config.userAnswers]);
+  const getSampleTestCases = () => {
+    return question.testcases?.filter((test) => test.tags === "SAMPLE") || [];
+  };
 
-  const visibleTestCases =
-    question.testcases?.filter((tc) => tc.tags !== "HIDDEN") || [];
-  const passedTests = testResults.filter((tr) => tr.passed).length;
-  const totalTests = testResults.length;
+  const getLanguageDisplayName = (lang: string) => {
+    const languageMap: { [key: string]: string } = {
+      python: "Python",
+      javascript: "JavaScript",
+      java: "Java",
+      cpp: "C++",
+      c: "C",
+      julia: "Julia",
+      rust: "Rust",
+      go: "Go",
+    };
+    return languageMap[lang] || lang.charAt(0).toUpperCase() + lang.slice(1);
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Function signature */}
-      {question.functionName && (
-        <div className="p-3 bg-gray-50 dark:bg-gray-800 border rounded-md">
-          <div className="flex items-center gap-2 mb-2">
-            <Settings className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium">Function Requirements</span>
+    <div className="space-y-6">
+      {/* Question Text */}
+      <div className="space-y-2">
+        <ContentPreview content={question.question} />
+
+        {question.hintText && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-950 border-l-4 border-blue-400 rounded-r">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <strong>Hint:</strong> {question.hintText}
+            </p>
           </div>
-          <div className="font-mono text-sm">
-            <span className="text-blue-600">function </span>
-            <span className="text-purple-600">{question.functionName}</span>
-            <span>(</span>
-            {question.params?.map((param, index) => (
-              <span key={`param-${index}`}>
-                {index > 0 && ", "}
-                <span className="text-orange-600">{param.param}</span>
-                <span className="text-gray-500">: {param.type}</span>
-              </span>
-            ))}
-            <span>)</span>
-            {question.returnType && (
-              <>
-                <span className="text-gray-500"> → </span>
-                <span className="text-green-600">{question.returnType}</span>
-              </>
-            )}
-          </div>
-          {question.params &&
-            question.params.length > 0 &&
-            question.params.some((param) => param.description) && (
-              <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                {question.params.map((param, index) =>
-                  param.description ? (
-                    <div key={`param-desc-${index}`}>
-                      <strong>{param.param}</strong>: {param.description}
-                    </div>
-                  ) : null,
-                )}
-              </div>
-            )}
+        )}
+      </div>
+
+      {/* Language Selection */}
+      {question.language && question.language.length > 1 && (
+        <div className="space-y-2">
+          <Label>Programming Language</Label>
+          <Select
+            value={selectedLanguage}
+            onValueChange={handleLanguageChange}
+            disabled={config.readOnly}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {question.language.map((lang) => (
+                <SelectItem key={lang} value={lang}>
+                  {getLanguageDisplayName(lang)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
-      <Tabs defaultValue="code" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="code" className="flex items-center gap-2">
-            <Code className="w-4 h-4" />
-            Code Editor
-          </TabsTrigger>
-          <TabsTrigger value="testcases" className="flex items-center gap-2">
-            <Terminal className="w-4 h-4" />
-            Test Cases
-          </TabsTrigger>
-          <TabsTrigger value="results" className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Results
-          </TabsTrigger>
-        </TabsList>
 
-        <TabsContent value="code" className="space-y-4">
-          {/* Language selection */}
-          {question.language && question.language.length > 1 && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Language:</label>
-              <Select
-                value={selectedLanguage}
-                onValueChange={handleLanguageChange}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {question.language.map((lang) => (
-                    <SelectItem key={lang} value={lang}>
-                      {lang.charAt(0).toUpperCase() + lang.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Code editor placeholder */}
-          <div className="relative">
-            <div className="border rounded-md bg-gray-900 text-green-400 font-mono text-sm">
-              <div className="flex items-center justify-between p-2 border-b bg-gray-800">
-                <div className="flex items-center gap-2">
-                  <FileCode className="w-4 h-4" />
-                  <span>
-                    main.
-                    {selectedLanguage === "javascript"
-                      ? "js"
-                      : selectedLanguage}
-                  </span>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {selectedLanguage}
-                </Badge>
-              </div>
-              <textarea
-                value={code}
-                onChange={(e) => handleCodeChange(e.target.value)}
-                placeholder="Write your code here..."
-                disabled={config.readOnly}
-                className="w-full h-64 p-4 bg-transparent border-none outline-none resize-none text-green-400 font-mono"
-                style={{ backgroundColor: "transparent" }}
-              />
-            </div>
-          </div>
-
-          {/* Run button */}
-          {!config.readOnly && (
-            <div className="flex items-center gap-2">
+      {/* Code Editor */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label>Your Solution</Label>
+          <div className="flex items-center gap-2">
+            {selectedLanguage && (
+              <Badge variant="secondary">
+                <Code className="w-3 h-3 mr-1" />
+                {getLanguageDisplayName(selectedLanguage)}
+              </Badge>
+            )}
+            {!config.readOnly && (
               <Button
-                onClick={handleRunCode}
-                disabled={isRunning || !code.trim()}
-                className="flex items-center gap-2"
+                variant="outline"
+                size="sm"
+                onClick={runTests}
+                className="gap-2"
               >
-                {isRunning ? (
-                  <>
-                    <Clock className="w-4 h-4 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" />
-                    Run Code
-                  </>
-                )}
+                <Play className="w-4 h-4" />
+                Run Tests
               </Button>
-
-              {testResults.length > 0 && (
-                <Badge
-                  variant={
-                    passedTests === totalTests ? "default" : "destructive"
-                  }
-                  className="ml-2"
-                >
-                  {passedTests}/{totalTests} tests passed
-                </Badge>
-              )}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="testcases" className="space-y-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Visible test cases ({visibleTestCases.length} shown):
+            )}
           </div>
+        </div>
 
-          <div className="space-y-3">
-            {visibleTestCases.map((testCase, index) => (
-              <Card key={testCase.id || `test-${index}`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Badge variant="outline">Test {index + 1}</Badge>
-                    <Badge variant="outline">
-                      {testCase.points || 1} points
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                      Input:
-                    </p>
-                    <code className="block p-2 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-                      {JSON.stringify(testCase.input)}
-                    </code>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                      Expected Output:
-                    </p>
-                    <code className="block p-2 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-                      {String(testCase.expected || "")}
-                    </code>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
+        <Textarea
+          value={code}
+          onChange={(e) => handleCodeChange(e.target.value)}
+          placeholder="Write your code here..."
+          className="font-mono text-sm min-h-[300px]"
+          readOnly={config.readOnly}
+        />
+      </div>
 
-        <TabsContent value="results" className="space-y-4">
-          {testResults.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              Run your code to see test results
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {testResults.map((result, index) => (
-                <Card
-                  key={result.id || `result-${index}`}
-                  className={cn(
-                    "border-l-4",
-                    result.passed
-                      ? "border-l-green-500 bg-green-50 dark:bg-green-900/20"
-                      : "border-l-red-500 bg-red-50 dark:bg-red-900/20",
-                  )}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      {result.passed ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-600" />
-                      )}
-                      Test {index + 1}
-                      <Badge variant="outline">{result.executionTime}ms</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          Expected:
-                        </p>
-                        <code className="block p-2 bg-white dark:bg-gray-800 rounded">
-                          {String(result.expected || "")}
-                        </code>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          Actual:
-                        </p>
-                        <code className="block p-2 bg-white dark:bg-gray-800 rounded">
-                          {result.actualOutput}
-                        </code>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-      {/* Driver code */}
+      {/* Driver Code (if available) */}
       {question.driverCode && (
-        <>
-          <Separator />
-          <div>
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-              Driver Code:
-            </h4>
-            <pre className="p-3 bg-gray-100 dark:bg-gray-800 rounded text-sm overflow-x-auto">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TestTube className="w-4 h-4" />
+              Driver Code
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="bg-muted p-3 rounded text-sm font-mono overflow-x-auto">
               <code>{question.driverCode}</code>
             </pre>
-          </div>
-        </>
+          </CardContent>
+        </Card>
       )}
-      {/* Solution in display/student mode */}
-      {(config.showCorrectAnswers || config.mode === "student") &&
-        question.answer && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-green-900 dark:text-green-100 flex items-center gap-2">
-                <FileCode className="w-4 h-4" />
-                Sample Solution
-              </h4>
+
+      {/* Sample Test Cases */}
+      {getSampleTestCases().length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <TestTube className="w-4 h-4" />
+                Sample Test Cases
+              </CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowSolution(!showSolution)}
-                className="text-green-700 hover:text-green-900"
+                onClick={() => setShowSampleTests(!showSampleTests)}
               >
-                {showSolution ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-1" />
-                    Hide
-                  </>
+                {showSampleTests ? (
+                  <EyeOff className="w-4 h-4" />
                 ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-1" />
-                    Show
-                  </>
+                  <Eye className="w-4 h-4" />
                 )}
               </Button>
             </div>
-            {showSolution && (
-              <pre className="p-3 bg-green-100 dark:bg-green-800 rounded text-sm overflow-x-auto">
-                <code>{question.answer}</code>
-              </pre>
-            )}
-          </div>
-        )}
+          </CardHeader>
+          {showSampleTests && (
+            <CardContent className="space-y-3">
+              {getSampleTestCases().map((testCase, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">Test {index + 1}</Badge>
+                    <Badge variant="secondary">
+                      {getLanguageDisplayName(testCase.language)}
+                    </Badge>
+                    {testCase.isMinimal && (
+                      <Badge variant="outline" className="text-xs">
+                        Minimal
+                      </Badge>
+                    )}
+                  </div>
+                  <pre className="bg-muted p-3 rounded text-sm font-mono overflow-x-auto">
+                    <code>{testCase.code}</code>
+                  </pre>
+                </div>
+              ))}
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      {/* Test Results */}
+      {testResults && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TestTube className="w-4 h-4" />
+              Test Results
+              <Badge
+                variant={
+                  testResults.passed === testResults.total
+                    ? "default"
+                    : "destructive"
+                }
+                className="ml-2"
+              >
+                {testResults.passed}/{testResults.total} Passed
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground">
+              Test execution completed. {testResults.passed} out of{" "}
+              {testResults.total} tests passed.
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Explanation (if available and showing explanations) */}
+      {config.showExplanation && question.explanation && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Explanation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ContentPreview content={question.explanation} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
+
+export default CodingRenderer;

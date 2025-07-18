@@ -89,19 +89,34 @@ const backendSampleData = [
     hintText: null,
     keys: [
       {
-        id: "ddd059ee-9092-4794-927e-f4b598d36907",
-        leftPair: "France",
-        rightPair: "Paris",
+        leftPair: {
+          id: "left-1",
+          text: "France",
+        },
+        rightPair: {
+          id: "right-1",
+          text: "Paris",
+        },
       },
       {
-        id: "3e1ccef0-2a15-4393-809e-21dd7761f4e2",
-        leftPair: "Germany",
-        rightPair: "Berlin",
+        leftPair: {
+          id: "left-2",
+          text: "Germany",
+        },
+        rightPair: {
+          id: "right-2",
+          text: "Berlin",
+        },
       },
       {
-        id: "0226524a-d033-4d57-9c89-e2b0c70d2322",
-        leftPair: "Italy",
-        rightPair: "Rome",
+        leftPair: {
+          id: "left-3",
+          text: "Italy",
+        },
+        rightPair: {
+          id: "right-3",
+          text: "Rome",
+        },
       },
     ],
     markValue: 4,

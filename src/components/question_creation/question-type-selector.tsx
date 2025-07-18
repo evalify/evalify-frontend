@@ -1,7 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Eye,
   Save,
   CircleDot,
   FileInput,
@@ -24,7 +23,7 @@ export type QuestionType =
 interface QuestionTypeSelectorProps {
   selectedType: QuestionType;
   onTypeSelect: (type: QuestionType) => void;
-  onPreview: () => void;
+  onSaveAndNext: () => void;
   onSave: () => void;
   isLoading?: boolean;
   isEdit?: boolean;
@@ -76,7 +75,7 @@ const questionTypes: {
 const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
   selectedType,
   onTypeSelect,
-  onPreview,
+  onSaveAndNext,
   onSave,
   isLoading = false,
   isEdit = false,
@@ -104,11 +103,10 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
       <div className="flex gap-2">
         <Button
           variant="outline"
-          onClick={onPreview}
+          onClick={onSaveAndNext}
           className="flex items-center gap-2"
         >
-          <Eye className="h-4 w-4" />
-          Preview
+          Save & Next
         </Button>
         <Button
           onClick={onSave}

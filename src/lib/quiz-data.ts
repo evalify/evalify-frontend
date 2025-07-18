@@ -96,34 +96,28 @@ export async function getQuizData(
       },
       {
         id: 4,
-        question: "Match the following",
+        question: "Match the following countries with their capitals",
         marks: 4,
         type: "MATCH_THE_FOLLOWING",
         sectionId: 1,
         topic: ["General Knowledge"],
-        key: [
-          { id: "k1", text: "Jupiter" },
-          { id: "k2", text: "Saturn" },
-          { id: "k3", text: "Mars" },
-          { id: "k4", text: "Earth" },
-          { id: "k5", text: "Venus" },
-          { id: "k6", text: "Mercury" },
-          { id: "k7", text: "Neptune" },
-          { id: "k8", text: "Uranus" },
-          { id: "k9", text: "Pluto" },
-          { id: "k10", text: "Moon" },
-        ],
-        value: [
-          { id: "v1", text: "Jupiter" },
-          { id: "v2", text: "Saturn" },
-          { id: "v3", text: "Mars" },
-          { id: "v4", text: "Earth" },
-          { id: "v5", text: "Venus" },
-          { id: "v6", text: "Mercury" },
-          { id: "v7", text: "Neptune" },
-          { id: "v8", text: "Uranus" },
-          { id: "v9", text: "Pluto" },
-          { id: "v10", text: "Moon" },
+        keys: [
+          {
+            leftPair: { id: "left-1", text: "France" },
+            rightPair: { id: "right-1", text: "Paris" },
+          },
+          {
+            leftPair: { id: "left-2", text: "Germany" },
+            rightPair: { id: "right-2", text: "Berlin" },
+          },
+          {
+            leftPair: { id: "left-3", text: "Italy" },
+            rightPair: { id: "right-3", text: "Rome" },
+          },
+          {
+            leftPair: { id: "left-4", text: "Spain" },
+            rightPair: { id: "right-4", text: "Madrid" },
+          },
         ],
       },
       {
@@ -142,10 +136,39 @@ export async function getQuizData(
         marks: 10,
         type: "CODING",
         sectionId: 2,
-        driverCode:
-          "# This is the driver code that will test your function\ndef test_factorial():\n    assert factorial(0) == 1\n    assert factorial(1) == 1\n    assert factorial(5) == 120\n    assert factorial(10) == 3628800\n    print('All test cases passed!')\n\ntest_factorial()",
-        boilerTemplate:
-          "# Write your factorial function below\n\ndef factorial(n):\n    # Your code here\n    pass\n\n# Example usage:\n# factorial(5) should return 120",
+        language: "python",
+        languages: ["python", "javascript"],
+        starterCode:
+          "# Write your factorial function below\n\ndef factorial(n):\n    # Your code here\n    pass",
+        driverCode: "# Driver code to test your function\nprint(factorial(5))",
+        testCases: [
+          {
+            id: "tc-1",
+            code: "assert factorial(0) == 1",
+            tags: "SAMPLE",
+            isMinimal: false,
+            language: "python",
+          },
+          {
+            id: "tc-2",
+            code: "assert factorial(1) == 1",
+            tags: "SAMPLE",
+            isMinimal: true,
+            language: "python",
+          },
+          {
+            id: "tc-3",
+            code: "assert factorial(5) == 120",
+            tags: "HIDDEN",
+            isMinimal: false,
+            language: "python",
+          },
+        ],
+        explanation:
+          "Factorial of a number n is the product of all positive integers from 1 to n.",
+        showExplanation: true,
+        strictMatch: true,
+        llmEval: false,
       },
       {
         id: 7,

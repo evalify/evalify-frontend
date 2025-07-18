@@ -3,6 +3,7 @@ import {
   MatchTheFollowingQuestion,
   QuestionConfig,
   MatchTheFollowingAnswer,
+  MatchPairItem,
 } from "../types";
 import {
   Select,
@@ -25,9 +26,9 @@ interface MatchTheFollowingRendererProps {
 export const MatchTheFollowingRenderer: React.FC<
   MatchTheFollowingRendererProps
 > = ({ question, config, onAnswerChange }) => {
-  const [matches, setMatches] = React.useState<{ [leftId: string]: string }>(
-    {},
-  );
+  const [matches, setMatches] = React.useState<{
+    [leftPairId: string]: string;
+  }>({});
 
   // Initialize matches from config if provided (for display mode)
   React.useEffect(() => {
@@ -36,10 +37,10 @@ export const MatchTheFollowingRenderer: React.FC<
     }
   }, [config.userAnswers]);
 
-  const handleMatchChange = (leftId: string, rightId: string) => {
+  const handleMatchChange = (leftPairId: string, rightPairId: string) => {
     if (config.readOnly) return;
 
-    const newMatches = { ...matches, [leftId]: rightId };
+    const newMatches = { ...matches, [leftPairId]: rightPairId };
     setMatches(newMatches);
     if (onAnswerChange) {
       onAnswerChange({ matches: newMatches });
@@ -54,30 +55,35 @@ export const MatchTheFollowingRenderer: React.FC<
     return question.keys;
   }, [question.keys, config.shuffleOptions, config.showCorrectAnswers]);
 
-  // Generate key for match pairs
-  const getPairKey = (
-    pair: (typeof question.keys)[0],
+  // Get unique ID for left or right pair
+  const getPairId = (
+    pair: MatchPairItem,
     index: number,
+    side: "left" | "right",
   ): string => {
-    return pair.id || `pair-${index}`;
+    return pair.id || `${side}-${index}`;
   };
 
-  const isMatchCorrect = (leftId: string) => {
+  const isMatchCorrect = (leftPairId: string) => {
     const correctPair = question.keys.find(
-      (pair, index) => getPairKey(pair, index) === leftId,
+      (pair, index) => getPairId(pair.leftPair, index, "left") === leftPairId,
     );
     return (
       correctPair &&
-      matches[leftId] ===
-        getPairKey(correctPair, question.keys.indexOf(correctPair))
+      matches[leftPairId] ===
+        getPairId(
+          correctPair.rightPair,
+          question.keys.indexOf(correctPair),
+          "right",
+        )
     );
   };
 
-  const getRowClass = (leftId: string) => {
+  const getRowClass = (leftPairId: string) => {
     if (config.showCorrectAnswers) {
-      return isMatchCorrect(leftId)
+      return isMatchCorrect(leftPairId)
         ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-        : matches[leftId]
+        : matches[leftPairId]
           ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
           : "border-gray-200 dark:border-gray-700";
     }
@@ -101,10 +107,10 @@ export const MatchTheFollowingRenderer: React.FC<
             </h4>
             <div className="space-y-3">
               {question.keys.map((pair, index) => {
-                const pairKey = getPairKey(pair, index);
+                const leftPairId = getPairId(pair.leftPair, index, "left");
                 return (
                   <div
-                    key={pairKey}
+                    key={leftPairId}
                     className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded border"
                   >
                     <div className="flex items-center gap-2 flex-1">
@@ -116,7 +122,7 @@ export const MatchTheFollowingRenderer: React.FC<
                       </Badge>
                       <div className="flex-1">
                         <ContentPreview
-                          content={pair.leftPair}
+                          content={pair.leftPair.text}
                           className="border-none p-0 bg-transparent text-sm"
                         />
                       </div>
@@ -124,7 +130,7 @@ export const MatchTheFollowingRenderer: React.FC<
                     <div className="w-8 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
                     <div className="flex-1">
                       <ContentPreview
-                        content={pair.rightPair}
+                        content={pair.rightPair.text}
                         className="border-none p-0 bg-transparent text-sm"
                       />
                     </div>
@@ -143,16 +149,16 @@ export const MatchTheFollowingRenderer: React.FC<
               </h4>
               <div className="space-y-2">
                 {question.keys.map((pair, index) => {
-                  const pairKey = getPairKey(pair, index);
-                  const userAnswer = matches[pairKey];
+                  const leftPairId = getPairId(pair.leftPair, index, "left");
+                  const userAnswer = matches[leftPairId];
                   const correctAnswer = question.keys.find(
-                    (p, i) => getPairKey(p, i) === userAnswer,
+                    (p, i) => getPairId(p.rightPair, i, "right") === userAnswer,
                   );
-                  const isCorrect = isMatchCorrect(pairKey);
+                  const isCorrect = isMatchCorrect(leftPairId);
 
                   return (
                     <div
-                      key={pairKey}
+                      key={leftPairId}
                       className={cn(
                         "flex items-center gap-4 p-2 rounded text-sm",
                         isCorrect
@@ -168,7 +174,7 @@ export const MatchTheFollowingRenderer: React.FC<
                       </Badge>
                       <div className="flex-1">
                         <ContentPreview
-                          content={pair.leftPair}
+                          content={pair.leftPair.text}
                           className="border-none p-0 bg-transparent text-xs"
                         />
                       </div>
@@ -176,7 +182,9 @@ export const MatchTheFollowingRenderer: React.FC<
                       <div className="flex-1">
                         {userAnswer ? (
                           <ContentPreview
-                            content={correctAnswer?.rightPair || "No answer"}
+                            content={
+                              correctAnswer?.rightPair.text || "No answer"
+                            }
                             className="border-none p-0 bg-transparent text-xs"
                           />
                         ) : (
@@ -201,13 +209,13 @@ export const MatchTheFollowingRenderer: React.FC<
         /* Interactive matching interface for edit mode */
         <div className="space-y-3">
           {question.keys.map((pair, index) => {
-            const pairKey = getPairKey(pair, index);
+            const leftPairId = getPairId(pair.leftPair, index, "left");
             return (
               <div
-                key={pairKey}
+                key={leftPairId}
                 className={cn(
                   "border rounded-lg p-4 transition-colors",
-                  getRowClass(pairKey),
+                  getRowClass(leftPairId),
                 )}
               >
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
@@ -219,7 +227,7 @@ export const MatchTheFollowingRenderer: React.FC<
                       </Badge>
                       <div className="flex-1">
                         <ContentPreview
-                          content={pair.leftPair}
+                          content={pair.leftPair.text}
                           className="border-none p-0 bg-transparent text-sm"
                         />
                       </div>
@@ -232,9 +240,9 @@ export const MatchTheFollowingRenderer: React.FC<
                   {/* Right selection */}
                   <div className="md:col-span-5">
                     <Select
-                      value={matches[pairKey] || ""}
+                      value={matches[leftPairId] || ""}
                       onValueChange={(value) =>
-                        handleMatchChange(pairKey, value)
+                        handleMatchChange(leftPairId, value)
                       }
                       disabled={config.readOnly}
                     >
@@ -243,11 +251,15 @@ export const MatchTheFollowingRenderer: React.FC<
                       </SelectTrigger>
                       <SelectContent>
                         {rightOptions.map((option, optionIndex) => {
-                          const optionKey = getPairKey(option, optionIndex);
+                          const rightPairId = getPairId(
+                            option.rightPair,
+                            optionIndex,
+                            "right",
+                          );
                           return (
-                            <SelectItem key={optionKey} value={optionKey}>
+                            <SelectItem key={rightPairId} value={rightPairId}>
                               <ContentPreview
-                                content={option.rightPair}
+                                content={option.rightPair.text}
                                 className="border-none p-0 bg-transparent text-sm"
                               />
                             </SelectItem>
@@ -258,9 +270,9 @@ export const MatchTheFollowingRenderer: React.FC<
                   </div>
                   {/* Status indicator */}
                   <div className="md:col-span-1 flex justify-center">
-                    {config.showCorrectAnswers && matches[pairKey] && (
+                    {config.showCorrectAnswers && matches[leftPairId] && (
                       <>
-                        {isMatchCorrect(pairKey) ? (
+                        {isMatchCorrect(leftPairId) ? (
                           <Check className="w-5 h-5 text-green-600" />
                         ) : (
                           <X className="w-5 h-5 text-red-600" />

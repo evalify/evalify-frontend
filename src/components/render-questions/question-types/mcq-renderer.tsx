@@ -35,10 +35,8 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
   };
 
   const displayOptions = config.shuffleOptions
-    ? [...((question as any).options || (question as any).choices || [])].sort(
-        () => Math.random() - 0.5,
-      )
-    : (question as any).options || (question as any).choices || [];
+    ? [...(question.options || [])].sort(() => Math.random() - 0.5)
+    : question.options || [];
 
   if (!displayOptions || displayOptions.length === 0) {
     return (
@@ -105,7 +103,7 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
         onValueChange={handleSelectionChange}
         disabled={config.readOnly}
       >
-        {displayOptions.map((option: any, index: number) => {
+        {displayOptions.map((option: MCQOption, index: number) => {
           const optionKey = getOptionKey(option, index);
           const optionIcon = getOptionIcon(option, index);
 
