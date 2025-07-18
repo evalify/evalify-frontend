@@ -8,6 +8,7 @@ use `useToast` from `src/hooks/use-toast.ts` for any toast messages. Donot use a
 - Make sure all UI components are responsive and works well on both desktop and mobile devices.
 - Use Tailwind CSS for styling.
 - Make sure all components works well with light and dark mode.
+- Use `lucide-icons` for icons.
 
 ### API calls
 Where possible, use `useQuery` and `useMutation` from `@tanstack/react-query` for API calls.
@@ -21,3 +22,7 @@ Use `axiosInstance` from `src/lib/axios/axios-client.ts` for making API requests
 ### Code Style
 - Modularize the code and keep it clean.
 - Strictly use TypeScript for type safety.
+
+### Package Management
+- Use `pnpm` for package management.
+
