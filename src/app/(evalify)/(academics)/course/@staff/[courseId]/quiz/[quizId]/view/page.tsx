@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Library,
 } from "lucide-react";
+import { QuestionRenderer, Question } from "@/components/render-questions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,12 +65,40 @@ interface QuizSection {
   totalMarks?: number;
 }
 
-interface QuizQuestion {
-  questionId: string;
-  title: string;
-  type: string;
-  marks: number;
-  sectionId?: string;
+interface QuizQuestionResponse {
+  question: {
+    questionId: string;
+    question: string;
+    type: string;
+    marks: number;
+    bloomsTaxonomy: string;
+    co: number;
+    difficulty: string;
+    explanation?: string | null;
+    hint?: string | null;
+    // Different question type properties
+    answers?: boolean; // For TRUE/FALSE
+    options?: Array<{
+      id: string | null;
+      text: string;
+      isCorrect: boolean;
+    }>; // For MCQ/MMCQ
+    blanks?: Array<{
+      id: string;
+      answers: string[];
+    }>; // For FILL_UP
+    template?: string; // For FILL_UP
+    strictMatch?: boolean;
+    llmEval?: boolean;
+    expectedAnswer?: string;
+    strictness?: number;
+    guidelines?: string;
+    topics?: Array<{
+      id: string;
+      name: string;
+    }>;
+  };
+  sectionId: string;
 }
 
 const Page = ({ params }: Props) => {
@@ -165,7 +194,7 @@ const Page = ({ params }: Props) => {
 
     const totalQuestions = quizQuestions.length;
     const totalMarks = quizQuestions.reduce(
-      (sum: number, q: QuizQuestion) => sum + (q.marks || 0),
+      (sum: number, q: QuizQuestionResponse) => sum + (q.question.marks || 0),
       0,
     );
 
@@ -176,7 +205,7 @@ const Page = ({ params }: Props) => {
     (sectionId: string) => {
       if (!quizQuestions || !Array.isArray(quizQuestions)) return [];
       return quizQuestions.filter(
-        (q: QuizQuestion) => q.sectionId === sectionId,
+        (q: QuizQuestionResponse) => q.sectionId === sectionId,
       );
     },
     [quizQuestions],
@@ -435,7 +464,7 @@ const Page = ({ params }: Props) => {
               {quizSections.map((section: QuizSection) => {
                 const sectionQuestions = getQuestionsForSection(section.id);
                 const sectionMarks = sectionQuestions.reduce(
-                  (sum, q) => sum + (q.marks || 0),
+                  (sum, q) => sum + (q.question.marks || 0),
                   0,
                 );
                 return (
@@ -526,10 +555,35 @@ const Page = ({ params }: Props) => {
                             </p>
                           </div>
                         ) : (
-                          <div className="space-y-2">
-                            <pre>
-                              {JSON.stringify(sectionQuestions, null, 2)}
-                            </pre>
+                          <div className="space-y-4">
+                            {sectionQuestions.map((questionResponse, index) => {
+                              // Transform the question to match the renderer's expected format
+                              const question: Question = {
+                                ...questionResponse.question,
+                                id: questionResponse.question.questionId,
+                                type: questionResponse.question
+                                  .type as Question["type"],
+                              };
+
+                              return (
+                                <QuestionRenderer
+                                  key={questionResponse.question.questionId}
+                                  question={question}
+                                  questionNumber={index + 1}
+                                  config={{
+                                    mode: "display",
+                                    showActions: isQuizEditable,
+                                    showMarks: true,
+                                    showDifficulty: true,
+                                    showBloomsTaxonomy: true,
+                                    showTopics: true,
+                                    showExplanation: true,
+                                    showCorrectAnswers: true,
+                                    readOnly: !isQuizEditable,
+                                  }}
+                                />
+                              );
+                            })}
                           </div>
                         )}
                       </div>
