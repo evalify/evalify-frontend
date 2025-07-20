@@ -1,0 +1,60 @@
+"use client";
+
+import React from "react";
+import { use } from "react";
+import { useSearchParams } from "next/navigation";
+import { QuestionCreationPage } from "@/components/question_creation";
+
+type Props = {
+  params: Promise<{
+    courseId: string;
+    quizId: string;
+  }>;
+};
+
+export default function CreateQuizQuestionPage({ params }: Props) {
+  const param = use(params);
+  const { quizId, courseId } = param;
+  const searchParams = useSearchParams();
+  const sectionId = searchParams.get("sectionId");
+
+  if (!sectionId) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Missing Section
+          </h1>
+          <p className="text-muted-foreground">
+            Section ID is required to create a quiz question.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const config = {
+    isQuiz: true,
+    quizId: quizId,
+    sectionId: sectionId,
+    courseId: courseId, // Include courseId in config
+  };
+
+  return (
+    <div className="container mx-auto py-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">
+          Create Quiz Question
+        </h1>
+        <p className="text-muted-foreground">
+          Create a new question for this quiz section.
+        </p>
+      </div>
+      <QuestionCreationPage
+        config={config}
+        // You might need to pass bankId if required for topics
+        // bankId={someBankId}
+      />
+    </div>
+  );
+}

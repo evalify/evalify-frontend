@@ -226,5 +226,33 @@ class Quiz {
     );
     return await response.data;
   }
+
+  /* Quiz Questions */
+  static async createQuizQuestion(quizId: string, questionData: object) {
+    const response = await axiosInstance.post(
+      `/api/quiz/${quizId}/question`,
+      questionData,
+    );
+    return await response.data;
+  }
+
+  static async updateQuizQuestion(
+    quizId: string,
+    questionId: string,
+    questionData: object,
+  ) {
+    const response = await axiosInstance.patch(
+      `/api/quiz/${quizId}/question/${questionId}`,
+      questionData,
+    );
+    return await response.data;
+  }
+
+  static async deleteQuizQuestion(quizId: string, questionId: string) {
+    const response = await axiosInstance.delete(
+      `/api/quiz/${quizId}/question/${questionId}`,
+    );
+    return await response.data;
+  }
 }
 export default Quiz;

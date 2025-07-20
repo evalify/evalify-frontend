@@ -3,6 +3,7 @@
 import Quiz from "@/repo/quiz/quiz";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { use, useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Clock,
   Calendar,
@@ -106,6 +107,7 @@ const Page = ({ params }: Props) => {
   const { quizId } = param;
   const { success, error } = useToast();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isCreateSectionOpen, setIsCreateSectionOpen] = useState(false);
@@ -113,6 +115,8 @@ const Page = ({ params }: Props) => {
   const [isDeleteSectionOpen, setIsDeleteSectionOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<string | null>(null);
   const [sectionName, setSectionName] = useState("");
+  const [isDeleteQuestionOpen, setIsDeleteQuestionOpen] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
 
   const { data: quiz, isLoading: isQuizLoading } = useQuery({
     queryKey: ["quiz", quizId],
@@ -187,6 +191,18 @@ const Page = ({ params }: Props) => {
     },
   });
 
+  const deleteQuestionMutation = useMutation({
+    mutationFn: (questionId: string) =>
+      Quiz.deleteQuizQuestion(quizId, questionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quizQuestions", quizId] });
+      success("Question deleted successfully");
+    },
+    onError: () => {
+      error("Failed to delete question");
+    },
+  });
+
   const quizStats = useMemo(() => {
     if (!quizQuestions || !Array.isArray(quizQuestions)) {
       return { totalQuestions: 0, totalMarks: 0 };
@@ -246,6 +262,53 @@ const Page = ({ params }: Props) => {
       deleteSectionMutation.mutate(sectionToDelete);
     }
   }, [sectionToDelete, deleteSectionMutation]);
+
+  const handleEditQuestion = useCallback(
+    (questionId: string) => {
+      // Navigate to question edit page with quiz and course context
+      const { courseId } = param;
+      router.push(
+        `/question/${questionId}/edit?quizId=${quizId}&courseId=${courseId}`,
+      );
+    },
+    [router, quizId, param],
+  );
+
+  const handleDeleteQuestion = useCallback((questionId: string) => {
+    setQuestionToDelete(questionId);
+    setIsDeleteQuestionOpen(true);
+  }, []);
+
+  const handleDeleteQuestionConfirm = useCallback(() => {
+    if (questionToDelete) {
+      deleteQuestionMutation.mutate(questionToDelete);
+      setIsDeleteQuestionOpen(false);
+      setQuestionToDelete(null);
+    }
+  }, [questionToDelete, deleteQuestionMutation]);
+
+  const handleAddQuestion = useCallback(
+    (sectionId: string) => {
+      // Navigate to question creation page with quiz config
+      const { courseId } = param;
+      router.push(
+        `/course/${courseId}/quiz/${quizId}/question/create?sectionId=${sectionId}`,
+      );
+    },
+    [router, quizId, param],
+  );
+
+  const handleAddQuestionFromBank = useCallback(
+    (sectionId: string) => {
+      // Navigate to question bank selection
+      console.log("Add question from bank to section:", sectionId);
+      // TODO: Implement question bank selection modal or page
+      success("Add from bank", {
+        description: `Add question from bank to section ${sectionId}`,
+      });
+    },
+    [success],
+  );
 
   const formatDuration = useCallback((nanoseconds: number) => {
     const hours = Math.floor(nanoseconds / (1000000000 * 60 * 60));
@@ -514,12 +577,7 @@ const Page = ({ params }: Props) => {
                         {/* Add Questions Buttons */}
                         <div className="flex gap-2 pb-3 border-b">
                           <Button
-                            onClick={() =>
-                              console.log(
-                                "Add question to section:",
-                                section.id,
-                              )
-                            }
+                            onClick={() => handleAddQuestion(section.id)}
                             disabled={!isQuizEditable}
                             variant="outline"
                             size="sm"
@@ -529,10 +587,7 @@ const Page = ({ params }: Props) => {
                           </Button>
                           <Button
                             onClick={() =>
-                              console.log(
-                                "Add question from bank to section:",
-                                section.id,
-                              )
+                              handleAddQuestionFromBank(section.id)
                             }
                             disabled={!isQuizEditable}
                             variant="outline"
@@ -580,6 +635,10 @@ const Page = ({ params }: Props) => {
                                     showExplanation: true,
                                     showCorrectAnswers: true,
                                     readOnly: !isQuizEditable,
+                                  }}
+                                  actions={{
+                                    onEdit: handleEditQuestion,
+                                    onDelete: handleDeleteQuestion,
                                   }}
                                 />
                               );
@@ -696,6 +755,19 @@ const Page = ({ params }: Props) => {
         title="Delete Section"
         description="Are you sure you want to delete this section? This action cannot be undone and will remove all questions in this section."
         isLoading={deleteSectionMutation.isPending}
+      />
+
+      {/* Delete Question Dialog */}
+      <DeleteDialog
+        isOpen={isDeleteQuestionOpen}
+        onClose={() => {
+          setIsDeleteQuestionOpen(false);
+          setQuestionToDelete(null);
+        }}
+        onConfirm={handleDeleteQuestionConfirm}
+        title="Delete Question"
+        description="Are you sure you want to delete this question? This action cannot be undone."
+        isLoading={deleteQuestionMutation.isPending}
       />
     </div>
   );

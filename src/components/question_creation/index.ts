@@ -21,4 +21,8 @@ export type {
   MCQOption,
   FillupBlank,
   MatchItem,
+  CodingTestCase,
 } from "./question-editor";
+
+// Export the new config interface
+export type { QuestionCreationConfig } from "./question-creation-page";

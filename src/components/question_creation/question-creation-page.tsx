@@ -11,11 +11,101 @@ import {
   questionsService,
   CreateQuestionRequest,
 } from "@/repo/question-queries/questions";
+import Quiz from "@/repo/quiz/quiz";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Bank from "@/repo/bank/bank";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+
+// Quiz question DTO interfaces
+interface BaseQuizQuestionDTO {
+  type: string;
+  question: string;
+  topicIds: string[];
+  explanation: string | null;
+  hint: string | null;
+  marks: number;
+  bloomsTaxonomy: string;
+  co: number;
+  negativeMark: number | null;
+  difficulty: string;
+  sectionId: string;
+}
+
+interface MCQQuizQuestionDTO extends BaseQuizQuestionDTO {
+  type: "MCQ" | "MMCQ";
+  options: Array<{
+    text: string;
+    isCorrect: boolean;
+  }>;
+}
+
+interface TrueFalseQuizQuestionDTO extends BaseQuizQuestionDTO {
+  type: "TRUEFALSE";
+  answers: boolean | null;
+}
+
+interface FillupQuizQuestionDTO extends BaseQuizQuestionDTO {
+  type: "FILL_UP";
+  strictMatch: boolean;
+  llmEval: boolean;
+  template: string;
+  blanks: Array<{
+    id: string;
+    answers: string[];
+    position: number;
+  }>;
+}
+
+interface DescriptiveQuizQuestionDTO extends BaseQuizQuestionDTO {
+  type: "DESCRIPTIVE";
+  expectedAnswer: string | null;
+  strictness: number;
+  guidelines: string | null;
+}
+
+interface CodingQuizQuestionDTO extends BaseQuizQuestionDTO {
+  type: "CODING";
+  driverCode: string | null;
+  boilerCode: string | null;
+  functionName: null;
+  returnType: null;
+  params: null;
+  testcases: Array<{
+    code: string;
+    tags: string;
+    isMinimal: boolean;
+    language: string;
+  }>;
+  language: string[];
+  answer: null;
+}
+
+interface MatchFollowingQuizQuestionDTO extends BaseQuizQuestionDTO {
+  type: "MATCH_THE_FOLLOWING";
+  keys: Array<{
+    leftPair: {
+      text: string;
+    };
+    rightPair: {
+      text: string;
+    };
+  }>;
+}
+
+interface FileUploadQuizQuestionDTO extends BaseQuizQuestionDTO {
+  type: "FILE_UPLOAD";
+}
+
+type QuizQuestionDTO =
+  | MCQQuizQuestionDTO
+  | TrueFalseQuizQuestionDTO
+  | FillupQuizQuestionDTO
+  | DescriptiveQuizQuestionDTO
+  | CodingQuizQuestionDTO
+  | MatchFollowingQuizQuestionDTO
+  | FileUploadQuizQuestionDTO;
 
 interface QuestionBaseSettings {
   marks: number;
@@ -28,6 +118,13 @@ interface QuestionCreationSettings extends QuestionBaseSettings {
   topics: { value: string; label: string }[];
 }
 
+export interface QuestionCreationConfig {
+  isQuiz?: boolean;
+  quizId?: string;
+  sectionId?: string;
+  courseId?: string;
+}
+
 interface QuestionCreationPageProps {
   isEdit?: boolean;
   initialQuestionData?: QuestionData;
@@ -35,6 +132,7 @@ interface QuestionCreationPageProps {
   questionId?: string;
   bankId?: string;
   selectedTopics?: string[];
+  config?: QuestionCreationConfig;
 }
 
 const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
@@ -44,6 +142,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   questionId,
   bankId,
   selectedTopics: initialSelectedTopics = [],
+  config = { isQuiz: false },
 }) => {
   // Initialize router and URL params for topic management
   const router = useRouter();
@@ -53,10 +152,182 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   // Initialize toast hook
   const { success, error } = useToast();
 
-  // Fetch all available topics for the bank
+  // Routes configuration based on mode
+  const routes = React.useMemo(() => {
+    if (config.isQuiz) {
+      return {
+        create: (questionData: CreateQuestionRequest) => {
+          // Transform questionData to match the backend quiz DTO format
+          const transformedData = transformQuestionForQuiz(
+            questionData,
+            config.sectionId!,
+          );
+          return Quiz.createQuizQuestion(config.quizId!, transformedData);
+        },
+        update: (questionData: CreateQuestionRequest) => {
+          const transformedData = transformQuestionForQuiz(
+            questionData,
+            config.sectionId!,
+          );
+          return Quiz.updateQuizQuestion(
+            config.quizId!,
+            questionId!,
+            transformedData,
+          );
+        },
+        delete: () => Quiz.deleteQuizQuestion(config.quizId!, questionId!),
+        getTopics: () =>
+          bankId ? Bank.getBankTopics(bankId) : Promise.resolve([]),
+      };
+    } else {
+      return {
+        create: (questionData: CreateQuestionRequest) =>
+          questionsService.createQuestion(questionData, bankId!),
+        update: (questionData: CreateQuestionRequest) =>
+          questionsService.updateQuestion(questionId!, questionData, bankId!),
+        delete: () => questionsService.deleteQuestion(questionId!, bankId!),
+        getTopics: () => Bank.getBankTopics(bankId!),
+      };
+    }
+  }, [config.isQuiz, config.quizId, config.sectionId, questionId, bankId]);
+
+  const transformQuestionForQuiz = (
+    questionData: CreateQuestionRequest,
+    sectionId: string,
+  ): QuizQuestionDTO => {
+    const { type, data, settings } = questionData;
+
+    // Extract topic IDs from settings
+    const topicIds = settings.topics.map((topic) => topic.value);
+
+    // Parse course outcome to integer (extract number from "co1", "co2", etc.)
+    const co = parseInt(settings.courseOutcome.replace(/^co/i, "")) || 0;
+
+    // Map difficulty to backend enum
+    const difficultyMap: Record<string, string> = {
+      easy: "EASY",
+      medium: "MEDIUM",
+      hard: "HARD",
+    };
+
+    // Map blooms taxonomy to backend enum
+    const taxonomyMap: Record<string, string> = {
+      remember: "REMEMBER",
+      understand: "UNDERSTAND",
+      apply: "APPLY",
+      analyze: "ANALYZE",
+      evaluate: "EVALUATE",
+      create: "CREATE",
+    };
+
+    // Base DTO structure
+    const baseDTO: BaseQuizQuestionDTO = {
+      type: type.toUpperCase().replace("-", "_"),
+      question: data.question,
+      topicIds,
+      explanation: data.explanation || null,
+      hint: "hint" in data ? (data.hint as string) || null : null,
+      marks: settings.marks,
+      bloomsTaxonomy: taxonomyMap[settings.bloomsTaxonomy] || "UNDERSTAND",
+      co,
+      negativeMark: null,
+      difficulty: difficultyMap[settings.difficulty] || "MEDIUM",
+      sectionId,
+    };
+
+    switch (data.type) {
+      case "mcq":
+        return {
+          ...baseDTO,
+          type: data.allowMultipleCorrect ? "MMCQ" : "MCQ",
+          options: data.options.map((option) => ({
+            text: option.text,
+            isCorrect: option.isCorrect,
+            // Don't send id for quiz questions - let backend generate
+          })),
+        } as MCQQuizQuestionDTO;
+
+      case "true-false":
+        return {
+          ...baseDTO,
+          type: "TRUEFALSE",
+          answers: data.correctAnswer,
+        } as TrueFalseQuizQuestionDTO;
+
+      case "fillup":
+        return {
+          ...baseDTO,
+          type: "FILL_UP",
+          strictMatch: data.strictMatch || false,
+          llmEval: data.useHybridEvaluation || false,
+          template: data.question,
+          blanks: data.blanks.map((blank) => ({
+            id: blank.id,
+            answers: blank.acceptedAnswers || [],
+            position: blank.position || 0,
+          })),
+        } as FillupQuizQuestionDTO;
+
+      case "descriptive":
+        return {
+          ...baseDTO,
+          type: "DESCRIPTIVE",
+          expectedAnswer: data.sampleAnswer || null,
+          strictness: 0.7,
+          guidelines: data.gradingCriteria || null,
+        } as DescriptiveQuizQuestionDTO;
+
+      case "coding":
+        return {
+          ...baseDTO,
+          type: "CODING",
+          driverCode: data.driverCode || null,
+          boilerCode: data.starterCode || null,
+          functionName: null,
+          returnType: null,
+          params: null,
+          testcases: data.testCases.map((tc) => ({
+            code: tc.code,
+            tags: tc.tags,
+            isMinimal: tc.isMinimal || false,
+            language: tc.language,
+          })),
+          language: data.languages || (data.language ? [data.language] : []),
+          answer: null,
+        } as CodingQuizQuestionDTO;
+
+      case "match-following":
+        return {
+          ...baseDTO,
+          type: "MATCH_THE_FOLLOWING",
+          keys: data.matchItems.map((item) => ({
+            leftPair: {
+              text: item.leftPair.text,
+            },
+            rightPair: {
+              text: item.rightPair.text,
+            },
+          })),
+        } as MatchFollowingQuizQuestionDTO;
+
+      case "file-upload":
+        return {
+          ...baseDTO,
+          type: "FILE_UPLOAD",
+        } as FileUploadQuizQuestionDTO;
+
+      default:
+        return {
+          ...baseDTO,
+          type: "MCQ",
+          options: [],
+        } as MCQQuizQuestionDTO;
+    }
+  };
+
   const { data: allTopics = [] } = useQuery({
-    queryKey: ["bankTopics", bankId],
-    queryFn: () => Bank.getBankTopics(bankId!),
+    queryKey: config.isQuiz ? ["bankTopics", bankId] : ["bankTopics", bankId],
+    queryFn: routes.getTopics,
     enabled: !!bankId,
   });
 
@@ -109,7 +380,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   // Mutations for create and update operations
   const createQuestionMutation = useMutation({
     mutationFn: async (questionToSave: CreateQuestionRequest) => {
-      return await questionsService.createQuestion(questionToSave, bankId!);
+      return await routes.create(questionToSave);
     },
     onSuccess: (response) => {
       console.log("Question saved successfully:", response);
@@ -132,11 +403,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
 
   const updateQuestionMutation = useMutation({
     mutationFn: async (questionToSave: CreateQuestionRequest) => {
-      return await questionsService.updateQuestion(
-        questionId!,
-        questionToSave,
-        bankId!,
-      );
+      return await routes.update(questionToSave);
     },
     onSuccess: (response) => {
       console.log("Question updated successfully:", response);
@@ -410,7 +677,11 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   const handleSaveAndBack = async () => {
     const success = await handleSave();
     if (success) {
-      router.push(`/question-bank/${bankId}`);
+      if (config.isQuiz && config.quizId && config.courseId) {
+        router.push(`/course/${config.courseId}/quiz/${config.quizId}/view`);
+      } else {
+        router.push(`/question-bank/${bankId}`);
+      }
     }
   };
 
@@ -427,7 +698,8 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       return false;
     }
 
-    if (!bankId) {
+    // Only check for bankId if not in quiz mode
+    if (!config.isQuiz && !bankId) {
       error("Bank ID is required", {
         description: "Cannot save question without a valid bank ID",
       });
