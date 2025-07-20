@@ -104,7 +104,7 @@ export interface CreateQuestionRequest {
 interface BaseQuestionDTO {
   type: string;
   question: string;
-  topicIds: string[];
+  topic: string[]; // Changed from topicIds to topic to match backend DTO
   explanation: string | null;
   hint: string | null;
   marks: number;
@@ -203,7 +203,7 @@ class QuestionsService {
     const { type, data, settings } = request;
 
     // Extract topic IDs from settings
-    const topicIds = settings.topics.map((topic) => topic.value);
+    const topicList = settings.topics.map((topic) => topic.value);
 
     // Parse course outcome to integer (extract number from "co1", "co2", etc.)
     const co = parseInt(settings.courseOutcome.replace(/^co/i, "")) || 0;
@@ -229,7 +229,7 @@ class QuestionsService {
     const baseDTO = {
       type: type.toUpperCase().replace("-", "_"),
       question: data.question,
-      topicIds,
+      topic: topicList, // Changed from topicIds to topic to match backend DTO
       explanation: data.explanation || null,
       hint: null,
       marks: settings.marks,
