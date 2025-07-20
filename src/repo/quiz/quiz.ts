@@ -254,5 +254,12 @@ class Quiz {
     );
     return await response.data;
   }
+
+  static async getQuizQuestionById(quizId: string, questionId: string) {
+    const response = await axiosInstance.get(
+      `/api/quiz/${quizId}/questions/${questionId}`,
+    );
+    return await response.data;
+  }
 }
 export default Quiz;
