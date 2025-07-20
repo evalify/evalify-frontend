@@ -399,9 +399,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     },
     onSuccess: (response) => {
       console.log("Question saved successfully:", response);
-      success("Question saved successfully!", {
-        description: `Question ID: ${response.id}`,
-      });
+      success("Question saved successfully!");
       resetForm();
     },
     onError: (err) => {
@@ -422,9 +420,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     },
     onSuccess: (response) => {
       console.log("Question updated successfully:", response);
-      success("Question updated successfully!", {
-        description: `Question ID: ${response.id}`,
-      });
+      success("Question updated successfully!");
       const questionToSave = {
         type: selectedType,
         data: questionData,
