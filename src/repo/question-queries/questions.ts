@@ -668,6 +668,17 @@ class QuestionsService {
     const backendQuestion = await this.getBankQuestionById(questionId);
     return this.transformBackendToFrontend(backendQuestion);
   }
+
+  /**
+   * Public method to transform a BankQuestionDTO to the format expected by the question editor
+   * This is useful when you already have the BankQuestionDTO from another source (like quiz endpoints)
+   */
+  transformBankQuestionToEdit(backendQuestion: BankQuestionDTO): {
+    questionData: QuestionData;
+    questionSettings: QuestionCreationSettings;
+  } {
+    return this.transformBackendToFrontend(backendQuestion);
+  }
 }
 
 export const questionsService = new QuestionsService();

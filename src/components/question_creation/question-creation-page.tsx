@@ -337,9 +337,24 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     isLoading: isLoadingQuestion,
     error: questionError,
   } = useQuery({
-    queryKey: ["questionDetails", questionId],
-    queryFn: () => questionsService.getQuestionForEdit(questionId!),
-    enabled: isEdit && !!questionId,
+    queryKey: config.isQuiz
+      ? ["quizQuestionDetails", config.quizId, questionId]
+      : ["questionDetails", questionId],
+    queryFn: async () => {
+      if (config.isQuiz && config.quizId) {
+        // For quiz questions, use the quiz endpoint to get question data
+        const quizQuestion = await Quiz.getQuizQuestionById(
+          config.quizId,
+          questionId!,
+        );
+        // Transform the BankQuestionDTO to match the expected format
+        return questionsService.transformBankQuestionToEdit(quizQuestion);
+      } else {
+        // For bank questions, use the existing bank endpoint
+        return questionsService.getQuestionForEdit(questionId!);
+      }
+    },
+    enabled: isEdit && !!questionId && (config.isQuiz ? !!config.quizId : true),
     retry: 1,
   });
 
