@@ -1,3 +1,4 @@
+import { Difficulty, QuestionTypes } from "@/components/render-questions";
 import axiosInstance from "@/lib/axios/axios-client";
 
 export type User = {
@@ -23,9 +24,16 @@ type BankQuestion = {
   type: string;
   marks?: number;
   difficulty?: string;
+  explanation?: string;
+  hintText?: string;
+  bloomsTaxonomy?: string;
+  co?: number;
   created_at: string;
   topics?: BankTopic[];
+  _originalData?: Record<string, unknown>; // Store original backend response for ID extraction
 };
+
+export type { BankQuestion };
 
 export type BankTopic = {
   id: string;
@@ -37,6 +45,17 @@ export type CopyBankQuestionDTO = {
   questionIds: string[];
   move: boolean;
   createNewTopic: boolean;
+};
+
+export type AddBankQuestionDTO = {
+  sectionId: string;
+  bankQuestionId: string[]; // Singular form to match backend
+};
+
+export type QuizQuestionAddResponse = {
+  message: string;
+  addedQuestionsCount: number; // Changed from addedQuestions to match backend
+  totalQuestions: number;
 };
 
 // Add paginated response type
@@ -61,6 +80,33 @@ export interface SharedUsers {
 }
 
 class Bank {
+  static async getFilteredQuestions(
+    bankId: string[],
+    noOfQuestions: number,
+    difficulty: Difficulty[],
+    sectionId: string,
+    quizId?: string,
+    topicIds?: string[],
+    questionType?: QuestionTypes[],
+    signal?: AbortSignal, // Add AbortSignal parameter
+  ): Promise<BankQuestion[]> {
+    const body = {
+      topicId: topicIds || null,
+      bankId,
+      difficulty,
+      noOfQuestions,
+      questionType: questionType || null,
+    };
+
+    console.log("Request body:", body);
+
+    const response = await axiosInstance.post<BankQuestion[]>(
+      `/api/quiz/${quizId}/question/filter`,
+      body,
+      { signal }, // Pass AbortSignal to axios config
+    );
+    return response.data;
+  }
   static async getAllBanks(
     params?: URLSearchParams,
   ): Promise<PaginatedResponse<BankSchema>> {
@@ -202,6 +248,21 @@ class Bank {
   ): Promise<void> {
     const response = await axiosInstance.post(
       `/api/bank/${sourceBankId}/copy`,
+      dto,
+    );
+    return response.data;
+  }
+
+  static async addBankQuestionToQuiz(
+    quizId: string,
+    dto: AddBankQuestionDTO,
+  ): Promise<QuizQuestionAddResponse> {
+    console.log("Adding bank question to quiz:", {
+      quizId,
+      dto,
+    });
+    const response = await axiosInstance.post(
+      `/api/quiz/${quizId}/question/add`,
       dto,
     );
     return response.data;

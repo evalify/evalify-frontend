@@ -1,6 +1,7 @@
 import {
   QuestionCreationRequest,
   QuestionResponse,
+  TestCase,
 } from "@/components/question_creation/types";
 import axiosInstance from "@/lib/axios/axios-client";
 import { QuestionData } from "@/components/question_creation/question-editor";
@@ -35,7 +36,7 @@ class QuestionsService {
   private transformQuestionData(
     request: CreateQuestionRequest,
     isUpdate: boolean = false,
-  ): any {
+  ): Record<string, unknown> {
     const { type, data, settings } = request;
 
     // Extract topic IDs from settings
@@ -82,7 +83,7 @@ class QuestionsService {
           ...baseDTO,
           type: data.allowMultipleCorrect ? "MMCQ" : "MCQ",
           options: (data.options || []).map((option) => {
-            const optionData: any = {
+            const optionData: Record<string, unknown> = {
               text: option.text,
               isCorrect: option.isCorrect,
             };
@@ -107,7 +108,7 @@ class QuestionsService {
           returnType: null, // Would need to be added to frontend
           params: null, // Would need to be added to frontend
           testcases:
-            data.testCases?.map((tc: any) => ({
+            data.testCases?.map((tc: TestCase) => ({
               input: tc.inputs,
               output: tc.expectedOutput,
               isHidden: tc.isHidden || false,
@@ -124,7 +125,7 @@ class QuestionsService {
           llmEval: data.useHybridEvaluation || false,
           template: data.question, // Use question as template
           blanks:
-            data.blanks?.map((blank: any) => ({
+            data.blanks?.map((blank) => ({
               id: blank.id,
               answers: blank.acceptedAnswers || [],
               position: blank.position || 0,
@@ -145,8 +146,8 @@ class QuestionsService {
           ...baseDTO,
           type: "MATCH_THE_FOLLOWING",
           keys:
-            data.matchItems?.map((item: any) => {
-              const itemData: any = {
+            data.matchItems?.map((item) => {
+              const itemData = {
                 leftPair: item.leftText,
                 rightPair: item.rightText,
                 id: item.id,
@@ -181,7 +182,7 @@ class QuestionsService {
     try {
       const transformedData = this.transformQuestionData(questionData, false);
 
-      const response = await axiosInstance.post(
+      await axiosInstance.post(
         `/api/bank/${bankId}/questions`,
         transformedData,
       );
@@ -199,9 +200,12 @@ class QuestionsService {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string; error?: string } };
+      };
+      if (err.response?.data) {
+        const errorData = err.response.data;
         throw new Error(
           errorData.message || errorData.error || "Failed to save question",
         );
@@ -216,9 +220,12 @@ class QuestionsService {
         `/api/bank/${bankId}/questions/${id}`,
       );
       return response.data;
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string; error?: string } };
+      };
+      if (err.response?.data) {
+        const errorData = err.response.data;
         throw new Error(
           errorData.message || errorData.error || "Failed to fetch question",
         );
@@ -235,7 +242,7 @@ class QuestionsService {
     try {
       const transformedData = this.transformQuestionData(questionData, true);
 
-      const response = await axiosInstance.put(
+      await axiosInstance.put(
         `/api/bank/${bankId}/questions/${id}`,
         transformedData,
       );
@@ -253,9 +260,12 @@ class QuestionsService {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string; error?: string } };
+      };
+      if (err.response?.data) {
+        const errorData = err.response.data;
         throw new Error(
           errorData.message || errorData.error || "Failed to update question",
         );
@@ -271,9 +281,12 @@ class QuestionsService {
     try {
       await axiosInstance.delete(`/api/bank/${bankId}/questions/${id}`);
       return { message: "Question deleted successfully" };
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string; error?: string } };
+      };
+      if (err.response?.data) {
+        const errorData = err.response.data;
         throw new Error(
           errorData.message || errorData.error || "Failed to delete question",
         );
@@ -286,9 +299,12 @@ class QuestionsService {
     try {
       const response = await axiosInstance.get(`/api/bank/${bankId}/questions`);
       return response.data;
-    } catch (error: any) {
-      if (error.response?.data) {
-        const errorData = error.response.data;
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string; error?: string } };
+      };
+      if (err.response?.data) {
+        const errorData = err.response.data;
         throw new Error(
           errorData.message || errorData.error || "Failed to fetch questions",
         );

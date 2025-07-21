@@ -28,7 +28,7 @@ export interface CodingQuestionData {
 // Question creation and response types
 export interface QuestionCreationRequest {
   type: string;
-  data?: any; // Question-specific data (varies by question type)
+  data?: Record<string, unknown>; // Question-specific data (varies by question type)
   settings?: {
     marks: number;
     difficulty: string;
@@ -42,7 +42,7 @@ export interface QuestionCreationRequest {
   bloomsTaxonomy?: string;
   courseOutcome?: string;
   topics?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface QuestionResponse {
@@ -54,7 +54,7 @@ export interface QuestionResponse {
   bloomsTaxonomy: string;
   courseOutcome: string;
   topics: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

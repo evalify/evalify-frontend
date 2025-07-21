@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { FillUpQuestion, QuestionConfig, FillUpAnswer } from "../types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,14 +13,12 @@ interface FillUpRendererProps {
   onAnswerChange?: (answer: FillUpAnswer) => void;
 }
 
-export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
+export function FillUpRenderer({
   question,
   config,
   onAnswerChange,
-}) => {
-  const [answers, setAnswers] = React.useState<{ [blankId: string]: string }>(
-    {},
-  );
+}: FillUpRendererProps) {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   // Initialize answers from config if provided (for display mode)
   React.useEffect(() => {
@@ -40,11 +38,11 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
   };
 
   const isAnswerCorrect = (blankId: string, userAnswer: string) => {
-    const blanks = (question as any).blanks || [];
-    const blank = blanks.find((b: any) => b.id === blankId);
+    const blanks = question.blanks || [];
+    const blank = blanks.find((b) => b.id === blankId);
     if (!blank) return false;
 
-    const strictMatch = (question as any).strictMatch;
+    const strictMatch = question.strictMatch;
     if (strictMatch) {
       return blank.answers.some(
         (answer: string) =>
@@ -71,7 +69,7 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
   return (
     <div className="space-y-4">
       {/* Early return if no blanks */}
-      {!(question as any).blanks || (question as any).blanks.length === 0 ? (
+      {!question.blanks || question.blanks.length === 0 ? (
         <div className="text-gray-500 italic">
           No blanks available for this question.
         </div>
@@ -79,7 +77,7 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
         <>
           {/* Individual blanks */}
           <div className="space-y-4">
-            {(question as any).blanks.map((blank: any, index: number) => (
+            {question.blanks.map((blank, index: number) => (
               <div key={blank.id} className="space-y-2">
                 <Label htmlFor={blank.id} className="text-sm font-medium">
                   Blank {index + 1}
@@ -171,4 +169,4 @@ export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
       )}
     </div>
   );
-};
+}
