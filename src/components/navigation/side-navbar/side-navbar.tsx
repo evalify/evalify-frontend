@@ -12,6 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,9 +20,7 @@ import {
   BarChart3,
   BookOpen,
   Calendar,
-  FlaskConical,
   GraduationCap,
-  HelpCircle,
   LayoutDashboard,
   Settings,
   Trophy,
@@ -30,6 +29,12 @@ import {
   Sun,
   LogOut,
   LogIn,
+  BookMarked,
+  PenTool,
+  Building2,
+  Beaker,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -45,6 +50,7 @@ const mainNavItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
+    color: "text-blue-500",
   },
 ];
 
@@ -52,17 +58,20 @@ const academicsItems = [
   {
     title: "Courses",
     url: "/course",
-    icon: HelpCircle,
+    icon: BookMarked,
+    color: "text-emerald-500",
   },
   {
     title: "Question Bank",
     url: "/question-bank",
     icon: BookOpen,
+    color: "text-orange-500",
   },
   {
     title: "Results",
     url: "/student-results",
     icon: Trophy,
+    color: "text-yellow-500",
   },
 ];
 
@@ -71,26 +80,46 @@ const administrationItems = [
     title: "Users",
     url: "/user",
     icon: Users,
+    color: "text-purple-500",
   },
   {
     title: "Batches",
     url: "/batch",
     icon: GraduationCap,
+    color: "text-indigo-500",
   },
   {
     title: "Semester",
     url: "/semester",
     icon: Calendar,
+    color: "text-rose-500",
   },
   {
     title: "Departments",
     url: "/department",
-    icon: GraduationCap,
+    icon: Building2,
+    color: "text-cyan-500",
   },
   {
     title: "Labs",
     url: "/lab",
-    icon: FlaskConical,
+    icon: Beaker,
+    color: "text-teal-500",
+  },
+];
+
+const studentNavItems = [
+  {
+    title: "Courses",
+    url: "/course",
+    icon: BookMarked,
+    color: "text-emerald-500",
+  },
+  {
+    title: "Quiz",
+    url: "/quiz",
+    icon: PenTool,
+    color: "text-amber-500",
   },
 ];
 
@@ -112,13 +141,16 @@ function ThemeToggle({ mounted }: { mounted: boolean }) {
             : "Toggle theme"
         }
         disabled={!mounted}
+        className="group/item transition-all duration-200 hover:bg-sidebar-accent/80"
       >
         {mounted && isDark ? (
-          <Sun className="h-4 w-4" />
+          <Sun className="h-4 w-4 text-yellow-500 group-hover/item:text-sidebar-accent-foreground transition-colors" />
         ) : (
-          <Moon className="h-4 w-4" />
+          <Moon className="h-4 w-4 text-indigo-500 group-hover/item:text-sidebar-accent-foreground transition-colors" />
         )}
-        <span>{mounted ? (isDark ? "Light Mode" : "Dark Mode") : "Theme"}</span>
+        <span className="font-medium">
+          {mounted ? (isDark ? "Light Mode" : "Dark Mode") : "Theme"}
+        </span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -135,25 +167,41 @@ export function AppSidebar() {
   }, []);
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <Link href="/">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <BarChart3 className="h-4 w-4" />
+    <Sidebar collapsible="icon" className="group relative">
+      <SidebarHeader className="border-b border-sidebar-border bg-gradient-to-br from-sidebar/40 via-sidebar/60 to-sidebar/80 dark:from-sidebar/60 dark:via-sidebar/80 dark:to-sidebar backdrop-blur-sm p-0">
+        <Link href="/" className="block">
+          <div className="flex items-center p-2 min-h-[64px] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg ring-2 ring-primary/20 transition-all duration-200 hover:scale-105 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
+              <BarChart3 className="h-5 w-5 group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-4" />
             </div>
-            {open && (
-              <span className="font-semibold text-2xl text-center">
+            <div className="ml-3 flex flex-col min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+              <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">
                 Evalify
               </span>
-            )}
+              <span className="text-xs text-muted-foreground truncate">
+                Assessment Platform
+              </span>
+            </div>
           </div>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+      {/* Sidebar Toggle Button - Simple */}
+      <div className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-20 hidden md:block">
+        <SidebarTrigger className="h-6 w-6 rounded-md bg-sidebar-border/50 hover:bg-sidebar-border text-sidebar-foreground border border-sidebar-border/30 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-1 focus:ring-primary/30">
+          {open ? (
+            <ChevronLeft className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
+        </SidebarTrigger>
+      </div>
+
+      <SidebarContent className="bg-gradient-to-b from-sidebar via-sidebar/50 to-sidebar dark:from-sidebar dark:via-sidebar/80 dark:to-sidebar scrollbar-thin scrollbar-track-transparent scrollbar-thumb-sidebar-border/50 hover:scrollbar-thumb-sidebar-border overflow-x-hidden p-0">
+        <SidebarGroup className="px-2 py-4">
+          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 px-2 group-data-[collapsible=icon]:sr-only">
+            Main
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => (
@@ -162,10 +210,17 @@ export function AppSidebar() {
                     asChild
                     isActive={pathname === item.url}
                     tooltip={item.title}
+                    className="group/item transition-all duration-200 hover:bg-sidebar-accent/80"
                   >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center">
+                      <item.icon
+                        className={`h-4 w-4 transition-colors ${
+                          pathname === item.url
+                            ? "text-sidebar-accent-foreground"
+                            : `${item.color} group-hover/item:text-sidebar-accent-foreground`
+                        }`}
+                      />
+                      <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -174,14 +229,16 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarSeparator />
+        <SidebarSeparator className="bg-gradient-to-r from-transparent via-sidebar-border to-transparent mx-2" />
 
         <AuthGuard
           requiredGroups={[UserType.STAFF, UserType.MANAGER]}
           fallbackComponent={null}
         >
-          <SidebarGroup>
-            <SidebarGroupLabel>Academics</SidebarGroupLabel>
+          <SidebarGroup className="px-2 py-4">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 px-2 group-data-[collapsible=icon]:sr-only">
+              Academics
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {academicsItems.map((item) => (
@@ -190,10 +247,17 @@ export function AppSidebar() {
                       asChild
                       isActive={pathname === item.url}
                       tooltip={item.title}
+                      className="group/item transition-all duration-200 hover:bg-sidebar-accent/80"
                     >
-                      <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                      <Link href={item.url} className="flex items-center">
+                        <item.icon
+                          className={`h-4 w-4 transition-colors ${
+                            pathname === item.url
+                              ? "text-sidebar-accent-foreground"
+                              : `${item.color} group-hover/item:text-sidebar-accent-foreground`
+                          }`}
+                        />
+                        <span className="font-medium">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -201,15 +265,17 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarSeparator />
+          <SidebarSeparator className="bg-gradient-to-r from-transparent via-sidebar-border to-transparent mx-2" />
         </AuthGuard>
 
         <AuthGuard
           requiredGroups={[UserType.ADMIN, UserType.MANAGER]}
           fallbackComponent={null}
         >
-          <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroup className="px-2 py-4">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 px-2 group-data-[collapsible=icon]:sr-only">
+              Administration
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {administrationItems.map((item) => (
@@ -218,10 +284,17 @@ export function AppSidebar() {
                       asChild
                       isActive={pathname === item.url}
                       tooltip={item.title}
+                      className="group/item transition-all duration-200 hover:bg-sidebar-accent/80"
                     >
-                      <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                      <Link href={item.url} className="flex items-center">
+                        <item.icon
+                          className={`h-4 w-4 transition-colors ${
+                            pathname === item.url
+                              ? "text-sidebar-accent-foreground"
+                              : `${item.color} group-hover/item:text-sidebar-accent-foreground`
+                          }`}
+                        />
+                        <span className="font-medium">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -229,11 +302,47 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarSeparator />
+          <SidebarSeparator className="bg-gradient-to-r from-transparent via-sidebar-border to-transparent mx-2" />
         </AuthGuard>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
+        <AuthGuard requiredGroups={[UserType.STUDENT]} fallbackComponent={null}>
+          <SidebarGroup className="px-2 py-4">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 px-2 group-data-[collapsible=icon]:sr-only">
+              Student
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {studentNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url}
+                      tooltip={item.title}
+                      className="group/item transition-all duration-200 hover:bg-sidebar-accent/80"
+                    >
+                      <Link href={item.url} className="flex items-center">
+                        <item.icon
+                          className={`h-4 w-4 transition-colors ${
+                            pathname === item.url
+                              ? "text-sidebar-accent-foreground"
+                              : `${item.color} group-hover/item:text-sidebar-accent-foreground`
+                          }`}
+                        />
+                        <span className="font-medium">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarSeparator className="bg-gradient-to-r from-transparent via-sidebar-border to-transparent mx-2" />
+        </AuthGuard>
+
+        <SidebarGroup className="px-2 py-4">
+          <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/70 px-2 group-data-[collapsible=icon]:sr-only">
+            System
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -241,10 +350,17 @@ export function AppSidebar() {
                   asChild
                   tooltip="Settings"
                   isActive={pathname === "/settings"}
+                  className="group/item transition-all duration-200 hover:bg-sidebar-accent/80"
                 >
-                  <Link href="/settings">
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
+                  <Link href="/settings" className="flex items-center">
+                    <Settings
+                      className={`h-4 w-4 transition-colors ${
+                        pathname === "/settings"
+                          ? "text-sidebar-accent-foreground"
+                          : "text-slate-500 group-hover/item:text-sidebar-accent-foreground"
+                      }`}
+                    />
+                    <span className="font-medium">Settings</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -254,67 +370,94 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
+      <SidebarFooter className="border-t border-sidebar-border bg-gradient-to-r from-sidebar via-sidebar/80 to-sidebar backdrop-blur-sm p-2 overflow-hidden">
+        <SidebarMenu className="overflow-hidden">
           {mounted && session?.user ? (
-            <>
-              <SidebarMenuItem className="border-t border-sidebar-border pt-2">
-                <div className="flex w-full items-center justify-between">
-                  <div className="flex flex-1 items-center overflow-hidden pr-2">
-                    <Avatar className="h-8 w-8 flex-shrink-0 rounded-lg">
-                      <AvatarImage
-                        src={session.user.image || ""}
-                        alt={session.user.name || ""}
-                      />
-                      <AvatarFallback className="rounded-lg">
-                        {session.user.name?.slice(0, 2).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    {open && (
-                      <>
-                        <div className="ml-2 grid flex-1 overflow-hidden text-left text-sm leading-tight">
-                          <span className="truncate font-semibold">
-                            {capitalizeWord(session.user.name || "")}
-                          </span>
-                          <span className="truncate text-xs text-muted-foreground">
-                            {session.user.email}
-                          </span>
-                        </div>
-                        <SidebarMenuButton
-                          tooltip="Sign out"
-                          size="sm"
-                          className="text-red-600 w-auto hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950" // ml-auto to push it right, flex-shrink-0
-                        >
-                          <ConfirmationDialog
-                            title="Logout Confirmation"
-                            message="Are you sure you want to logout?"
-                            onAccept={() => signOut({ callbackUrl: "/" })}
-                            confirmButtonText="Yes, Logout"
-                          >
-                            <LogOut className="h-4 w-4" />
-                          </ConfirmationDialog>
-                        </SidebarMenuButton>
-                      </>
-                    )}
+            <SidebarMenuItem>
+              <div className="group relative w-full overflow-hidden">
+                <div className="flex items-center p-2 rounded-lg hover:bg-sidebar-accent/50 transition-all duration-200 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-3">
+                  <Avatar className="h-8 w-8 flex-shrink-0 rounded-lg ring-2 ring-primary/20 transition-all duration-200 hover:ring-primary/40 group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:w-7">
+                    <AvatarImage
+                      src={session.user.image || ""}
+                      alt={session.user.name || ""}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-sm font-semibold group-data-[collapsible=icon]:text-xs">
+                      {session.user.name?.slice(0, 2).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="ml-3 flex items-center justify-between flex-1 min-w-0 group-data-[collapsible=icon]:hidden overflow-hidden">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="font-semibold text-sm truncate">
+                        {capitalizeWord(session.user.name || "")}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {session.user.email}
+                      </div>
+                    </div>
+                    <ConfirmationDialog
+                      title="Logout Confirmation"
+                      message="Are you sure you want to logout?"
+                      onAccept={() => signOut({ callbackUrl: "/" })}
+                      confirmButtonText="Yes, Logout"
+                    >
+                      <button
+                        className="flex-shrink-0 p-1.5 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 transition-all duration-200 hover:scale-105"
+                        title="Sign out"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </button>
+                    </ConfirmationDialog>
                   </div>
                 </div>
-              </SidebarMenuItem>
-            </>
+                {/* Tooltip for collapsed state */}
+                <div className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground rounded-md shadow-lg border opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 whitespace-nowrap z-50 group-data-[collapsible=expanded]:hidden">
+                  <div className="font-semibold text-sm">
+                    {capitalizeWord(session.user.name || "")}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {session.user.email}
+                  </div>
+                  <div className="mt-2 pt-2 border-t">
+                    <ConfirmationDialog
+                      title="Logout Confirmation"
+                      message="Are you sure you want to logout?"
+                      onAccept={() => signOut({ callbackUrl: "/" })}
+                      confirmButtonText="Yes, Logout"
+                    >
+                      <button className="flex items-center gap-2 text-red-500 hover:text-red-600 text-xs">
+                        <LogOut className="h-3 w-3" />
+                        Sign out
+                      </button>
+                    </ConfirmationDialog>
+                  </div>
+                </div>
+              </div>
+            </SidebarMenuItem>
           ) : mounted ? (
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={() => signIn("keycloak")}
                 tooltip="Sign in to access all features"
+                className="w-full justify-center bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 transition-all duration-200 hover:scale-105 group-data-[collapsible=icon]:p-3"
               >
-                <LogIn className="h-4 w-4" />
-                <span>Sign In</span>
+                <LogIn className="h-4 w-4 text-green-400 group-data-[collapsible=icon]:h-5 group-data-[collapsible=icon]:w-5" />
+                <span className="font-medium group-data-[collapsible=icon]:hidden">
+                  Sign In
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ) : (
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Loading...">
-                <LogIn className="h-4 w-4" />
-                <span>Loading...</span>
+              <SidebarMenuButton
+                tooltip="Loading..."
+                disabled
+                className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-3"
+              >
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent flex-shrink-0" />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  Loading...
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
