@@ -2,12 +2,12 @@
 
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import Quiz from "@/repo/quiz/quiz";
+import StudentCourse from "@/repo/student/course/student-course";
 
 export default function Page() {
   const { data, isPending, error } = useQuery({
-    queryKey: ["quiz"],
-    queryFn: Quiz.getAllQuizzes,
+    queryKey: ["course"],
+    queryFn: StudentCourse.getAllStudentCourses,
   });
 
   if (isPending) {
