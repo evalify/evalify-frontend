@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDebounce } from "@/hooks/use-debounce";
 import { BankQuestion } from "@/repo/bank/bank";
@@ -29,12 +29,25 @@ export function QuestionSelectionComponent({
   selectedQuestions: initialSelectedQuestions = [],
 }: QuestionSelectionComponentProps) {
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>(
-    initialSelectedQuestions.map((q) => q.id),
+    initialSelectedQuestions
+      .map((q) => q.id)
+      .filter((id): id is string => !!id),
   );
   const [searchQuery, setSearchQuery] = useState("");
   const parentRef = useRef<HTMLDivElement>(null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Create a stable function to update parent state
+  const updateParentSelections = useCallback(
+    (newSelections: string[]) => {
+      const selectedQuestionObjects = questions.filter(
+        (q) => q.id && newSelections.includes(q.id),
+      );
+      onQuestionsSelected(selectedQuestionObjects);
+    },
+    [questions, onQuestionsSelected],
+  );
 
   // Filter questions based on search query
   const filteredQuestions = useMemo(() => {
@@ -88,11 +101,8 @@ export function QuestionSelectionComponent({
           : [...prev, questionId]
         : prev.filter((selectedId) => selectedId !== questionId);
 
-      // Call the callback with the actual question objects
-      const selectedQuestionObjects = questions.filter((q) =>
-        newSelection.includes(q.id),
-      );
-      onQuestionsSelected(selectedQuestionObjects);
+      // Call parent callback with new selection
+      setTimeout(() => updateParentSelections(newSelection), 0);
 
       return newSelection;
     });
@@ -100,18 +110,20 @@ export function QuestionSelectionComponent({
 
   const handleSelectAll = (checked?: boolean | "indeterminate") => {
     if (checked === true) {
-      const allQuestionIds = filteredQuestions.map((q) => q.id);
+      const allQuestionIds = filteredQuestions
+        .map((q) => q.id)
+        .filter((id): id is string => !!id);
       setSelectedQuestions(allQuestionIds);
-      onQuestionsSelected(filteredQuestions);
+      setTimeout(() => updateParentSelections(allQuestionIds), 0);
     } else {
       setSelectedQuestions([]);
-      onQuestionsSelected([]);
+      setTimeout(() => updateParentSelections([]), 0);
     }
   };
 
   const handleClearSelection = () => {
     setSelectedQuestions([]);
-    onQuestionsSelected([]);
+    setTimeout(() => updateParentSelections([]), 0);
   };
 
   const selectedCount = selectedQuestions.length;
@@ -227,7 +239,9 @@ export function QuestionSelectionComponent({
               >
                 {items.map((virtualItem) => {
                   const question = filteredQuestions[virtualItem.index];
-                  const isSelected = selectedQuestions.includes(question.id);
+                  const isSelected = question.id
+                    ? selectedQuestions.includes(question.id)
+                    : false;
 
                   return (
                     <div
@@ -252,10 +266,12 @@ export function QuestionSelectionComponent({
                             <Checkbox
                               checked={isSelected}
                               onCheckedChange={(checked) => {
-                                handleQuestionSelect(
-                                  question.id,
-                                  Boolean(checked),
-                                );
+                                if (question.id) {
+                                  handleQuestionSelect(
+                                    question.id,
+                                    Boolean(checked),
+                                  );
+                                }
                               }}
                             />
                           </div>

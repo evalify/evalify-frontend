@@ -19,18 +19,70 @@ export type BankSchema = {
 };
 
 type BankQuestion = {
-  id: string;
+  id?: string;
+  questionId?: string; // Backend uses both id and questionId
   question: string;
   type: string;
   marks?: number;
   difficulty?: string;
-  explanation?: string;
-  hintText?: string;
-  bloomsTaxonomy?: string;
-  co?: number;
   created_at: string;
   topics?: BankTopic[];
-  _originalData?: Record<string, unknown>; // Store original backend response for ID extraction
+
+  // Additional fields that should be included for proper rendering
+  explanation?: string | null;
+  hint?: string | null;
+  bloomsTaxonomy?: string;
+  co?: number;
+
+  // MCQ/MMCQ specific fields
+  options?: Array<{
+    id?: string | null;
+    text: string;
+    isCorrect: boolean;
+  }>;
+
+  // TRUE/FALSE specific fields
+  answers?: boolean;
+
+  // CODING specific fields
+  functionName?: string;
+  returnType?: string;
+  params?: Array<{
+    param: string;
+    type: string;
+  }>;
+  language?: string[];
+  driverCode?: string;
+  boilerCode?: string;
+  testcases?: Array<{
+    input: unknown[];
+    expected: unknown;
+    tags?: string;
+    isMinimal?: boolean;
+    language?: string;
+  }>;
+  answer?: string | null;
+
+  // FILL_UP specific fields
+  strictMatch?: boolean;
+  llmEval?: boolean | null;
+  template?: string;
+  blanks?: Array<{
+    id: string;
+    answers: string[];
+  }>;
+
+  // DESCRIPTIVE specific fields
+  expectedAnswer?: string;
+  strictness?: number;
+  guidelines?: string;
+
+  // MATCH_THE_FOLLOWING specific fields
+  keys?: Array<{
+    id?: string;
+    leftPair: string;
+    rightPair: string;
+  }>;
 };
 
 export type { BankQuestion };
@@ -91,11 +143,11 @@ class Bank {
     signal?: AbortSignal, // Add AbortSignal parameter
   ): Promise<BankQuestion[]> {
     const body = {
-      topicId: topicIds || null,
+      topicId: topicIds?.length ? topicIds : null,
       bankId,
-      difficulty,
+      difficulty: difficulty.length ? difficulty : null,
       noOfQuestions,
-      questionType: questionType || null,
+      questionType: questionType?.length ? questionType : null,
     };
 
     console.log("Request body:", body);
@@ -190,7 +242,7 @@ class Bank {
   static async getBankQuestions(
     bankId: string,
     topicIds: string[],
-  ): Promise<unknown[]> {
+  ): Promise<BankQuestion[]> {
     const params = new URLSearchParams();
     topicIds.forEach((id) => params.append("topicIds", id));
 
@@ -220,6 +272,13 @@ class Bank {
       topicIds,
     );
     return response.data;
+  }
+
+  static async deleteBankQuestion(
+    bankId: string,
+    questionId: string,
+  ): Promise<void> {
+    await axiosInstance.delete(`/api/bank/${bankId}/questions/${questionId}`);
   }
 
   static async shareBank(
