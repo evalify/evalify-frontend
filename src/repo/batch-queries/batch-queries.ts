@@ -81,6 +81,11 @@ const batchQueries = {
     );
     return response.data;
   },
+
+  getAllBatches: async () => {
+    const response = await axiosInstance.get(`/api/batch?all=true`);
+    return response.data;
+  },
 };
 
 export default batchQueries;

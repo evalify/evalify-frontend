@@ -1,5 +1,10 @@
 import { Course, Batch, User } from "@/types/types";
 import axiosInstance from "@/lib/axios/axios-client";
+import {
+  CourseInstructorPreviewDTO,
+  CourseStudentInstructorDTO,
+  LabResponse,
+} from "@/components/quiz-creation/types";
 
 export const courseQueries = {
   getCourseById: async (id: string): Promise<Course> => {
@@ -96,6 +101,25 @@ export const courseQueries = {
 
   getCoursesHandledByUser: async (): Promise<Course[]> => {
     const response = await axiosInstance.get(`/api/courses/instructors`);
+    return response.data ?? [];
+  },
+
+  getCoursesByInstructor: async (): Promise<CourseInstructorPreviewDTO[]> => {
+    const response = await axiosInstance.get(`/api/courses/instructors`);
+    return response.data ?? [];
+  },
+
+  getCourseStudentsByInstructor: async (): Promise<
+    CourseStudentInstructorDTO[]
+  > => {
+    const response = await axiosInstance.get(
+      `/api/courses/students/instructors`,
+    );
+    return response.data ?? [];
+  },
+
+  getAllLabs: async (): Promise<LabResponse[]> => {
+    const response = await axiosInstance.get(`/api/lab/all`);
     return response.data ?? [];
   },
 };

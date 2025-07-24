@@ -1,315 +1,354 @@
-import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Users, BookOpen, Search, MapPin, Calendar } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Batch, Course, Student, Lab } from "@/lib/types";
+"use client";
 
-export interface QuizParticipantData {
-  students: string[];
-  batches: string[];
-  courses: string[];
-  labs: string[];
-}
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { MultiSelect, OptionType } from "@/components/ui/multi-select-virtual";
+import {
+  Users,
+  BookOpen,
+  AlertCircle,
+  MapPin,
+  GraduationCap,
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { courseQueries } from "@/repo/course-queries/course-queries";
+import batchQueries from "@/repo/batch-queries/batch-queries";
+import {
+  QuizParticipantData,
+  CourseInstructorPreviewDTO,
+  CourseStudentInstructorDTO,
+  LabResponse,
+  BatchResponse,
+} from "./types";
 
 export interface QuizParticipantProps {
   data: QuizParticipantData;
   updateData: (data: QuizParticipantData) => void;
-  students: Student[];
-  batches: Batch[];
-  courses: Course[];
-  labs: Lab[];
-  disabled?: boolean;
 }
 
-export function QuizParticipant({
-  data,
-  updateData,
-  students,
-  batches,
-  courses,
-  labs,
-  disabled = false,
-}: QuizParticipantProps) {
-  const [searchTerms, setSearchTerms] = useState({
-    students: "",
-    batches: "",
-    courses: "",
-    labs: "",
+export function QuizParticipant({ data, updateData }: QuizParticipantProps) {
+  // Fetch courses handled by the instructor
+  const {
+    data: coursesData,
+    isLoading: coursesLoading,
+    error: coursesError,
+  } = useQuery<CourseInstructorPreviewDTO[]>({
+    queryKey: ["courses-by-instructor"],
+    queryFn: courseQueries.getCoursesByInstructor,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
   });
 
-  const handleToggleItem = (
-    category: keyof QuizParticipantData,
-    itemId: string,
-  ) => {
-    const currentItems = data[category];
-    const updatedItems = currentItems.includes(itemId)
-      ? currentItems.filter((id) => id !== itemId)
-      : [...currentItems, itemId];
+  // Fetch students under the instructor's courses
+  const {
+    data: studentsData,
+    isLoading: studentsLoading,
+    error: studentsError,
+  } = useQuery<CourseStudentInstructorDTO[]>({
+    queryKey: ["course-students-by-instructor"],
+    queryFn: courseQueries.getCourseStudentsByInstructor,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+  });
 
-    updateData({ ...data, [category]: updatedItems });
-  };
+  // Fetch all labs
+  const {
+    data: labsData,
+    isLoading: labsLoading,
+    error: labsError,
+  } = useQuery<LabResponse[]>({
+    queryKey: ["all-labs"],
+    queryFn: courseQueries.getAllLabs,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+  });
 
-  const handleSelectAll = (
-    category: keyof QuizParticipantData,
-    allIds: string[],
-  ) => {
-    updateData({ ...data, [category]: allIds });
-  };
+  // Fetch all batches
+  const {
+    data: batchesData,
+    isLoading: batchesLoading,
+    error: batchesError,
+  } = useQuery<BatchResponse[]>({
+    queryKey: ["all-batches"],
+    queryFn: batchQueries.getAllBatches,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+  });
 
-  const handleClearAll = (category: keyof QuizParticipantData) => {
-    updateData({ ...data, [category]: [] });
-  };
+  // Transform courses data to options for MultiSelect
+  const courseOptions: OptionType[] = React.useMemo(() => {
+    if (!coursesData) return [];
+    return coursesData.map((course) => ({
+      label: `${course.courseCode} - ${course.name}`,
+      value: course.id,
+    }));
+  }, [coursesData]);
 
-  const filterItems = <T extends { id: string }>(
-    items: T[],
-    searchTerm: string,
-    searchFields: (keyof T)[],
-  ) => {
-    if (!searchTerm) return items;
-    return items.filter((item) =>
-      searchFields.some((field) =>
-        String(item[field]).toLowerCase().includes(searchTerm.toLowerCase()),
-      ),
+  // Transform students data to options for MultiSelect
+  const studentOptions: OptionType[] = React.useMemo(() => {
+    if (!studentsData) return [];
+    const allStudents: OptionType[] = [];
+
+    studentsData.forEach((courseData) => {
+      courseData.students.forEach((student) => {
+        if (student.id) {
+          allStudents.push({
+            label: `${student.name} (${student.email})`,
+            value: student.id,
+          });
+        }
+      });
+    });
+
+    // Remove duplicates based on student ID
+    const uniqueStudents = allStudents.filter(
+      (student, index, self) =>
+        index === self.findIndex((s) => s.value === student.value),
     );
+
+    return uniqueStudents;
+  }, [studentsData]);
+
+  // Transform labs data to options for MultiSelect
+  const labOptions: OptionType[] = React.useMemo(() => {
+    if (!labsData) return [];
+    return labsData.map((lab) => ({
+      label: `${lab.name} (${lab.block})`,
+      value: lab.id,
+    }));
+  }, [labsData]);
+
+  // Transform batches data to options for MultiSelect
+  const batchOptions: OptionType[] = React.useMemo(() => {
+    if (!batchesData) return [];
+    return batchesData.map((batch) => ({
+      label: `${batch.name} - ${batch.graduationYear} (${batch.section})`,
+      value: batch.id,
+    }));
+  }, [batchesData]);
+
+  const handleCoursesChange = (selectedCourses: string[]) => {
+    updateData({
+      ...data,
+      courses: selectedCourses,
+    });
   };
 
-  const filteredStudents = filterItems(students, searchTerms.students, [
-    "name",
-    "rollNumber",
-  ]);
-  const filteredBatches = filterItems(batches, searchTerms.batches, [
-    "name",
-    "year",
-  ]);
-  const filteredCourses = filterItems(courses, searchTerms.courses, [
-    "name",
-    "code",
-  ]);
-  const filteredLabs = filterItems(labs, searchTerms.labs, [
-    "name",
-    "location",
-  ]);
+  const handleStudentsChange = (selectedStudents: string[]) => {
+    updateData({
+      ...data,
+      students: selectedStudents,
+    });
+  };
 
-  const SelectionCard = <T extends { id: string }>({
-    title,
-    icon: Icon,
-    items,
-    selectedItems,
-    category,
-    searchTerm,
-    onSearchChange,
-    renderItem,
-  }: {
-    title: string;
-    icon: React.ElementType;
-    items: T[];
-    selectedItems: string[];
-    category: keyof QuizParticipantData;
-    searchTerm: string;
-    onSearchChange: (value: string) => void;
-    renderItem: (item: T) => React.ReactNode;
-  }) => (
-    <Card className="h-fit">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Icon className="w-5 h-5" />
-            {title}
-            <Badge variant="secondary" className="text-xs">
-              {selectedItems.length}/{items.length}
-            </Badge>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={`Search ${title.toLowerCase()}...`}
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
-            disabled={disabled}
-          />
-        </div>
+  const handleLabsChange = (selectedLabs: string[]) => {
+    updateData({
+      ...data,
+      labs: selectedLabs,
+    });
+  };
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              handleSelectAll(
-                category,
-                items.map((item) => item.id),
-              )
-            }
-            disabled={disabled || selectedItems.length === items.length}
-            className="flex-1"
-          >
-            Select All
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleClearAll(category)}
-            disabled={disabled || selectedItems.length === 0}
-            className="flex-1"
-          >
-            Clear All
-          </Button>
-        </div>
-
-        <Separator />
-
-        <ScrollArea className="h-64">
-          <div className="space-y-2">
-            {items.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No {title.toLowerCase()} found
-              </p>
-            ) : (
-              items.map((item: T) => (
-                <div
-                  key={item.id}
-                  className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50 transition-colors"
-                >
-                  <Checkbox
-                    id={`${category}-${item.id}`}
-                    checked={selectedItems.includes(item.id)}
-                    onCheckedChange={() => handleToggleItem(category, item.id)}
-                    disabled={disabled}
-                  />
-                  <div className="flex-1 min-w-0">{renderItem(item)}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
-  );
+  const handleBatchesChange = (selectedBatches: string[]) => {
+    updateData({
+      ...data,
+      batches: selectedBatches,
+    });
+  };
 
   return (
     <div className="space-y-6">
-      {/* Selection Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Selection Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                {data.courses.length}
+      {/* Show error messages if queries fail */}
+      {(coursesError || studentsError || labsError || batchesError) && (
+        <div className="bg-destructive/15 border border-destructive/20 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-destructive">
+              <strong>Error loading data:</strong>
+              {coursesError && (
+                <div>• Failed to load courses: {coursesError.message}</div>
+              )}
+              {studentsError && (
+                <div>• Failed to load students: {studentsError.message}</div>
+              )}
+              {labsError && (
+                <div>• Failed to load labs: {labsError.message}</div>
+              )}
+              {batchesError && (
+                <div>• Failed to load batches: {batchesError.message}</div>
+              )}
+              <div className="mt-2 text-muted-foreground">
+                Please refresh the page and try again.
               </div>
-              <div className="text-sm text-muted-foreground">Courses</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                {data.students.length}
-              </div>
-              <div className="text-sm text-muted-foreground">Students</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                {data.labs.length}
-              </div>
-              <div className="text-sm text-muted-foreground">Labs</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                {data.batches.length}
-              </div>
-              <div className="text-sm text-muted-foreground">Batches</div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Selection Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SelectionCard
-          title="Courses"
-          icon={BookOpen}
-          items={filteredCourses}
-          selectedItems={data.courses}
-          category="courses"
-          searchTerm={searchTerms.courses}
-          onSearchChange={(value) =>
-            setSearchTerms((prev) => ({ ...prev, courses: value }))
-          }
-          renderItem={(course: Course) => (
-            <div>
-              <div className="font-medium">{course.name}</div>
-              <div className="text-sm text-muted-foreground">{course.code}</div>
+      {/* Participant Selection Grid - 2x2 responsive layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Courses Selection */}
+        <Card>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+              Select Courses
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="space-y-4">
+              <MultiSelect
+                options={courseOptions}
+                selected={data.courses}
+                onChange={handleCoursesChange}
+                placeholder={
+                  coursesLoading
+                    ? "Loading courses..."
+                    : "Select courses for this quiz"
+                }
+                className="w-full"
+              />
+              {data.courses.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {data.courses.length} course
+                  {data.courses.length === 1 ? "" : "s"} selected
+                </p>
+              )}
             </div>
-          )}
-        />
+          </CardContent>
+        </Card>
 
-        <SelectionCard
-          title="Students"
-          icon={Users}
-          items={filteredStudents}
-          selectedItems={data.students}
-          category="students"
-          searchTerm={searchTerms.students}
-          onSearchChange={(value) =>
-            setSearchTerms((prev) => ({ ...prev, students: value }))
-          }
-          renderItem={(student: Student) => (
-            <div>
-              <div className="font-medium">{student.name}</div>
-              <div className="text-sm text-muted-foreground">
-                {student.rollNumber}
-              </div>
+        {/* Labs Selection */}
+        <Card>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+              Select Labs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="space-y-4">
+              <MultiSelect
+                options={labOptions}
+                selected={data.labs}
+                onChange={handleLabsChange}
+                placeholder={
+                  labsLoading ? "Loading labs..." : "Select labs for this quiz"
+                }
+                className="w-full"
+              />
+              {data.labs.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {data.labs.length} lab{data.labs.length === 1 ? "" : "s"}{" "}
+                  selected
+                </p>
+              )}
             </div>
-          )}
-        />
+          </CardContent>
+        </Card>
 
-        <SelectionCard
-          title="Labs"
-          icon={MapPin}
-          items={filteredLabs}
-          selectedItems={data.labs}
-          category="labs"
-          searchTerm={searchTerms.labs}
-          onSearchChange={(value) =>
-            setSearchTerms((prev) => ({ ...prev, labs: value }))
-          }
-          renderItem={(lab: Lab) => (
-            <div>
-              <div className="font-medium">{lab.name}</div>
-              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {lab.location}
-              </div>
+        {/* Batches Selection */}
+        <Card>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
+              Select Batches
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="space-y-4">
+              <MultiSelect
+                options={batchOptions}
+                selected={data.batches}
+                onChange={handleBatchesChange}
+                placeholder={
+                  batchesLoading
+                    ? "Loading batches..."
+                    : "Select batches for this quiz"
+                }
+                className="w-full"
+              />
+              {data.batches.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {data.batches.length} batch
+                  {data.batches.length === 1 ? "" : "es"} selected
+                </p>
+              )}
             </div>
-          )}
-        />
+          </CardContent>
+        </Card>
 
-        <SelectionCard
-          title="Batches"
-          icon={Calendar}
-          items={filteredBatches}
-          selectedItems={data.batches}
-          category="batches"
-          searchTerm={searchTerms.batches}
-          onSearchChange={(value) =>
-            setSearchTerms((prev) => ({ ...prev, batches: value }))
-          }
-          renderItem={(batch: Batch) => (
-            <div>
-              <div className="font-medium">{batch.name}</div>
-              <div className="text-sm text-muted-foreground">{batch.year}</div>
+        {/* Students Selection */}
+        <Card>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              Select Students
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="space-y-4">
+              <MultiSelect
+                options={studentOptions}
+                selected={data.students}
+                onChange={handleStudentsChange}
+                placeholder={
+                  studentsLoading
+                    ? "Loading students..."
+                    : "Select individual students for this quiz"
+                }
+                className="w-full"
+              />
+              {data.students.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {data.students.length} student
+                  {data.students.length === 1 ? "" : "s"} selected
+                </p>
+              )}
             </div>
-          )}
-        />
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Summary */}
+      {(data.courses.length > 0 ||
+        data.labs.length > 0 ||
+        data.batches.length > 0 ||
+        data.students.length > 0) && (
+        <Card>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">
+              Selection Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="font-medium">Courses:</span>{" "}
+                {data.courses.length}
+              </p>
+              <p>
+                <span className="font-medium">Labs:</span> {data.labs.length}
+              </p>
+              <p>
+                <span className="font-medium">Batches:</span>{" "}
+                {data.batches.length}
+              </p>
+              <p>
+                <span className="font-medium">Individual Students:</span>{" "}
+                {data.students.length}
+              </p>
+              <p className="text-muted-foreground">
+                Students from selected courses, labs, and batches will
+                automatically be included in the quiz.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -1,0 +1,232 @@
+"use client";
+
+import React from  // Fetch students under the instructor's courses
+  const { 
+    data: studentsData, 
+    isLoading: studentsLoading, 
+    error: studentsError 
+  } = useQuery<CourseStudentInstructorDTO[]>({
+    queryKey: ["course-students-by-instructor"],
+    queryFn: courseQueries.getCourseStudentsByInstructor,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+  });
+
+  // Fetch all labs
+  const { 
+    data: labsData, 
+    isLoading: labsLoading, 
+    error: labsError 
+  } = useQuery<LabResponse[]>({
+    queryKey: ["all-labs"],
+    queryFn: courseQueries.getAllLabs,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+  });mport { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { MultiSelect, OptionType } from "@/components/ui/multi-select-virtual";
+import { Users, BookOpen, AlertCircle, MapPin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { courseQueries } from "@/repo/course-queries/course-queries";
+import {
+  QuizParticipantData,
+  CourseInstructorPreviewDTO,
+  CourseStudentInstructorDTO,
+  LabResponse,
+} from "./types";
+
+export interface QuizParticipantProps {
+  data: QuizParticipantData;
+  updateData: (data: QuizParticipantData) => void;
+}
+
+export function QuizParticipant({ data, updateData }: QuizParticipantProps) {
+  // Fetch courses handled by the instructor
+  const {
+    data: coursesData,
+    isLoading: coursesLoading,
+    error: coursesError,
+  } = useQuery<CourseInstructorPreviewDTO[]>({
+    queryKey: ["courses-by-instructor"],
+    queryFn: courseQueries.getCoursesByInstructor,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+  });
+
+  // Fetch students under the instructor's courses
+  const {
+    data: studentsData,
+    isLoading: studentsLoading,
+    error: studentsError,
+  } = useQuery<CourseStudentInstructorDTO[]>({
+    queryKey: ["course-students-by-instructor"],
+    queryFn: courseQueries.getCourseStudentsByInstructor,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+  });
+
+  // Transform courses data to options for MultiSelect
+  const courseOptions: OptionType[] = React.useMemo(() => {
+    if (!coursesData) return [];
+    return coursesData.map((course) => ({
+      label: `${course.courseCode} - ${course.name}`,
+      value: course.id,
+    }));
+  }, [coursesData]);
+
+  // Transform students data to options for MultiSelect
+  const studentOptions: OptionType[] = React.useMemo(() => {
+    if (!studentsData) return [];
+    const allStudents: OptionType[] = [];
+
+    studentsData.forEach((courseData) => {
+      courseData.students.forEach((student) => {
+        if (student.id) {
+          allStudents.push({
+            label: `${student.name} (${student.email})`,
+            value: student.id,
+          });
+        }
+      });
+    });
+
+    // Remove duplicates based on student ID
+    const uniqueStudents = allStudents.filter(
+      (student, index, self) =>
+        index === self.findIndex((s) => s.value === student.value),
+    );
+
+    return uniqueStudents;
+  }, [studentsData]);
+
+  const handleCoursesChange = (selectedCourses: string[]) => {
+    updateData({
+      ...data,
+      courses: selectedCourses,
+    });
+  };
+
+  const handleStudentsChange = (selectedStudents: string[]) => {
+    updateData({
+      ...data,
+      students: selectedStudents,
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Show error messages if queries fail */}
+      {(coursesError || studentsError) && (
+        <div className="bg-destructive/15 border border-destructive/20 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-destructive">
+              <strong>Error loading data:</strong>
+              {coursesError && (
+                <div>• Failed to load courses: {coursesError.message}</div>
+              )}
+              {studentsError && (
+                <div>• Failed to load students: {studentsError.message}</div>
+              )}
+              <div className="mt-2 text-muted-foreground">
+                Please refresh the page and try again.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Courses Selection */}
+      <Card>
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+            Select Courses
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 sm:px-6">
+          <div className="space-y-4">
+            <MultiSelect
+              options={courseOptions}
+              selected={data.courses}
+              onChange={handleCoursesChange}
+              placeholder={
+                coursesLoading
+                  ? "Loading courses..."
+                  : "Select courses for this quiz"
+              }
+              className="w-full"
+            />
+            {data.courses.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {data.courses.length} course
+                {data.courses.length === 1 ? "" : "s"} selected
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Students Selection */}
+      <Card>
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+            Select Students
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 sm:px-6">
+          <div className="space-y-4">
+            <MultiSelect
+              options={studentOptions}
+              selected={data.students}
+              onChange={handleStudentsChange}
+              placeholder={
+                studentsLoading
+                  ? "Loading students..."
+                  : "Select individual students for this quiz"
+              }
+              className="w-full"
+            />
+            {data.students.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {data.students.length} student
+                {data.students.length === 1 ? "" : "s"} selected
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary */}
+      {(data.courses.length > 0 || data.students.length > 0) && (
+        <Card>
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">
+              Selection Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="font-medium">Courses:</span>{" "}
+                {data.courses.length}
+              </p>
+              <p>
+                <span className="font-medium">Individual Students:</span>{" "}
+                {data.students.length}
+              </p>
+              <p className="text-muted-foreground">
+                Students from selected courses will automatically be included in
+                the quiz.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
