@@ -24,7 +24,6 @@ import {
   XCircle,
   Globe,
   Lock,
-  Unlock,
   BookOpen,
   Timer,
   Activity,
@@ -205,22 +204,13 @@ export function QuizCard({
           <div className="flex items-center gap-1">
             {/* Security Indicators */}
             <div className="flex items-center gap-1.5">
-              {quiz.isProtected ? (
+              {quiz.isProtected && (
                 <div className="group/tooltip relative">
                   <div className="p-1.5 rounded-lg bg-amber-100/80 dark:bg-amber-900/30 border border-amber-200/60 dark:border-amber-800/60">
                     <Lock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs py-1.5 px-2.5 rounded-md opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 font-medium">
                     Password Protected
-                  </div>
-                </div>
-              ) : (
-                <div className="group/tooltip relative">
-                  <div className="p-1.5 rounded-lg bg-emerald-100/80 dark:bg-emerald-900/30 border border-emerald-200/60 dark:border-emerald-800/60">
-                    <Unlock className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs py-1.5 px-2.5 rounded-md opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 font-medium">
-                    Open Access
                   </div>
                 </div>
               )}
@@ -249,17 +239,17 @@ export function QuizCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onView?.(quiz.id)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onEdit?.(quiz.id)}>
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 mr-2" />
                   Edit Quiz
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onManage?.(quiz.id)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage
+                  <Edit className="h-4 w-4 mr-2" />
+                  View Questions
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onView?.(quiz.id)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Results
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -358,14 +348,14 @@ export function QuizCard({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          {isActive && (
+          {(isActive || !isScheduled || !isCompleted || !isActive) && (
             <Button
               size="sm"
-              className="flex-1 bg-gradient-to-r font-medium shadow-lg"
+              className="flex-1 dark:bg-slate-800 dark:text-white font-medium shadow-lg hover:shadow-slate-300/50 dark:hover:shadow-slate-900/50 transition-shadow"
               onClick={() => onManage?.(quiz.id)}
             >
               <Zap className="h-3.5 w-3.5 mr-2" />
-              Manage Live
+              View Questions
             </Button>
           )}
 
@@ -381,23 +371,11 @@ export function QuizCard({
             </Button>
           )}
 
-          {!isActive && !isScheduled && !isCompleted && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 font-medium"
-              onClick={() => onView?.(quiz.id)}
-            >
-              <Eye className="h-3.5 w-3.5 mr-2" />
-              View
-            </Button>
-          )}
-
           <Button
             size="sm"
             variant="ghost"
             className="px-3"
-            onClick={() => onView?.(quiz.id)}
+            onClick={() => onEdit?.(quiz.id)}
           >
             <Settings className="h-3.5 w-3.5" />
           </Button>
