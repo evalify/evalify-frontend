@@ -2,6 +2,7 @@
 
 import Quiz from "@/repo/quiz/quiz";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuiz, useDeleteQuiz } from "@/hooks/use-quiz-crud";
 import React, { use, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -104,7 +105,7 @@ interface QuizQuestionResponse {
 
 const Page = ({ params }: Props) => {
   const param = use(params);
-  const { quizId } = param;
+  const { quizId, courseId } = param;
   const { success, error } = useToast();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -117,12 +118,11 @@ const Page = ({ params }: Props) => {
   const [sectionName, setSectionName] = useState("");
   const [isDeleteQuestionOpen, setIsDeleteQuestionOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
+  const [isDeleteQuizOpen, setIsDeleteQuizOpen] = useState(false);
 
-  const { data: quiz, isLoading: isQuizLoading } = useQuery({
-    queryKey: ["quiz", quizId],
-    queryFn: () => Quiz.getQuizById(quizId),
-    enabled: !!quizId,
-  });
+  // Use the new CRUD hooks
+  const { data: quiz, isLoading: isQuizLoading } = useQuiz(quizId);
+  const deleteQuizMutation = useDeleteQuiz();
 
   const { data: quizSections, isLoading: isSectionsLoading } = useQuery({
     queryKey: ["quizSections", quizId],
@@ -310,6 +310,25 @@ const Page = ({ params }: Props) => {
     [success],
   );
 
+  const handleEditQuiz = useCallback(() => {
+    // Navigate to quiz edit page using the manage route
+    router.push(`/course/${courseId}/quiz/${quizId}/manage`);
+  }, [router, courseId, quizId]);
+
+  const handleDeleteQuiz = useCallback(() => {
+    setIsDeleteQuizOpen(true);
+  }, []);
+
+  const handleDeleteQuizConfirm = useCallback(() => {
+    deleteQuizMutation.mutate(quizId, {
+      onSuccess: () => {
+        setIsDeleteQuizOpen(false);
+        // Navigate back to course page after successful deletion
+        router.push(`/course/${courseId}/quiz`);
+      },
+    });
+  }, [deleteQuizMutation, quizId, router, courseId]);
+
   const formatDuration = useCallback((nanoseconds: number) => {
     const hours = Math.floor(nanoseconds / (1000000000 * 60 * 60));
     const minutes = Math.floor(
@@ -372,9 +391,28 @@ const Page = ({ params }: Props) => {
             <Badge variant={getStatusBadgeVariant(quiz.status)}>
               {quiz.status}
             </Badge>
-            <Button variant="outline" size="icon">
-              <Settings className="h-4 w-4" />
-            </Button>
+            {isQuizEditable && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleEditQuiz}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Quiz
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDeleteQuiz}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Quiz
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
         {/* Quiz Stats Cards */}
@@ -768,6 +806,16 @@ const Page = ({ params }: Props) => {
         title="Delete Question"
         description="Are you sure you want to delete this question? This action cannot be undone."
         isLoading={deleteQuestionMutation.isPending}
+      />
+
+      {/* Delete Quiz Dialog */}
+      <DeleteDialog
+        isOpen={isDeleteQuizOpen}
+        onClose={() => setIsDeleteQuizOpen(false)}
+        onConfirm={handleDeleteQuizConfirm}
+        title="Delete Quiz"
+        description="Are you sure you want to delete this entire quiz? This action cannot be undone and will remove all sections, questions, and associated data."
+        isLoading={deleteQuizMutation.isPending}
       />
     </div>
   );

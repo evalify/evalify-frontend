@@ -1,20 +1,63 @@
 import axiosInstance from "@/lib/axios/axios-client";
-import {
-  AddQuestionsToQuizDTO,
-  BankQuestionsReturnDTO,
-  QuestionFilters,
-} from "@/types/quiz-types";
-import { Difficulty, QuestionTypes } from "@/components/render-questions/types";
 
-type QuizSchema = {
+// DTOs matching backend structure
+export interface CreateQuizDTO {
+  name: string;
+  description?: string;
+  instructions?: string;
+  startTime: string; // ISO string
+  endTime: string; // ISO string
+  durationInMinutes: number;
+  fullScreen?: boolean;
+  shuffleQuestions?: boolean;
+  shuffleOptions?: boolean;
+  linearQuiz?: boolean;
+  calculator?: boolean;
+  autoSubmit?: boolean;
+  quizTags: string[];
+  password?: string;
+  courseIds: string[];
+  studentIds: string[];
+  labIds: string[];
+  batchIds: string[];
+}
+
+export interface PatchQuizDTO {
+  name?: string;
+  description?: string;
+  instructions?: string;
+  startTime?: string;
+  endTime?: string;
+  durationInMinutes?: number;
+  fullScreen?: boolean;
+  shuffleQuestions?: boolean;
+  shuffleOptions?: boolean;
+  linearQuiz?: boolean;
+  calculator?: boolean;
+  autoSubmit?: boolean;
+  publishResult?: boolean;
+  publishQuiz?: boolean;
+  password?: string;
+  courseIds?: string[];
+  batchIds?: string[];
+  studentIds?: string[];
+  labIds?: string[];
+  quizTags?: string[];
+}
+
+export interface QuizResponse {
+  quizId: string;
+  message: string;
+}
+
+export interface QuizData {
   id: string;
   name: string;
-  description: string;
-  instructions: string;
+  description?: string;
+  instructions?: string;
   startTime: string;
   endTime: string;
-  duration: number;
-  password: string;
+  durationInMinutes: number;
   fullScreen: boolean;
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
@@ -23,39 +66,48 @@ type QuizSchema = {
   autoSubmit: boolean;
   publishResult: boolean;
   publishQuiz: boolean;
-  section: string[];
-  course: string[];
-  student: string[];
-  lab: string[];
-  batch: string[];
-  createdAt: string;
-  createdBy: string;
-};
+  password?: string;
+  courseIds: string[];
+  batchIds: string[];
+  studentIds: string[];
+  labIds: string[];
+  quizTags: string[];
+  createdAt?: string;
+  createdBy?: string;
+}
+
+export interface QuizUpdateResponse {
+  message: string;
+  quiz: QuizData;
+}
 
 class Quiz {
   static async getAllQuizzes() {
     const response = await axiosInstance.get("/api/quiz");
-    return await response.data;
+    return response.data;
   }
 
-  static async createQuiz(quizData: QuizSchema) {
+  static async createQuiz(quizData: CreateQuizDTO): Promise<QuizResponse> {
     const response = await axiosInstance.post("/api/quiz", quizData);
-    return await response.data;
+    return response.data;
   }
+
 
   static async getQuizById(quizId: string) {
     const response = await axiosInstance.get(`/api/quiz/${quizId}`);
-    return await response.data;
+    return response.data;
   }
 
-  static async updateQuiz(quizId: string, quizData: QuizSchema) {
-    const response = await axiosInstance.put(`/api/quiz/${quizId}`, quizData);
-    return await response.data;
+  static async updateQuiz(
+    quizId: string,
+    quizData: PatchQuizDTO,
+  ): Promise<QuizUpdateResponse> {
+    const response = await axiosInstance.patch(`/api/quiz/${quizId}`, quizData);
+    return response.data;
   }
 
-  static async deleteQuiz(quizId: string) {
-    const response = await axiosInstance.delete(`/api/quiz/${quizId}`);
-    return await response.data;
+  static async deleteQuiz(quizId: string): Promise<void> {
+    await axiosInstance.delete(`/api/quiz/${quizId}`);
   }
 
   static async getQuizzesByCourseId(courseId: string) {

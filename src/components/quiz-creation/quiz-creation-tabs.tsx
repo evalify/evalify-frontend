@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -18,8 +18,8 @@ import { ScoringMethod } from "./scoring-method";
 import { format, differenceInMinutes } from "date-fns";
 import { QuizParticipant } from "./quiz-participant";
 import { QuizParticipantData } from "./types";
-import Quiz from "@/repo/quiz/quiz";
-import { useMutation } from "@tanstack/react-query";
+import { useCreateQuiz, useUpdateQuiz, useQuiz } from "@/hooks/use-quiz-crud";
+import type { CreateQuizDTO, PatchQuizDTO } from "@/repo/quiz/quiz";
 
 // Define the data structure for each component
 type QuizCreationData = {
@@ -92,21 +92,19 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
-export function QuizCreationTabs(
-  {
-    // courseId,
-    // quizId,
-    // isEdit,
-  }: {
-    courseId?: string;
-    quizId?: string;
-    isEdit?: boolean;
-  },
-) {
+export function QuizCreationTabs({
+  courseId,
+  quizId,
+  isEdit,
+}: {
+  courseId?: string;
+  quizId?: string;
+  isEdit?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = (searchParams.get("tab") as TabId) || "metadata";
-  const { error, success } = useToast();
+  const { error } = useToast();
 
   const [quizData, setQuizData] = useState<QuizCreationData>({
     metadata: {
@@ -162,26 +160,83 @@ export function QuizCreationTabs(
     batches: [],
   });
 
-  // Create quiz mutation
-  const createQuizMutation = useMutation({
-    mutationFn: Quiz.createQuiz,
-    onSuccess: () => {
-      success("Quiz created successfully!", {
-        description: `Quiz has been created and saved.`,
-        duration: 4000,
+  // Use React Query hooks for CRUD operations
+  const createQuizMutation = useCreateQuiz();
+  const updateQuizMutation = useUpdateQuiz();
+
+  // Fetch existing quiz data when in edit mode
+  const { data: existingQuiz, isLoading: isLoadingQuiz } = useQuiz(
+    quizId || "",
+    !!isEdit && !!quizId,
+  );
+
+  // Load existing quiz data into form when available
+  useEffect(() => {
+    if (isEdit && existingQuiz && !isLoadingQuiz) {
+      // Parse dates and times from ISO strings
+      const parseDateTime = (isoString: string) => {
+        if (!isoString) return { date: undefined, time: "" };
+        const dateObj = new Date(isoString);
+        return {
+          date: dateObj,
+          time: format(dateObj, "HH:mm"),
+        };
+      };
+
+      // Parse duration from minutes to appropriate unit
+      const parseDuration = (minutes: number) => {
+        if (minutes >= 60 && minutes % 60 === 0) {
+          return { value: minutes / 60, unit: "Hours" as const };
+        }
+        return { value: minutes, unit: "Minutes" as const };
+      };
+
+      setQuizData({
+        metadata: {
+          title: existingQuiz.name || "",
+          description: existingQuiz.description || "",
+          instructions: existingQuiz.instructions || "",
+          duration: parseDuration(existingQuiz.durationInMinutes || 60),
+          startDateTime: parseDateTime(existingQuiz.startTime),
+          endDateTime: parseDateTime(existingQuiz.endTime),
+          tags: existingQuiz.quizTags || [],
+          questionBreakdown: {
+            easy: 0,
+            medium: 0,
+            hard: 0,
+            totalMarks: 0,
+          },
+          settings: {
+            passwordProtected: !!existingQuiz.password,
+            password: existingQuiz.password || "",
+            autoSubmit: existingQuiz.autoSubmit || false,
+            calculatorAccess: existingQuiz.calculator || false,
+            allowTabSwitching: true, // Not provided by backend
+            fullScreen: existingQuiz.fullScreen || false,
+            shuffleQuestions: existingQuiz.shuffleQuestions || false,
+            shuffleOptions: existingQuiz.shuffleOptions || false,
+            randomizeQuestions: false, // Not provided by backend
+            linearQuiz: existingQuiz.linearQuiz || false,
+            publishResult: existingQuiz.publishResult || false,
+            publishQuiz: existingQuiz.publishQuiz || false,
+          },
+        },
+        scoring: {
+          method: "Standard",
+          pointsPerQuestion: 1,
+          penalizeWrongAnswers: false,
+          penaltyAmount: 0,
+        },
       });
-    },
-    onError: (err: Error) => {
-      let errorMessage = "There was an error saving your quiz data.";
-      if (err && typeof err === "object" && "message" in err) {
-        errorMessage = err.message;
-      }
-      error("Failed to create quiz. Please try again.", {
-        description: errorMessage,
-        duration: 5000,
+
+      setParticipantData({
+        students: existingQuiz.studentIds || [],
+        courses: existingQuiz.courseIds || [],
+        labs: existingQuiz.labIds || [],
+        batches: existingQuiz.batchIds || [],
       });
-    },
-  });
+    }
+  }, [isEdit, existingQuiz, isLoadingQuiz]);
 
   // Update URL when tab changes
   const handleTabChange = (tabId: string) => {
@@ -331,142 +386,208 @@ export function QuizCreationTabs(
       }
     }
 
-    // Transform data to QuizSchema and create quiz
+    // Transform data to match backend DTO structure
     const meta = quizData.metadata;
-    const now = new Date().toISOString();
     const startTime =
       meta.startDateTime.date && meta.startDateTime.time
         ? new Date(
             `${format(meta.startDateTime.date, "yyyy-MM-dd")}T${meta.startDateTime.time}`,
           ).toISOString()
-        : now;
+        : new Date().toISOString();
     const endTime =
       meta.endDateTime.date && meta.endDateTime.time
         ? new Date(
             `${format(meta.endDateTime.date, "yyyy-MM-dd")}T${meta.endDateTime.time}`,
           ).toISOString()
-        : now;
-    const duration =
+        : new Date().toISOString();
+    const durationInMinutes =
       meta.duration.unit === "Hours"
         ? meta.duration.value * 60
         : meta.duration.value;
 
-    const quizPayload = {
-      id: "",
-      name: meta.title,
-      description: meta.description,
-      instructions: meta.instructions,
-      startTime,
-      endTime,
-      duration: duration,
-      password: meta.settings.passwordProtected ? meta.settings.password : "",
-      fullScreen: meta.settings.fullScreen,
-      shuffleQuestions: meta.settings.shuffleQuestions,
-      shuffleOptions: meta.settings.shuffleOptions,
-      linearQuiz: meta.settings.linearQuiz,
-      calculator: meta.settings.calculatorAccess,
-      autoSubmit: meta.settings.autoSubmit,
-      publishResult: meta.settings.publishResult,
-      publishQuiz: meta.settings.publishQuiz,
-      section: [],
-      course: participantData.courses,
-      student: participantData.students,
-      lab: participantData.labs,
-      batch: participantData.batches,
-      createdAt: now,
-      createdBy: "",
-    };
+    if (isEdit && quizId) {
+      // Update existing quiz
+      const updatePayload: PatchQuizDTO = {
+        name: meta.title,
+        description: meta.description,
+        instructions: meta.instructions,
+        startTime,
+        endTime,
+        durationInMinutes,
+        password: meta.settings.passwordProtected
+          ? meta.settings.password
+          : undefined,
+        fullScreen: meta.settings.fullScreen,
+        shuffleQuestions: meta.settings.shuffleQuestions,
+        shuffleOptions: meta.settings.shuffleOptions,
+        linearQuiz: meta.settings.linearQuiz,
+        calculator: meta.settings.calculatorAccess,
+        autoSubmit: meta.settings.autoSubmit,
+        publishResult: meta.settings.publishResult,
+        publishQuiz: meta.settings.publishQuiz,
+        courseIds: participantData.courses,
+        studentIds: participantData.students,
+        labIds: participantData.labs,
+        batchIds: participantData.batches,
+        quizTags: meta.tags,
+      };
 
-    createQuizMutation.mutate(quizPayload);
+      updateQuizMutation.mutate(
+        { quizId, quizData: updatePayload },
+        {
+          onSuccess: () => {
+            // Navigate back to quiz view page after successful update
+            if (courseId) {
+              router.push(`/course/${courseId}/quiz/${quizId}/view`);
+            }
+          },
+        },
+      );
+    } else {
+      // Create new quiz
+      const createPayload: CreateQuizDTO = {
+        name: meta.title,
+        description: meta.description,
+        instructions: meta.instructions,
+        startTime,
+        endTime,
+        durationInMinutes,
+        password: meta.settings.passwordProtected
+          ? meta.settings.password
+          : undefined,
+        fullScreen: meta.settings.fullScreen,
+        shuffleQuestions: meta.settings.shuffleQuestions,
+        shuffleOptions: meta.settings.shuffleOptions,
+        linearQuiz: meta.settings.linearQuiz,
+        calculator: meta.settings.calculatorAccess,
+        autoSubmit: meta.settings.autoSubmit,
+        quizTags: meta.tags,
+        courseIds: participantData.courses,
+        studentIds: participantData.students,
+        labIds: participantData.labs,
+        batchIds: participantData.batches,
+      };
+
+      createQuizMutation.mutate(createPayload, {
+        onSuccess: (response) => {
+          // Navigate to the created quiz's view page
+          if (courseId && response?.quizId) {
+            router.push(`/course/${courseId}/quiz/${response.quizId}/view`);
+          }
+        },
+      });
+    }
   };
 
   return (
     <div className="w-full">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex justify-between">
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-              Quiz
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Set up your quiz by configuring the details, scoring method, and
-              publishing settings.
-            </p>
+        {/* Show loading state when fetching quiz data for edit */}
+        {isEdit && isLoadingQuiz ? (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <div className="h-8 bg-muted animate-pulse rounded mb-2"></div>
+              <div className="h-4 bg-muted animate-pulse rounded w-2/3"></div>
+            </div>
+            <div className="h-96 bg-muted animate-pulse rounded"></div>
           </div>
-          <div className="flex justify-end pt-6 border-t">
-            <Button
-              onClick={handleSave}
-              className="flex items-center gap-2"
-              size="sm"
-              disabled={createQuizMutation.isPending}
-            >
-              <Save className="h-4 w-4" />
-              {createQuizMutation.isPending ? "Saving..." : "Save Quiz"}
-            </Button>
-          </div>
-        </div>
-
-        <Tabs
-          value={currentTab}
-          onValueChange={handleTabChange}
-          className="space-y-6 h-full flex flex-col"
-        >
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto p-1 gap-1 sm:gap-0">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="flex flex-col sm:flex-col items-center gap-2 py-3 px-2 sm:px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground min-h-[60px] sm:min-h-[80px]"
+        ) : (
+          <>
+            <div className="flex justify-between">
+              <div className="mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+                  {isEdit ? "Edit Quiz" : "Create Quiz"}
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  {isEdit
+                    ? "Update your quiz configuration, scoring method, and publishing settings."
+                    : "Set up your quiz by configuring the details, scoring method, and publishing settings."}
+                </p>
+              </div>
+              <div className="flex justify-end pt-6 border-t">
+                <Button
+                  onClick={handleSave}
+                  className="flex items-center gap-2"
+                  size="sm"
+                  disabled={
+                    createQuizMutation.isPending || updateQuizMutation.isPending
+                  }
                 >
-                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <div className="text-center">
-                    <div className="font-medium text-xs sm:text-sm">
-                      {tab.label}
-                    </div>
-                    <div className="text-xs text-muted-foreground hidden lg:block">
-                      {tab.description}
-                    </div>
-                  </div>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-          <TabsContent value="metadata" className="space-y-6">
-            <QuizMetadata
-              data={quizData.metadata}
-              updateData={updateMetadata}
-            />
-          </TabsContent>
-          <TabsContent value="participants" className="space-y-6">
-            <QuizParticipant
-              data={participantData}
-              updateData={setParticipantData}
-            />
-          </TabsContent>
+                  <Save className="h-4 w-4" />
+                  {createQuizMutation.isPending || updateQuizMutation.isPending
+                    ? isEdit
+                      ? "Updating..."
+                      : "Saving..."
+                    : isEdit
+                      ? "Update Quiz"
+                      : "Save Quiz"}
+                </Button>
+              </div>
+            </div>
 
-          <TabsContent value="scoring" className="space-y-6">
-            <Card className="w-full">
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Calculator className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Scoring Method
-                </CardTitle>
-                <CardDescription className="text-sm">
-                  Define how questions will be scored and whether to apply
-                  penalties for wrong answers.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6">
-                <ScoringMethod
-                  data={quizData.scoring}
-                  updateData={updateScoring}
+            <Tabs
+              value={currentTab}
+              onValueChange={handleTabChange}
+              className="space-y-6 h-full flex flex-col"
+            >
+              <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto p-1 gap-1 sm:gap-0">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="flex flex-col sm:flex-col items-center gap-2 py-3 px-2 sm:px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground min-h-[60px] sm:min-h-[80px]"
+                    >
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <div className="text-center">
+                        <div className="font-medium text-xs sm:text-sm">
+                          {tab.label}
+                        </div>
+                        <div className="text-xs text-muted-foreground hidden lg:block">
+                          {tab.description}
+                        </div>
+                      </div>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+              <TabsContent value="metadata" className="space-y-6">
+                <QuizMetadata
+                  data={quizData.metadata}
+                  updateData={updateMetadata}
                 />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </TabsContent>
+              <TabsContent value="participants" className="space-y-6">
+                <QuizParticipant
+                  data={participantData}
+                  updateData={setParticipantData}
+                />
+              </TabsContent>
+
+              <TabsContent value="scoring" className="space-y-6">
+                <Card className="w-full">
+                  <CardHeader className="px-4 sm:px-6">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Calculator className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Scoring Method
+                    </CardTitle>
+                    <CardDescription className="text-sm">
+                      Define how questions will be scored and whether to apply
+                      penalties for wrong answers.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-4 sm:px-6">
+                    <ScoringMethod
+                      data={quizData.scoring}
+                      updateData={updateScoring}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
       </div>
     </div>
   );
