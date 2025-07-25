@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Card,
@@ -18,8 +19,18 @@ import { ScoringMethod } from "./scoring-method";
 import { format, differenceInMinutes } from "date-fns";
 import { QuizParticipant } from "./quiz-participant";
 import { QuizParticipantData } from "./types";
-import { useCreateQuiz, useUpdateQuiz, useQuiz } from "@/hooks/use-quiz-crud";
-import type { CreateQuizDTO, PatchQuizDTO } from "@/repo/quiz/quiz";
+import Quiz, { CreateQuizDTO, PatchQuizDTO, QuizData } from "@/repo/quiz/quiz";
+
+// Query keys for quiz operations
+const quizKeys = {
+  all: ["quizzes"] as const,
+  lists: () => [...quizKeys.all, "list"] as const,
+  list: (filters: string) => [...quizKeys.lists(), { filters }] as const,
+  details: () => [...quizKeys.all, "detail"] as const,
+  detail: (id: string) => [...quizKeys.details(), id] as const,
+  byCourse: (courseId: string) =>
+    [...quizKeys.all, "course", courseId] as const,
+};
 
 // Define the data structure for each component
 type QuizCreationData = {
@@ -159,6 +170,78 @@ export function QuizCreationTabs({
     labs: [],
     batches: [],
   });
+
+  const { success: showSuccess, error: showError } = useToast();
+  const queryClient = useQueryClient();
+
+  // Custom hooks for quiz CRUD operations
+  const useQuiz = (quizId: string, enabled = true) => {
+    return useQuery({
+      queryKey: quizKeys.detail(quizId),
+      queryFn: () => Quiz.getQuizById(quizId),
+      enabled: enabled && !!quizId,
+    });
+  };
+
+  const useCreateQuiz = () => {
+    return useMutation({
+      mutationFn: (quizData: CreateQuizDTO) => Quiz.createQuiz(quizData),
+      onSuccess: (data) => {
+        // Invalidate and refetch quiz list
+        queryClient.invalidateQueries({ queryKey: quizKeys.lists() });
+
+        showSuccess("Quiz created successfully!", {
+          description: `Quiz has been created with ID: ${data.quizId}`,
+          duration: 4000,
+        });
+      },
+      onError: (err: Error) => {
+        let errorMessage = "There was an error creating your quiz.";
+        if (err && typeof err === "object" && "message" in err) {
+          errorMessage = err.message;
+        }
+        showError("Failed to create quiz. Please try again.", {
+          description: errorMessage,
+          duration: 5000,
+        });
+      },
+    });
+  };
+
+  const useUpdateQuiz = () => {
+    return useMutation({
+      mutationFn: ({
+        quizId,
+        quizData,
+      }: {
+        quizId: string;
+        quizData: PatchQuizDTO;
+      }) => Quiz.updateQuiz(quizId, quizData),
+      onSuccess: (data, variables) => {
+        // Invalidate and refetch quiz list
+        queryClient.invalidateQueries({ queryKey: quizKeys.lists() });
+        // Invalidate and refetch specific quiz
+        queryClient.invalidateQueries({
+          queryKey: quizKeys.detail(variables.quizId),
+        });
+
+        showSuccess("Quiz updated successfully!", {
+          description: "Your quiz changes have been saved.",
+          duration: 4000,
+        });
+      },
+      onError: (err: Error) => {
+        let errorMessage = "There was an error updating your quiz.";
+        if (err && typeof err === "object" && "message" in err) {
+          errorMessage = err.message;
+        }
+        showError("Failed to update quiz. Please try again.", {
+          description: errorMessage,
+          duration: 5000,
+        });
+      },
+    });
+  };
 
   // Use React Query hooks for CRUD operations
   const createQuizMutation = useCreateQuiz();
@@ -339,6 +422,128 @@ export function QuizCreationTabs({
     return validationErrors;
   };
 
+  // Helper function to create update payload with only changed fields
+  const createUpdatePayload = (
+    currentData: QuizCreationData,
+    participantData: QuizParticipantData,
+    originalQuiz: QuizData,
+  ): PatchQuizDTO => {
+    const payload: PatchQuizDTO = {};
+    const meta = currentData.metadata;
+
+    // Helper function to compare values and add to payload if different
+    const addIfChanged = (
+      key: keyof PatchQuizDTO,
+      currentValue: unknown,
+      originalValue: unknown,
+    ) => {
+      if (JSON.stringify(currentValue) !== JSON.stringify(originalValue)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload as any)[key] = currentValue;
+      }
+    };
+
+    // Transform current data to match backend format for comparison
+    const currentStartTime =
+      meta.startDateTime.date && meta.startDateTime.time
+        ? new Date(
+            `${format(meta.startDateTime.date, "yyyy-MM-dd")}T${meta.startDateTime.time}`,
+          ).toISOString()
+        : null;
+
+    const currentEndTime =
+      meta.endDateTime.date && meta.endDateTime.time
+        ? new Date(
+            `${format(meta.endDateTime.date, "yyyy-MM-dd")}T${meta.endDateTime.time}`,
+          ).toISOString()
+        : null;
+
+    const currentDurationInMinutes =
+      meta.duration.unit === "Hours"
+        ? meta.duration.value * 60
+        : meta.duration.value;
+
+    // Compare and add only changed fields
+    addIfChanged("name", meta.title, originalQuiz.name);
+    addIfChanged("description", meta.description, originalQuiz.description);
+    addIfChanged("instructions", meta.instructions, originalQuiz.instructions);
+    addIfChanged("startTime", currentStartTime, originalQuiz.startTime);
+    addIfChanged("endTime", currentEndTime, originalQuiz.endTime);
+    addIfChanged(
+      "durationInMinutes",
+      currentDurationInMinutes,
+      originalQuiz.durationInMinutes,
+    );
+    addIfChanged(
+      "fullScreen",
+      meta.settings.fullScreen,
+      originalQuiz.fullScreen,
+    );
+    addIfChanged(
+      "shuffleQuestions",
+      meta.settings.shuffleQuestions,
+      originalQuiz.shuffleQuestions,
+    );
+    addIfChanged(
+      "shuffleOptions",
+      meta.settings.shuffleOptions,
+      originalQuiz.shuffleOptions,
+    );
+    addIfChanged(
+      "linearQuiz",
+      meta.settings.linearQuiz,
+      originalQuiz.linearQuiz,
+    );
+    addIfChanged(
+      "calculator",
+      meta.settings.calculatorAccess,
+      originalQuiz.calculator,
+    );
+    addIfChanged(
+      "autoSubmit",
+      meta.settings.autoSubmit,
+      originalQuiz.autoSubmit,
+    );
+    addIfChanged(
+      "publishResult",
+      meta.settings.publishResult,
+      originalQuiz.publishResult,
+    );
+    addIfChanged(
+      "publishQuiz",
+      meta.settings.publishQuiz,
+      originalQuiz.publishQuiz,
+    );
+    addIfChanged(
+      "courseIds",
+      participantData.courses,
+      originalQuiz.courseIds || [],
+    );
+    addIfChanged(
+      "studentIds",
+      participantData.students,
+      originalQuiz.studentIds || [],
+    );
+    addIfChanged("labIds", participantData.labs, originalQuiz.labIds || []);
+    addIfChanged(
+      "batchIds",
+      participantData.batches,
+      originalQuiz.batchIds || [],
+    );
+    addIfChanged("quizTags", meta.tags, originalQuiz.quizTags || []);
+
+    // Handle password separately as it needs special logic
+    const currentPassword = meta.settings.passwordProtected
+      ? meta.settings.password
+      : null;
+    const originalPassword = originalQuiz.password || null;
+    if (currentPassword !== originalPassword) {
+      payload.password = currentPassword || undefined;
+    }
+
+    return payload;
+  };
+
   // Save quiz data with validation and API call
   const handleSave = async () => {
     const validationErrors = validateQuizData();
@@ -388,49 +593,23 @@ export function QuizCreationTabs({
 
     // Transform data to match backend DTO structure
     const meta = quizData.metadata;
-    const startTime =
-      meta.startDateTime.date && meta.startDateTime.time
-        ? new Date(
-            `${format(meta.startDateTime.date, "yyyy-MM-dd")}T${meta.startDateTime.time}`,
-          ).toISOString()
-        : new Date().toISOString();
-    const endTime =
-      meta.endDateTime.date && meta.endDateTime.time
-        ? new Date(
-            `${format(meta.endDateTime.date, "yyyy-MM-dd")}T${meta.endDateTime.time}`,
-          ).toISOString()
-        : new Date().toISOString();
-    const durationInMinutes =
-      meta.duration.unit === "Hours"
-        ? meta.duration.value * 60
-        : meta.duration.value;
 
-    if (isEdit && quizId) {
-      // Update existing quiz
-      const updatePayload: PatchQuizDTO = {
-        name: meta.title,
-        description: meta.description,
-        instructions: meta.instructions,
-        startTime,
-        endTime,
-        durationInMinutes,
-        password: meta.settings.passwordProtected
-          ? meta.settings.password
-          : undefined,
-        fullScreen: meta.settings.fullScreen,
-        shuffleQuestions: meta.settings.shuffleQuestions,
-        shuffleOptions: meta.settings.shuffleOptions,
-        linearQuiz: meta.settings.linearQuiz,
-        calculator: meta.settings.calculatorAccess,
-        autoSubmit: meta.settings.autoSubmit,
-        publishResult: meta.settings.publishResult,
-        publishQuiz: meta.settings.publishQuiz,
-        courseIds: participantData.courses,
-        studentIds: participantData.students,
-        labIds: participantData.labs,
-        batchIds: participantData.batches,
-        quizTags: meta.tags,
-      };
+    if (isEdit && quizId && existingQuiz) {
+      // Update existing quiz - only send changed fields
+      const updatePayload = createUpdatePayload(
+        quizData,
+        participantData,
+        existingQuiz,
+      );
+
+      // Only proceed if there are actual changes
+      if (Object.keys(updatePayload).length === 0) {
+        showSuccess("No changes detected", {
+          description: "All fields are already up to date.",
+          duration: 3000,
+        });
+        return;
+      }
 
       updateQuizMutation.mutate(
         { quizId, quizData: updatePayload },
@@ -444,6 +623,23 @@ export function QuizCreationTabs({
         },
       );
     } else {
+      // Create new quiz - need all fields
+      const startTime =
+        meta.startDateTime.date && meta.startDateTime.time
+          ? new Date(
+              `${format(meta.startDateTime.date, "yyyy-MM-dd")}T${meta.startDateTime.time}`,
+            ).toISOString()
+          : new Date().toISOString();
+      const endTime =
+        meta.endDateTime.date && meta.endDateTime.time
+          ? new Date(
+              `${format(meta.endDateTime.date, "yyyy-MM-dd")}T${meta.endDateTime.time}`,
+            ).toISOString()
+          : new Date().toISOString();
+      const durationInMinutes =
+        meta.duration.unit === "Hours"
+          ? meta.duration.value * 60
+          : meta.duration.value;
       // Create new quiz
       const createPayload: CreateQuizDTO = {
         name: meta.title,

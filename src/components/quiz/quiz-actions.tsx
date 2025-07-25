@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Trash2, Edit, Eye } from "lucide-react";
-import { useDeleteQuiz, useQuizzes } from "@/hooks/use-quiz-crud";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import Quiz from "@/repo/quiz/quiz";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,6 +14,55 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+// Query keys for quiz operations
+const quizKeys = {
+  all: ["quizzes"] as const,
+  lists: () => [...quizKeys.all, "list"] as const,
+  list: (filters: string) => [...quizKeys.lists(), { filters }] as const,
+  details: () => [...quizKeys.all, "detail"] as const,
+  detail: (id: string) => [...quizKeys.details(), id] as const,
+  byCourse: (courseId: string) =>
+    [...quizKeys.all, "course", courseId] as const,
+};
+
+// Custom hooks for quiz operations
+function useDeleteQuiz() {
+  const queryClient = useQueryClient();
+  const { success, error } = useToast();
+
+  return useMutation({
+    mutationFn: (quizId: string) => Quiz.deleteQuiz(quizId),
+    onSuccess: (_, quizId) => {
+      // Invalidate and refetch quiz list
+      queryClient.invalidateQueries({ queryKey: quizKeys.lists() });
+      // Remove the specific quiz from cache
+      queryClient.removeQueries({ queryKey: quizKeys.detail(quizId) });
+
+      success("Quiz deleted successfully!", {
+        description: "The quiz has been permanently removed.",
+        duration: 4000,
+      });
+    },
+    onError: (err: Error) => {
+      let errorMessage = "There was an error deleting your quiz.";
+      if (err && typeof err === "object" && "message" in err) {
+        errorMessage = err.message;
+      }
+      error("Failed to delete quiz. Please try again.", {
+        description: errorMessage,
+        duration: 5000,
+      });
+    },
+  });
+}
+
+function useQuizzes() {
+  return useQuery({
+    queryKey: quizKeys.lists(),
+    queryFn: Quiz.getAllQuizzes,
+  });
+}
 
 interface QuizActionsProps {
   quizId: string;

@@ -2,7 +2,6 @@
 
 import Quiz from "@/repo/quiz/quiz";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useQuiz, useDeleteQuiz } from "@/hooks/use-quiz-crud";
 import React, { use, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -119,6 +118,39 @@ const Page = ({ params }: Props) => {
   const [isDeleteQuestionOpen, setIsDeleteQuestionOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
   const [isDeleteQuizOpen, setIsDeleteQuizOpen] = useState(false);
+
+  // Custom hooks for quiz operations
+  const useQuiz = (quizId: string, enabled = true) => {
+    return useQuery({
+      queryKey: ["quiz", quizId],
+      queryFn: () => Quiz.getQuizById(quizId),
+      enabled: enabled && !!quizId,
+    });
+  };
+
+  const useDeleteQuiz = () => {
+    return useMutation({
+      mutationFn: (quizId: string) => Quiz.deleteQuiz(quizId),
+      onSuccess: () => {
+        success("Quiz deleted successfully!", {
+          description: "The quiz has been permanently removed.",
+          duration: 4000,
+        });
+        // Navigate back to course page
+        router.push(`/course/${courseId}`);
+      },
+      onError: (err: Error) => {
+        let errorMessage = "There was an error deleting your quiz.";
+        if (err && typeof err === "object" && "message" in err) {
+          errorMessage = err.message;
+        }
+        error("Failed to delete quiz. Please try again.", {
+          description: errorMessage,
+          duration: 5000,
+        });
+      },
+    });
+  };
 
   // Use the new CRUD hooks
   const { data: quiz, isLoading: isQuizLoading } = useQuiz(quizId);
