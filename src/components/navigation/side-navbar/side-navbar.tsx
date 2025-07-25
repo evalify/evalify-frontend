@@ -23,7 +23,6 @@ import {
   GraduationCap,
   LayoutDashboard,
   Settings,
-  Trophy,
   Users,
   Moon,
   Sun,
@@ -66,12 +65,6 @@ const academicsItems = [
     url: "/question-bank",
     icon: BookOpen,
     color: "text-orange-500",
-  },
-  {
-    title: "Results",
-    url: "/student-results",
-    icon: Trophy,
-    color: "text-yellow-500",
   },
 ];
 
@@ -167,7 +160,7 @@ export function AppSidebar() {
   }, []);
 
   return (
-    <Sidebar collapsible="icon" className="group relative">
+    <Sidebar collapsible="icon" side="left" className="group relative">
       <SidebarHeader className="border-b border-sidebar-border bg-gradient-to-br from-sidebar/40 via-sidebar/60 to-sidebar/80 dark:from-sidebar/60 dark:via-sidebar/80 dark:to-sidebar backdrop-blur-sm p-0">
         <Link href="/" className="block">
           <div className="flex items-center p-2 min-h-[64px] group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-3">
@@ -186,7 +179,7 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
 
-      {/* Sidebar Toggle Button - Simple */}
+      {/* Sidebar Toggle Button - Positioned for left sidebar */}
       <div className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-20 hidden md:block">
         <SidebarTrigger className="h-6 w-6 rounded-md bg-sidebar-border/50 hover:bg-sidebar-border text-sidebar-foreground border border-sidebar-border/30 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-1 focus:ring-primary/30">
           {open ? (
