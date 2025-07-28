@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { courseQueries } from "@/repo/course-queries/course-queries";
 import QuizRepo from "@/repo/quiz/quiz";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -66,7 +67,12 @@ interface RawQuizData {
 export default function QuizManagementPage({ params }: Props) {
   const { courseId } = use(params);
   const router = useRouter();
-  const { info, error } = useToast();
+  const { success, error } = useToast();
+  const queryClient = useQueryClient();
+
+  // State for delete dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
 
   // Use custom hook for state management
   const {
@@ -86,11 +92,28 @@ export default function QuizManagementPage({ params }: Props) {
   } = useQuery({
     queryKey: ["quizzes", courseId],
     queryFn: () => QuizRepo.getQuizzesByCourseId(courseId),
+    refetchOnMount: true,
   });
 
   const { data: courseData, isLoading: courseLoading } = useQuery({
     queryKey: ["course", courseId],
     queryFn: () => courseQueries.getCourseById(courseId),
+  });
+
+  // Delete quiz mutation
+  const deleteQuizMutation = useMutation({
+    mutationFn: (quizId: string) => QuizRepo.deleteQuiz(quizId),
+    onSuccess: () => {
+      success("Quiz deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["quizzes", courseId] });
+      setDeleteDialogOpen(false);
+      setQuizToDelete(null);
+    },
+    onError: () => {
+      error("Failed to delete quiz. Please try again.");
+      setDeleteDialogOpen(false);
+      setQuizToDelete(null);
+    },
   });
 
   // Transform quiz data to match our interface
@@ -252,21 +275,23 @@ export default function QuizManagementPage({ params }: Props) {
 
   const handleDuplicateQuiz = useCallback(
     (quizId: string) => {
-      info("Feature Coming Soon", {
+      success("Feature Coming Soon", {
         description: `Quiz duplication for ${quizId} will be available in the next update.`,
       });
     },
-    [info],
+    [success],
   );
 
-  const handleDeleteQuiz = useCallback(
-    (quizId: string) => {
-      error("Feature Coming Soon", {
-        description: `Quiz deletion for ${quizId} will be available in the next update.`,
-      });
-    },
-    [error],
-  );
+  const handleDeleteQuiz = useCallback((quizId: string) => {
+    setQuizToDelete(quizId);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const confirmDeleteQuiz = useCallback(() => {
+    if (quizToDelete) {
+      deleteQuizMutation.mutate(quizToDelete);
+    }
+  }, [quizToDelete, deleteQuizMutation]);
 
   // Loading state
   if (courseLoading || quizzesLoading) {
@@ -439,6 +464,19 @@ export default function QuizManagementPage({ params }: Props) {
           isLoading={quizzesLoading}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setQuizToDelete(null);
+        }}
+        onConfirm={confirmDeleteQuiz}
+        title="Delete Quiz"
+        description="Are you sure you want to delete this quiz? This action cannot be undone."
+        isLoading={deleteQuizMutation.isPending}
+      />
     </div>
   );
 }

@@ -61,7 +61,6 @@ export default function Page() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [semesterFilter, setSemesterFilter] = useState<string>("all");
 
-  // Color palette for course cards - optimized for light and dark modes
   const courseColors = [
     "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 text-white",
     "bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-400 dark:to-purple-500 text-white",
