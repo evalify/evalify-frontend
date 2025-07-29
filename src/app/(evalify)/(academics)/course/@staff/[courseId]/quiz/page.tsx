@@ -30,6 +30,7 @@ import {
 } from "@/components/quiz/quiz-view/quiz-filters";
 import { QuizGrid } from "@/components/quiz/quiz-view/quiz-grid";
 import { QuizTable } from "@/components/quiz/quiz-view/quiz-table";
+import ShareQuizDialog from "@/components/quiz/ShareQuizDialog";
 
 type Props = {
   params: Promise<{
@@ -70,11 +71,11 @@ export default function QuizManagementPage({ params }: Props) {
   const { success, error } = useToast();
   const queryClient = useQueryClient();
 
-  // State for delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [quizToShare, setQuizToShare] = useState<string | null>(null);
 
-  // Use custom hook for state management
   const {
     viewMode,
     sortBy,
@@ -84,7 +85,6 @@ export default function QuizManagementPage({ params }: Props) {
     handleSortChange,
   } = useQuizState({ defaultSort: "startTime" });
 
-  // Data fetching
   const {
     data: quizData,
     isLoading: quizzesLoading,
@@ -93,6 +93,7 @@ export default function QuizManagementPage({ params }: Props) {
     queryKey: ["quizzes", courseId],
     queryFn: () => QuizRepo.getQuizzesByCourseId(courseId),
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const { data: courseData, isLoading: courseLoading } = useQuery({
@@ -100,7 +101,6 @@ export default function QuizManagementPage({ params }: Props) {
     queryFn: () => courseQueries.getCourseById(courseId),
   });
 
-  // Delete quiz mutation
   const deleteQuizMutation = useMutation({
     mutationFn: (quizId: string) => QuizRepo.deleteQuiz(quizId),
     onSuccess: () => {
@@ -287,6 +287,11 @@ export default function QuizManagementPage({ params }: Props) {
     setDeleteDialogOpen(true);
   }, []);
 
+  const handleShareQuiz = useCallback((quizId: string) => {
+    setQuizToShare(quizId);
+    setShareDialogOpen(true);
+  }, []);
+
   const confirmDeleteQuiz = useCallback(() => {
     if (quizToDelete) {
       deleteQuizMutation.mutate(quizToDelete);
@@ -451,6 +456,7 @@ export default function QuizManagementPage({ params }: Props) {
           onDuplicate={handleDuplicateQuiz}
           onDelete={handleDeleteQuiz}
           onManage={handleManageQuiz}
+          onShare={handleShareQuiz}
           isLoading={quizzesLoading}
         />
       ) : (
@@ -461,6 +467,7 @@ export default function QuizManagementPage({ params }: Props) {
           onDuplicate={handleDuplicateQuiz}
           onDelete={handleDeleteQuiz}
           onManage={handleManageQuiz}
+          onShare={handleShareQuiz}
           isLoading={quizzesLoading}
         />
       )}
@@ -477,6 +484,18 @@ export default function QuizManagementPage({ params }: Props) {
         description="Are you sure you want to delete this quiz? This action cannot be undone."
         isLoading={deleteQuizMutation.isPending}
       />
+
+      {/* Share Quiz Dialog */}
+      {quizToShare && (
+        <ShareQuizDialog
+          quizId={quizToShare}
+          open={shareDialogOpen}
+          onClose={() => {
+            setShareDialogOpen(false);
+            setQuizToShare(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { courseQueries } from "@/repo/course-queries/course-queries";
 import { useQuery } from "@tanstack/react-query";
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
   GraduationCap,
   Clock,
   ArrowRight,
+  Share,
 } from "lucide-react";
 
 type StaffCourse = {
@@ -55,6 +57,7 @@ type SortField = "name" | "courseCode" | "semester" | "quizzes";
 type SortOrder = "asc" | "desc";
 
 export default function Page() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [sortField, setSortField] = useState<SortField>("name");
@@ -146,6 +149,69 @@ export default function Page() {
     }
   };
 
+  const SharedQuizzesCard = () => {
+    return (
+      <Card className="group hover:shadow-lg dark:hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300 hover:-translate-y-1 overflow-hidden border-0 shadow-md dark:shadow-lg dark:shadow-black/10 bg-card dark:bg-card">
+        <div className="p-0">
+          {/* Shared Quizzes Banner */}
+          <div className="p-6 text-center bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/10 backdrop-blur-sm"></div>
+            <div className="relative z-10">
+              <Share className="h-8 w-8 mx-auto mb-3 opacity-90" />
+              <h3 className="text-2xl font-bold tracking-wider drop-shadow-sm">
+                SHARED
+              </h3>
+            </div>
+            {/* Decorative elements */}
+            <div className="absolute -top-4 -right-4 w-16 h-16 bg-white/10 dark:bg-black/10 rounded-full"></div>
+            <div className="absolute -bottom-2 -left-2 w-8 h-8 bg-white/10 dark:bg-black/10 rounded-full"></div>
+          </div>
+
+          {/* Shared Quizzes Info */}
+          <div className="p-6 pb-4">
+            <div className="flex items-start justify-between mb-3">
+              <h4 className="text-lg font-semibold text-foreground line-clamp-2 leading-tight flex-1">
+                Shared Quizzes
+              </h4>
+              <Badge variant="secondary" className="ml-2 shrink-0">
+                <Share className="mr-1 h-3 w-3" />
+                Shared
+              </Badge>
+            </div>
+            <div className="h-12 mb-4">
+              <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                Access quizzes shared by other instructors across different
+                courses and departments.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 pt-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Share className="h-4 w-4" />
+                <span className="font-medium">Shared</span>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className=""
+              variant="ghost"
+              onClick={() => {
+                router.push("/course/quiz/shared");
+              }}
+            >
+              View Quizzes
+              <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   const renderContent = () => {
     if (viewMode === "cards") {
       return (
@@ -157,6 +223,7 @@ export default function Page() {
               colorClass={getColorForCourse(course.id)}
             />
           ))}
+          <SharedQuizzesCard />
         </div>
       );
     }
@@ -230,6 +297,48 @@ export default function Page() {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {/* Shared Quizzes Row */}
+            <TableRow className="hover:bg-muted/30 dark:hover:bg-muted/20 transition-colors border-b-2 border-muted/50">
+              <TableCell>
+                <div className="flex h-10 w-20 items-center justify-center rounded-md text-sm font-bold shadow-sm bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 text-white">
+                  SHARED
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  <div className="font-medium text-foreground">
+                    Shared Quizzes
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    Access quizzes shared by other instructors across different
+                    courses and departments.
+                  </p>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className="font-medium">
+                  <Share className="mr-1 h-3 w-3" />
+                  Shared
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                <div className="flex items-center justify-center gap-1">
+                  <Share className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">shared</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => router.push("/course/quiz/shared")}
+                  className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <ArrowRight className="mr-1 h-3 w-3" />
+                  View Quizzes
+                </Button>
+              </TableCell>
+            </TableRow>
             {filteredAndSortedCourses.map((course) => (
               <TableRow
                 key={course.id}
@@ -330,24 +439,71 @@ export default function Page() {
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex min-h-[500px] flex-col items-center justify-center space-y-6 text-center p-6">
-        <div className="relative">
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-500 rounded-2xl flex items-center justify-center shadow-lg dark:shadow-xl dark:shadow-black/20">
-            <BookOpen className="h-12 w-12 text-white" />
+      <div className="space-y-6 p-4 md:p-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              My Courses
+            </h1>
+            <p className="text-muted-foreground">
+              Manage and view your assigned courses
+            </p>
           </div>
-          <div className="absolute -top-2 -right-2 w-8 h-8 bg-orange-500 dark:bg-orange-400 rounded-full flex items-center justify-center shadow-md dark:shadow-lg dark:shadow-black/20">
-            <GraduationCap className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === "cards" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("cards")}
+              className="transition-all"
+            >
+              <Grid className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Cards</span>
+            </Button>
+            <Button
+              variant={viewMode === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className="transition-all"
+            >
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Table</span>
+            </Button>
           </div>
         </div>
-        <div className="space-y-2">
-          <h3 className="text-xl font-semibold text-foreground">
-            No courses found
-          </h3>
-          <p className="text-muted-foreground max-w-md">
-            {
-              "You don't have any courses assigned yet. Contact your administrator to get courses assigned to your account."
-            }
-          </p>
+
+        {/* Empty State Message */}
+        <div className="flex min-h-[300px] flex-col items-center justify-center space-y-6 text-center p-6 rounded-lg border-2 border-dashed border-muted bg-muted/20 dark:bg-muted/10">
+          <div className="relative">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-500 rounded-2xl flex items-center justify-center shadow-lg dark:shadow-xl dark:shadow-black/20">
+              <BookOpen className="h-10 w-10 text-white" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-7 h-7 bg-orange-500 dark:bg-orange-400 rounded-full flex items-center justify-center shadow-md dark:shadow-lg dark:shadow-black/20">
+              <GraduationCap className="h-3 w-3 text-white" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-foreground">
+              No courses assigned yet
+            </h3>
+            <p className="text-muted-foreground max-w-md">
+              You don&apos;t have any courses assigned yet. Contact your
+              administrator to get courses assigned to your account.
+            </p>
+          </div>
+        </div>
+
+        {/* Shared Quizzes Card - Always visible */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Share className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">
+              Shared Content
+            </h2>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <SharedQuizzesCard />
+          </div>
         </div>
       </div>
     );
@@ -466,32 +622,47 @@ export default function Page() {
 
       {/* Content */}
       {filteredAndSortedCourses.length === 0 ? (
-        <div className="flex min-h-[400px] flex-col items-center justify-center space-y-6 text-center rounded-lg border-2 border-dashed border-muted bg-muted/20 dark:bg-muted/10 p-8">
-          <div className="relative">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 dark:from-orange-400 dark:to-red-400 rounded-xl flex items-center justify-center shadow-lg dark:shadow-xl dark:shadow-black/20">
-              <Search className="h-8 w-8 text-white" />
+        <div className="space-y-6">
+          {/* No search results message */}
+          <div className="flex min-h-[300px] flex-col items-center justify-center space-y-6 text-center rounded-lg border-2 border-dashed border-muted bg-muted/20 dark:bg-muted/10 p-8">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 dark:from-orange-400 dark:to-red-400 rounded-xl flex items-center justify-center shadow-lg dark:shadow-xl dark:shadow-black/20">
+                <Search className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                No courses match your search
+              </h3>
+              <p className="text-muted-foreground max-w-md">
+                Try adjusting your search terms or filters to find the courses
+                you&apos;re looking for.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("");
+                setSemesterFilter("all");
+              }}
+              className="mt-4 hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              Clear Filters
+            </Button>
+          </div>
+
+          {/* Shared Quizzes Card - Always visible */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Share className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">
+                Shared Content
+              </h2>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <SharedQuizzesCard />
             </div>
           </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">
-              No courses match your search
-            </h3>
-            <p className="text-muted-foreground max-w-md">
-              {
-                "Try adjusting your search terms or filters to find the courses you're looking for."
-              }
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSearchTerm("");
-              setSemesterFilter("all");
-            }}
-            className="mt-4 hover:bg-primary hover:text-primary-foreground transition-colors"
-          >
-            Clear Filters
-          </Button>
         </div>
       ) : (
         renderContent()

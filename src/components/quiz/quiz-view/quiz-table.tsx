@@ -26,6 +26,7 @@ import {
   FileText,
   Globe,
   Lock,
+  Share,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ColumnDef } from "@tanstack/react-table";
@@ -51,6 +52,7 @@ interface QuizTableProps {
   onDuplicate?: (quizId: string) => void;
   onDelete?: (quizId: string) => void;
   onManage?: (quizId: string) => void;
+  onShare?: (quizId: string) => void;
   isLoading?: boolean;
   currentPage?: number;
   totalPages?: number;
@@ -106,6 +108,7 @@ export function QuizTable({
   onDuplicate,
   onDelete,
   onManage,
+  onShare,
   isLoading = false,
   currentPage = 1,
   totalPages = 1,
@@ -275,6 +278,10 @@ export function QuizTable({
                 <DropdownMenuItem onClick={() => onManage?.(quiz.id)}>
                   <Settings className="h-4 w-4 mr-2" />
                   Manage
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onShare?.(quiz.id)}>
+                  <Share className="h-4 w-4 mr-2" />
+                  Share Quiz
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onDuplicate?.(quiz.id)}>

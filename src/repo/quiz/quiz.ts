@@ -87,6 +87,11 @@ class Quiz {
     return response.data;
   }
 
+  static async getSharedQuizzes() {
+    const response = await axiosInstance.get("/api/quiz/shared");
+    return response.data;
+  }
+
   static async createQuiz(quizData: CreateQuizDTO): Promise<QuizResponse> {
     const response = await axiosInstance.post("/api/quiz", quizData);
     return response.data;
@@ -312,6 +317,25 @@ class Quiz {
       `/api/quiz/${quizId}/questions/${questionId}`,
     );
     return await response.data;
+  }
+
+  static async shareQuiz(quizId: string, userIds: string[]) {
+    const response = await axiosInstance.post(`/api/quiz/${quizId}/share`, {
+      userID: userIds,
+    });
+    return response.data;
+  }
+
+  static async unshareQuiz(quizId: string, userIds: string[]) {
+    const response = await axiosInstance.delete(`/api/quiz/${quizId}/share`, {
+      data: { userID: userIds },
+    });
+    return response.data;
+  }
+
+  static async getQuizUsers(quizId: string) {
+    const response = await axiosInstance.get(`/api/quiz/${quizId}/share`);
+    return response.data;
   }
 }
 export default Quiz;

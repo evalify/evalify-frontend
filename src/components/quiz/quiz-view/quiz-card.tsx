@@ -28,6 +28,7 @@ import {
   Timer,
   Activity,
   Zap,
+  Share,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,8 @@ interface QuizCardProps {
   onDuplicate?: (quizId: string) => void;
   onDelete?: (quizId: string) => void;
   onManage?: (quizId: string) => void;
+  onShare?: (quizId: string) => void;
+  isShared?: boolean;
 }
 
 const statusConfig = {
@@ -128,6 +131,8 @@ export function QuizCard({
   onDuplicate,
   onDelete,
   onManage,
+  onShare,
+  isShared = false,
 }: QuizCardProps) {
   const currentStatus =
     statusConfig[quiz.status as keyof typeof statusConfig] ||
@@ -239,34 +244,48 @@ export function QuizCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onEdit?.(quiz.id)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Edit Quiz
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onManage?.(quiz.id)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  View Questions
-                </DropdownMenuItem>
+                {!isShared && (
+                  <DropdownMenuItem onClick={() => onEdit?.(quiz.id)}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Edit Quiz
+                  </DropdownMenuItem>
+                )}
+                {!isShared && (
+                  <DropdownMenuItem onClick={() => onManage?.(quiz.id)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    View Questions
+                  </DropdownMenuItem>
+                )}
+                {!isShared && (
+                  <DropdownMenuItem onClick={() => onShare?.(quiz.id)}>
+                    <Share className="h-4 w-4 mr-2" />
+                    Share Quiz
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => onView?.(quiz.id)}>
                   <Eye className="h-4 w-4 mr-2" />
                   Results
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => onDuplicate?.(quiz.id)}
-                  disabled
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => onDelete?.(quiz.id)}
-                  className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
+                {!isShared && <DropdownMenuSeparator />}
+                {!isShared && (
+                  <DropdownMenuItem
+                    onClick={() => onDuplicate?.(quiz.id)}
+                    disabled
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicate
+                  </DropdownMenuItem>
+                )}
+                {!isShared && <DropdownMenuSeparator />}
+                {!isShared && (
+                  <DropdownMenuItem
+                    onClick={() => onDelete?.(quiz.id)}
+                    className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -371,14 +390,16 @@ export function QuizCard({
             </Button>
           )}
 
-          <Button
-            size="sm"
-            variant="ghost"
-            className="px-3"
-            onClick={() => onEdit?.(quiz.id)}
-          >
-            <Settings className="h-3.5 w-3.5" />
-          </Button>
+          {!isShared && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="px-3"
+              onClick={() => onEdit?.(quiz.id)}
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
     </Card>

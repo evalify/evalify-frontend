@@ -23,6 +23,7 @@ interface QuizGridProps {
   onDuplicate?: (quizId: string) => void;
   onDelete?: (quizId: string) => void;
   onManage?: (quizId: string) => void;
+  onShare?: (quizId: string) => void;
   isLoading?: boolean;
 }
 
@@ -33,6 +34,7 @@ export function QuizGrid({
   onDuplicate,
   onDelete,
   onManage,
+  onShare,
   isLoading = false,
 }: QuizGridProps) {
   if (isLoading) {
@@ -77,6 +79,7 @@ export function QuizGrid({
           onDuplicate={onDuplicate}
           onDelete={onDelete}
           onManage={onManage}
+          onShare={onShare}
         />
       ))}
     </div>
