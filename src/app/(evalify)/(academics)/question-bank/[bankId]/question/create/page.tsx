@@ -1,4 +1,4 @@
-import { QuestionCreationPage } from "@/components/question_creation";
+import QuestionCreation from "@/components/question-creation-new/question-creation";
 import { use } from "react";
 
 export default function CreateQuestionPage({
@@ -15,5 +15,5 @@ export default function CreateQuestionPage({
     throw new Error("Bank ID is required");
   }
 
-  return <QuestionCreationPage bankId={bankId} />;
+  return <QuestionCreation bankId={bankId} />;
 }

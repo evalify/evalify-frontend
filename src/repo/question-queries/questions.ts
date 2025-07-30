@@ -35,11 +35,7 @@ export interface BankQuestionDTO {
     text: string;
     isCorrect: boolean;
   }>;
-
-  // TRUE/FALSE specific fields
   answers?: boolean;
-
-  // CODING specific fields
   functionName?: string;
   returnType?: string;
   params?: Array<{
@@ -58,8 +54,6 @@ export interface BankQuestionDTO {
     language?: string;
   }>;
   answer?: string | null;
-
-  // FILL_UP specific fields
   strictMatch?: boolean;
   llmEval?: boolean | null;
   template?: string;
@@ -67,8 +61,6 @@ export interface BankQuestionDTO {
     id: string;
     answers: string[];
   }>;
-
-  // DESCRIPTIVE specific fields
   expectedAnswer?: string;
   strictness?: number;
   guidelines?: string;
@@ -478,7 +470,7 @@ class QuestionsService {
     }
   }
 
-  async getBankQuestionById(questionId: string): Promise<BankQuestionDTO> {
+  async getBankQuestionById(questionId: string) {
     try {
       const response = await axiosInstance.get(
         `/api/bank/questions/${questionId}`,
