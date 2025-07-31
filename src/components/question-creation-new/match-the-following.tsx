@@ -10,6 +10,7 @@ import {
   MatchItem,
   MatchPair,
 } from "./question-types/match-the-following";
+import { UpdatePayload } from "./question-types/base-question";
 import { QuestionSettings } from "./settings-types/settings-types";
 import {
   Plus,
@@ -110,7 +111,7 @@ export default function CreateMatchTheFollowing({
     }
   }, [settings, createNewQuestion]);
 
-  const updateQuestion = useCallback((updates: Partial<MatchTheFollowing>) => {
+  const updateQuestion = useCallback((updates: UpdatePayload) => {
     setQuestion((prev) => {
       if (!prev) return null;
       return { ...prev, ...updates };

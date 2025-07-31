@@ -85,16 +85,12 @@ export function validateMCQQuestion(
 ): ValidationResult {
   const errors: ValidationError[] = [];
 
-  // Common validation
   errors.push(...validateCommonQuestion(questionData));
   errors.push(...validateCommonSettings(settings));
-
-  // Early return if basic validation fails
   if (!questionData) {
     return { isValid: false, errors };
   }
 
-  // MCQ-specific validation
   if (!questionData.options || questionData.options.length < 2) {
     errors.push({
       field: "options",

@@ -4,7 +4,8 @@ import { MCQ, MCQOption } from "./mcq";
 import { DescriptiveQuestion } from "./descriptive-question";
 import { FillUpQuestion } from "./fill-up";
 import { CodingQuestion } from "./coding-questions";
-import { MatchTheFollowing } from "./match-the-following";
+import { MatchTheFollowing, MatchItem, MatchPair } from "./match-the-following";
+import { TrueFalseQuestion } from "./true-false";
 
 export interface Topic {
   id: string;
@@ -34,6 +35,9 @@ export interface UpdatePayload extends Record<string, unknown> {
   expectedAnswer?: string;
   strictness?: number;
   guidelines?: string;
+  keys?: MatchItem[];
+  values?: MatchItem[];
+  matchPair?: MatchPair[];
 }
 
 export type Question =
@@ -42,4 +46,5 @@ export type Question =
   | DescriptiveQuestion
   | FillUpQuestion
   | MatchTheFollowing
+  | TrueFalseQuestion
   | CodingQuestion;
