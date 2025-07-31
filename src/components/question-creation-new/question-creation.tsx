@@ -100,7 +100,6 @@ export default function QuestionCreation({
       } else {
         params.delete("topics");
       }
-
       const newUrl = `${window.location.pathname}?${params.toString()}`;
       router.replace(newUrl, { scroll: false });
     },

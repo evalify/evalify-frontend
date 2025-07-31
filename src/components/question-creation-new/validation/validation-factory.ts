@@ -2,6 +2,7 @@ import { MCQ } from "@/components/question-creation-new/question-types/mcq";
 import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
 import { MatchTheFollowing } from "@/components/question-creation-new/question-types/match-the-following";
 import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
+import { CodingQuestion } from "@/components/question-creation-new/question-types/coding-questions";
 import { Question } from "@/components/question-creation-new/question-types/base-question";
 import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
 import { QuestionType } from "@/components/question-creation-new/question-type-selector";
@@ -288,6 +289,79 @@ export function validateTrueFalseQuestion(
   return { isValid: errors.length === 0, errors };
 }
 
+export function validateCodingQuestion(
+  questionData: CodingQuestion | null,
+  settings: QuestionSettings,
+): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  errors.push(...validateCommonQuestion(questionData));
+  errors.push(...validateCommonSettings(settings));
+
+  if (!questionData) {
+    return { isValid: false, errors };
+  }
+
+  if (!questionData.language?.trim()) {
+    errors.push({
+      field: "language",
+      message: "Programming language must be selected",
+    });
+  }
+
+  if (!questionData.answer?.trim()) {
+    errors.push({
+      field: "answer",
+      message: "Answer code cannot be empty",
+    });
+  }
+
+  if (!questionData.testCases || questionData.testCases.length === 0) {
+    errors.push({
+      field: "testCases",
+      message: "At least one test case is required",
+    });
+  }
+
+  if (questionData.testCases) {
+    questionData.testCases.forEach((testCase, index) => {
+      if (!testCase.code?.trim()) {
+        errors.push({
+          field: "testCases",
+          message: `Test case ${index + 1} code cannot be empty`,
+        });
+      }
+
+      if (!testCase.language?.trim()) {
+        errors.push({
+          field: "testCases",
+          message: `Test case ${index + 1} must have a language specified`,
+        });
+      }
+
+      if (testCase.language !== questionData.language) {
+        errors.push({
+          field: "testCases",
+          message: `Test case ${index + 1} language must match question language (${questionData.language})`,
+        });
+      }
+    });
+
+    const hasSampleTestCase = questionData.testCases.some(
+      (tc) => tc.tags === "SAMPLE",
+    );
+    if (!hasSampleTestCase) {
+      errors.push({
+        field: "testCases",
+        message:
+          "At least one SAMPLE test case is required for students to see",
+      });
+    }
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
 export function validateQuestion(
   questionData: Question | null,
   questionType: QuestionType,
@@ -312,6 +386,8 @@ export function validateQuestion(
         questionData as MatchTheFollowing,
         settings,
       );
+    case "CODING":
+      return validateCodingQuestion(questionData as CodingQuestion, settings);
     default:
       return { isValid: true, errors: [] };
   }

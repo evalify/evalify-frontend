@@ -1,11 +1,16 @@
 import { BaseQuestion } from "./base-question";
 
-export interface CodingQuestion extends BaseQuestion {
+export interface TestCase {
+  code: string;
+  tags: "HIDDEN" | "SAMPLE";
+  isMinimal: boolean;
   language: string;
-  starterCode?: string;
-  expectedOutput?: string;
-  testCases?: {
-    input: string;
-    expectedOutput: string;
-  }[];
+}
+
+export interface CodingQuestion extends BaseQuestion {
+  language: string[];
+  boilerCode?: string;
+  driverCode?: string;
+  answer: string;
+  testcases: TestCase[];
 }

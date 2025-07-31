@@ -19,7 +19,7 @@ export type QuestionType =
   | "TRUEFALSE"
   | "fillup"
   | "MATCH_THE_FOLLOWING"
-  | "coding"
+  | "CODING"
   | "file-upload"
   | "DESCRIPTIVE";
 
@@ -66,7 +66,7 @@ const questionTypes: {
     description: "Connect related items",
   },
   {
-    type: "coding",
+    type: "CODING",
     label: "Coding",
     icon: <Code className="h-4 w-4" />,
     description: "Programming challenge",

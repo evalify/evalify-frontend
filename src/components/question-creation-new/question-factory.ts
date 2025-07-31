@@ -2,6 +2,7 @@ import CreateMCQQuestion from "./mcq";
 import CreateDescriptiveQuestion from "./descriptive";
 import CreateTrueFalseQuestion from "./true-false";
 import MatchTheFollowingComponent from "./match-the-following";
+import CreateCodingQuestion from "./coding-question";
 
 export default function QuestionFactory(type: string) {
   switch (type) {
@@ -20,8 +21,8 @@ export default function QuestionFactory(type: string) {
     case "MATCH_THE_FOLLOWING":
       return MatchTheFollowingComponent;
 
-    case "coding":
-      return;
+    case "CODING":
+      return CreateCodingQuestion;
 
     case "file-upload":
       return;
