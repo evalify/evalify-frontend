@@ -1,5 +1,6 @@
 import CreateMCQQuestion from "./mcq";
 import CreateDescriptiveQuestion from "./descriptive";
+import MatchTheFollowingComponent from "./match-the-following";
 
 export default function QuestionFactory(type: string) {
   switch (type) {
@@ -15,8 +16,8 @@ export default function QuestionFactory(type: string) {
     case "fillup":
       return;
 
-    case "match-following":
-      return;
+    case "MATCH_THE_FOLLOWING":
+      return MatchTheFollowingComponent;
 
     case "coding":
       return;

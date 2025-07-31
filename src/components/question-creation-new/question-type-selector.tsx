@@ -18,7 +18,7 @@ export type QuestionType =
   | "MMCQ"
   | "true-false"
   | "fillup"
-  | "match-following"
+  | "MATCH_THE_FOLLOWING"
   | "coding"
   | "file-upload"
   | "DESCRIPTIVE";
@@ -60,7 +60,7 @@ const questionTypes: {
     description: "Complete the sentence",
   },
   {
-    type: "match-following",
+    type: "MATCH_THE_FOLLOWING",
     label: "Match Following",
     icon: <Network className="h-4 w-4" />,
     description: "Connect related items",

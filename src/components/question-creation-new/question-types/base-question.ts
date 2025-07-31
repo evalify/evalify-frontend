@@ -4,6 +4,7 @@ import { MCQ, MCQOption } from "./mcq";
 import { DescriptiveQuestion } from "./descriptive-question";
 import { FillUpQuestion } from "./fill-up";
 import { CodingQuestion } from "./coding-questions";
+import { MatchTheFollowing } from "./match-the-following";
 
 export interface Topic {
   id: string;
@@ -40,4 +41,5 @@ export type Question =
   | FileUpload
   | DescriptiveQuestion
   | FillUpQuestion
+  | MatchTheFollowing
   | CodingQuestion;

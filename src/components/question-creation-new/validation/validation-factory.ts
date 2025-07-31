@@ -15,7 +15,6 @@ export interface ValidationResult {
   errors: ValidationError[];
 }
 
-// Common validation functions
 function validateCommonQuestion(
   questionData: Question | null,
 ): ValidationError[] {
