@@ -1,6 +1,6 @@
 import { BaseQuestion } from "./base-question";
 
-interface MCQOption {
+export interface MCQOption {
   id: string;
   text: string;
   isCorrect: boolean;

@@ -1,4 +1,5 @@
 import CreateMCQQuestion from "./mcq";
+import CreateDescriptiveQuestion from "./descriptive";
 
 export default function QuestionFactory(type: string) {
   switch (type) {
@@ -6,7 +7,7 @@ export default function QuestionFactory(type: string) {
       return CreateMCQQuestion;
 
     case "MMCQ":
-      return;
+      return CreateMCQQuestion;
 
     case "true-false":
       return;
@@ -23,8 +24,8 @@ export default function QuestionFactory(type: string) {
     case "file-upload":
       return;
 
-    case "descriptive":
-      return;
+    case "DESCRIPTIVE":
+      return CreateDescriptiveQuestion;
 
     default:
       return null;

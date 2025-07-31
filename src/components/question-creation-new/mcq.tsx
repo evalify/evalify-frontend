@@ -1,13 +1,6 @@
-import { MCQ } from "./question-types/mcq";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { questionsService } from "@/repo/question-queries/questions";
-import { QuestionCreationSkeleton } from "@/components/question-creation-new/fallbacks";
-import { QuestionCreationError } from "@/components/question-creation-new/fallbacks";
-import {
-  TiptapEditor,
-  TiptapEditorRef,
-} from "@/components/rich-text-editor/editor";
+import { MCQ } from "@/components/question-creation-new/question-types/mcq";
+import { useEffect, useState, useCallback } from "react";
+import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,67 +13,65 @@ import {
   Edit3,
   Check,
 } from "lucide-react";
+import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CreateMCQQuestionProps {
-  type: "MCQ";
-  onSave: (question: MCQ) => void;
+  type: "MCQ" | "MMCQ";
   isEditing: boolean;
   questionId?: string;
-  settings?: {
-    marks: number;
-    difficulty: string;
-    bloomsTaxonomy: string;
-    co: string;
-    negativeMarks: number;
-  };
+  questionData?: MCQ;
+  settings?: QuestionSettings;
+  onSave?: (question: MCQ) => void;
 }
 
 export default function CreateMCQQuestion({
-  onSave,
+  type = "MCQ",
   isEditing,
-  questionId,
+  questionData,
   settings,
+  onSave,
 }: CreateMCQQuestionProps) {
   const [question, setQuestion] = useState<MCQ | null>(null);
   const [isCreatingNewOption, setIsCreatingNewOption] = useState(false);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [editor, setEditor] = useState<string>("");
-  const newOptionEditorRef = useRef<TiptapEditorRef>(null);
+  const [allowMultipleCorrect, setAllowMultipleCorrect] = useState(
+    type === "MMCQ",
+  );
+
   const createNewQuestion = useCallback(
     (questionText: string = ""): MCQ => {
       return {
-        type: "MCQ",
+        type: allowMultipleCorrect ? "MMCQ" : "MCQ",
         question: questionText,
-        topicIds: [],
+        topicIds: settings?.topicIds || [],
         marks: settings?.marks || 1,
-        difficulty: settings?.difficulty || "medium",
-        bloomsTaxonomy: settings?.bloomsTaxonomy || "remember",
-        co: settings?.co || "CO1",
+        difficulty: settings?.difficulty || "MEDIUM",
+        bloomsTaxonomy: settings?.bloomsTaxonomy || "REMEMBER",
+        co: settings?.co || 1,
         negativeMarks: settings?.negativeMarks || 0,
         options: [],
       };
     },
-    [settings],
+    [settings, allowMultipleCorrect],
   );
 
-  const {
-    data: questionData,
-    error,
-    isLoading,
-  } = useQuery({
-    queryKey: ["question", questionId],
-    queryFn: () => {
-      if (!questionId) {
-        throw new Error("Question ID is required for fetching question data.");
-      }
-      return questionsService.getBankQuestionById(questionId);
-    },
-    enabled: isEditing && !!questionId,
-  });
+  useEffect(() => {
+    if (question && onSave) {
+      onSave(question);
+    }
+  }, [question, onSave]);
 
   useEffect(() => {
     if (questionData && isEditing) {
       setQuestion(questionData);
+      if (questionData.type === "MMCQ") {
+        setAllowMultipleCorrect(true);
+      } else if (questionData.type === "MCQ") {
+        setAllowMultipleCorrect(false);
+      }
     }
   }, [questionData, isEditing]);
 
@@ -99,6 +90,7 @@ export default function CreateMCQQuestion({
         ) {
           return {
             ...prev,
+            type: allowMultipleCorrect ? "MMCQ" : "MCQ",
             marks: settings.marks,
             difficulty: settings.difficulty,
             bloomsTaxonomy: settings.bloomsTaxonomy,
@@ -109,30 +101,7 @@ export default function CreateMCQQuestion({
         return prev;
       });
     }
-  }, [createNewQuestion, settings]);
-
-  useEffect(() => {
-    if (isCreatingNewOption && newOptionEditorRef.current?.editor) {
-      setTimeout(() => {
-        newOptionEditorRef.current?.editor?.commands?.focus();
-      }, 100);
-    }
-  }, [isCreatingNewOption]);
-
-  // Auto-save whenever question changes
-  useEffect(() => {
-    if (question) {
-      onSave(question);
-    }
-  }, [question, onSave]);
-
-  if (isLoading && isEditing) {
-    return <QuestionCreationSkeleton />;
-  }
-
-  if (error && isEditing) {
-    return <QuestionCreationError message={error.message} />;
-  }
+  }, [createNewQuestion, settings, allowMultipleCorrect]);
 
   const handleAddOption = () => {
     setIsCreatingNewOption(true);
@@ -159,6 +128,7 @@ export default function CreateMCQQuestion({
       if (!prev) return prev;
       return {
         ...prev,
+        type: allowMultipleCorrect ? "MMCQ" : "MCQ",
         options: prev.options?.filter((opt) => opt.id !== optionId) || [],
       };
     });
@@ -176,6 +146,7 @@ export default function CreateMCQQuestion({
         if (!prev) return prev;
         return {
           ...prev,
+          type: allowMultipleCorrect ? "MMCQ" : "MCQ",
           options:
             prev.options?.map((opt) =>
               opt.id === editingOptionId ? { ...opt, text: editor } : opt,
@@ -192,6 +163,7 @@ export default function CreateMCQQuestion({
         if (!prev) return prev;
         return {
           ...prev,
+          type: allowMultipleCorrect ? "MMCQ" : "MCQ",
           options: [...(prev.options || []), newOption],
         };
       });
@@ -211,7 +183,9 @@ export default function CreateMCQQuestion({
             newQuestion.options?.map((opt) =>
               opt.id === optionId
                 ? { ...opt, isCorrect: true }
-                : { ...opt, isCorrect: false },
+                : allowMultipleCorrect
+                  ? opt
+                  : { ...opt, isCorrect: false },
             ) || [],
         };
       }
@@ -221,12 +195,14 @@ export default function CreateMCQQuestion({
 
       return {
         ...prev,
+        type: allowMultipleCorrect ? "MMCQ" : "MCQ",
         options:
-          prev.options?.map((opt) =>
-            opt.id === optionId
-              ? { ...opt, isCorrect: !isCurrentlyCorrect }
-              : { ...opt, isCorrect: false },
-          ) || [],
+          prev.options?.map((opt) => {
+            if (opt.id === optionId) {
+              return { ...opt, isCorrect: !isCurrentlyCorrect };
+            }
+            return allowMultipleCorrect ? opt : { ...opt, isCorrect: false };
+          }) || [],
       };
     });
   };
@@ -238,8 +214,38 @@ export default function CreateMCQQuestion({
       }
       return {
         ...prev,
+        type: allowMultipleCorrect ? "MMCQ" : "MCQ",
         question: content,
       };
+    });
+  };
+
+  const handleMultipleCorrectToggle = (enabled: boolean) => {
+    setAllowMultipleCorrect(enabled);
+    setQuestion((prev) => {
+      if (!prev) {
+        return createNewQuestion("");
+      }
+
+      const updatedQuestion = {
+        ...prev,
+        type: enabled ? "MMCQ" : "MCQ",
+      };
+      if (!enabled) {
+        const correctOptions =
+          prev.options?.filter((opt) => opt.isCorrect) || [];
+        if (correctOptions.length > 1) {
+          const firstCorrectIndex =
+            prev.options?.findIndex((opt) => opt.isCorrect) ?? -1;
+          updatedQuestion.options =
+            prev.options?.map((opt, index) => ({
+              ...opt,
+              isCorrect: index === firstCorrectIndex,
+            })) || [];
+        }
+      }
+
+      return updatedQuestion;
     });
   };
 
@@ -263,10 +269,29 @@ export default function CreateMCQQuestion({
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <ListChecks className="h-5 w-5 text-primary" />
-            Options
-          </CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ListChecks className="h-5 w-5 text-primary" />
+              Options
+            </CardTitle>
+
+            <div className="flex items-center gap-2">
+              <Label htmlFor="allow-multiple" className="text-sm">
+                Allow multiple correct answers
+              </Label>
+              <Checkbox
+                id="allow-multiple"
+                checked={allowMultipleCorrect}
+                onCheckedChange={handleMultipleCorrectToggle}
+              />
+            </div>
+          </div>
+
+          <div className="text-xs text-muted-foreground mt-2">
+            {allowMultipleCorrect
+              ? "Mode: MMCQ - Click options to select multiple correct answers"
+              : "Mode: MCQ - Click to select the single correct answer"}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {question?.options?.map((option, index) => (
@@ -374,7 +399,6 @@ export default function CreateMCQQuestion({
                 {String.fromCharCode(65 + (question?.options?.length || 0))}.
               </span>
               <TiptapEditor
-                ref={newOptionEditorRef}
                 initialContent=""
                 onUpdate={setEditor}
                 className="flex-1 min-h-[100px]"

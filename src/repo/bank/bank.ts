@@ -255,12 +255,19 @@ class Bank {
   static async addQuestionToBank(
     bankId: string,
     questionData: Record<string, unknown>,
-  ): Promise<BankQuestion> {
-    const response = await axiosInstance.put(
-      `/api/bank/${bankId}/questions/add-question`,
+  ) {
+    await axiosInstance.post(`/api/bank/${bankId}/questions`, questionData);
+  }
+
+  static async updateBankQuestion(
+    bankId: string,
+    id: string,
+    questionData: Record<string, unknown>,
+  ) {
+    await axiosInstance.patch(
+      `/api/bank/${bankId}/questions/${id}`,
       questionData,
     );
-    return response.data;
   }
 
   static async getBankQuestionsByTopic(

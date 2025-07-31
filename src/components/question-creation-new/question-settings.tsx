@@ -11,43 +11,56 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Award, BrainCircuit, Target, Hash, Settings } from "lucide-react";
+import {
+  Award,
+  BrainCircuit,
+  Target,
+  Hash,
+  Settings,
+  Tags,
+} from "lucide-react";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { useQuery } from "@tanstack/react-query";
+import Bank, { BankTopic } from "@/repo/bank/bank";
 
 interface QuestionSettingsProps {
   marks: number;
   difficulty: string;
   bloomsTaxonomy: string;
-  co: string;
+  co: number;
   negativeMarks: number;
+  topicIds: string[];
+  bankId?: string;
   onMarksChange: (marks: number) => void;
   onDifficultyChange: (difficulty: string) => void;
   onBloomsTaxonomyChange: (bloomsTaxonomy: string) => void;
-  onCourseOutcomeChange: (courseOutcome: string) => void;
+  onCourseOutcomeChange: (courseOutcome: number) => void;
   onNegativeMarksChange: (negativeMarks: number) => void;
+  onTopicsChange: (topicIds: string[]) => void;
 }
 
 const difficultyOptions = [
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
+  { value: "EASY", label: "Easy" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HARD", label: "Hard" },
 ];
 
 const bloomOptions = [
-  { value: "remember", label: "Remember" },
-  { value: "understand", label: "Understand" },
-  { value: "apply", label: "Apply" },
-  { value: "analyze", label: "Analyze" },
-  { value: "evaluate", label: "Evaluate" },
-  { value: "create", label: "Create" },
+  { value: "REMEMBER", label: "Remember" },
+  { value: "UNDERSTAND", label: "Understand" },
+  { value: "APPLY", label: "Apply" },
+  { value: "ANALYZE", label: "Analyze" },
+  { value: "EVALUATE", label: "Evaluate" },
+  { value: "CREATE", label: "Create" },
 ];
 
 const courseOutcomeOptions = [
-  { value: "CO1", label: "CO 1" },
-  { value: "CO2", label: "CO 2" },
-  { value: "CO3", label: "CO 3" },
-  { value: "CO4", label: "CO 4" },
-  { value: "CO5", label: "CO 5" },
-  { value: "CO6", label: "CO 6" },
+  { value: 1, label: "CO 1" },
+  { value: 2, label: "CO 2" },
+  { value: 3, label: "CO 3" },
+  { value: 4, label: "CO 4" },
+  { value: 5, label: "CO 5" },
+  { value: 6, label: "CO 6" },
 ];
 
 export default function QuestionSettings({
@@ -56,12 +69,24 @@ export default function QuestionSettings({
   bloomsTaxonomy,
   co,
   negativeMarks,
+  topicIds,
+  bankId,
   onMarksChange,
   onDifficultyChange,
   onBloomsTaxonomyChange,
   onCourseOutcomeChange,
   onNegativeMarksChange,
+  onTopicsChange,
 }: QuestionSettingsProps) {
+  const { data: bankTopics = [] } = useQuery({
+    queryKey: ["bank-topics", bankId],
+    queryFn: () => (bankId ? Bank.getBankTopics(bankId) : Promise.resolve([])),
+    enabled: !!bankId,
+  });
+  const topicOptions = bankTopics.map((topic: BankTopic) => ({
+    label: topic.name,
+    value: topic.id,
+  }));
   return (
     <Card className="h-fit">
       <CardHeader>
@@ -149,19 +174,43 @@ export default function QuestionSettings({
             <Target className="h-4 w-4 text-primary" />
             Course Outcome
           </Label>
-          <Select value={co} onValueChange={onCourseOutcomeChange}>
+          <Select
+            value={co.toString()}
+            onValueChange={(value) => onCourseOutcomeChange(parseInt(value))}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select outcome" />
             </SelectTrigger>
             <SelectContent>
               {courseOutcomeOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem key={option.value} value={option.value.toString()}>
                   {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+        {bankId && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Tags className="h-4 w-4 text-primary" />
+              Topics
+            </Label>
+            <MultiSelect
+              options={topicOptions}
+              selected={topicIds}
+              onChange={(newTopics) => {
+                if (typeof newTopics === "function") {
+                  onTopicsChange(newTopics(topicIds));
+                } else {
+                  onTopicsChange(newTopics);
+                }
+              }}
+              placeholder="Select topics..."
+              className="w-full"
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

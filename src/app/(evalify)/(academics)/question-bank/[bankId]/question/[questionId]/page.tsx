@@ -1,4 +1,4 @@
-import { QuestionCreationPage } from "@/components/question_creation";
+import QuestionCreation from "@/components/question-creation-new/question-creation";
 import { use } from "react";
 
 export default function EditQuestionPage({
@@ -17,10 +17,10 @@ export default function EditQuestionPage({
   }
 
   return (
-    <QuestionCreationPage
+    <QuestionCreation
       questionId={questionId}
       bankId={bankId}
-      isEdit={true}
+      isEditing={true}
     />
   );
 }

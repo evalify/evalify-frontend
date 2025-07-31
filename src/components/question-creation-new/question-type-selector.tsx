@@ -9,7 +9,6 @@ import {
   ToggleLeft,
   Code,
   Upload,
-  CheckCircle2,
   ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,7 +21,8 @@ export type QuestionType =
   | "match-following"
   | "coding"
   | "file-upload"
-  | "descriptive";
+  | "descriptive"
+  | "DESCRIPTIVE";
 
 interface QuestionTypeSelectorProps {
   selectedType: QuestionType;
@@ -47,12 +47,6 @@ const questionTypes: {
     label: "Multiple Choice",
     icon: <CircleDot className="h-4 w-4" />,
     description: "Single correct answer",
-  },
-  {
-    type: "MMCQ",
-    label: "Multi-Select",
-    icon: <CheckCircle2 className="h-4 w-4" />,
-    description: "Multiple correct answers",
   },
   {
     type: "true-false",
@@ -155,7 +149,6 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
           </Button>
         )}
 
-        {/* Always show save button, but conditionally disable it */}
         <Button
           onClick={onSave}
           disabled={!onSave || !canSave || isLoading || (isEdit && !hasChanges)}
