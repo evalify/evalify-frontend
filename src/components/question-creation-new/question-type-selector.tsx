@@ -21,7 +21,6 @@ export type QuestionType =
   | "match-following"
   | "coding"
   | "file-upload"
-  | "descriptive"
   | "DESCRIPTIVE";
 
 interface QuestionTypeSelectorProps {
@@ -79,7 +78,7 @@ const questionTypes: {
     description: "Submit a file",
   },
   {
-    type: "descriptive",
+    type: "DESCRIPTIVE",
     label: "Descriptive",
     icon: <FileText className="h-4 w-4" />,
     description: "Long form answer",
