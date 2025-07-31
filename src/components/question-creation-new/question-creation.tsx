@@ -14,10 +14,7 @@ import {
   Question,
   Topic,
 } from "@/components/question-creation-new/question-types/base-question";
-import {
-  MCQ,
-  MCQOption,
-} from "@/components/question-creation-new/question-types/mcq";
+import { MCQ } from "@/components/question-creation-new/question-types/mcq";
 import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
 import { validateQuestion } from "@/components/question-creation-new/validation/validation-factory";
 import { ValidationError } from "@/components/question-creation-new/validation/validation-factory";
@@ -36,21 +33,6 @@ interface QuestionComponentProps {
   questionId?: string;
   questionData?: Question;
   settings: QuestionSettingsType;
-}
-
-interface UpdatePayload extends Record<string, unknown> {
-  type?: string;
-  question?: string;
-  marks?: number;
-  difficulty?: string;
-  bloomsTaxonomy?: string;
-  co?: number;
-  negativeMarks?: number;
-  topicIds?: string[];
-  options?: MCQOption[];
-  expectedAnswer?: string;
-  strictness?: number;
-  guidelines?: string;
 }
 
 interface QuestionCreationProps {
@@ -86,15 +68,6 @@ export default function QuestionCreation({
   );
   const { success, error } = useToast();
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [originalData, setOriginalData] = useState<{
-    type: QuestionType;
-    question: string;
-    settings: QuestionSettingsType;
-    options?: MCQOption[];
-    expectedAnswer?: string;
-    strictness?: number;
-    guidelines?: string;
-  } | null>(null);
 
   const {
     data: questionData,
@@ -154,100 +127,21 @@ export default function QuestionCreation({
       const questionTopics =
         questionData.topics?.map((topic: Topic) => topic.id) || [];
 
-      const settingsData = {
-        marks: questionData.marks || 1,
-        difficulty: questionData.difficulty || "medium",
-        bloomsTaxonomy: questionData.bloomsTaxonomy || "remember",
-        co:
-          typeof questionData.co === "string"
-            ? parseInt(questionData.co.replace("CO", "")) || 1
-            : questionData.co || 1,
-        negativeMarks: questionData.negativeMarks || 1,
-        topicIds: questionTopics,
-      };
-
       setSettings((prev) => ({
         ...prev,
-        ...settingsData,
+        marks: questionData.marks || prev.marks,
+        difficulty: questionData.difficulty || prev.difficulty,
+        bloomsTaxonomy: questionData.bloomsTaxonomy || prev.bloomsTaxonomy,
+        co: questionData.co || prev.co,
+        negativeMarks: questionData.negativeMarks || prev.negativeMarks,
+        topicIds: questionTopics,
       }));
-      setOriginalData({
-        type: questionData.type as QuestionType,
-        question: questionData.question || "",
-        settings: settingsData,
-        options: questionData.options || [],
-        expectedAnswer: questionData.expectedAnswer || "",
-        strictness: questionData.strictness || 50,
-        guidelines: questionData.guidelines || "",
-      });
 
       if (questionTopics.length > 0) {
         updateUrlWithTopics(questionTopics);
       }
     }
   }, [questionData, isEditing, updateUrlWithTopics]);
-
-  const buildUpdatePayload = () => {
-    if (!originalData || !currentQuestion) return {};
-
-    const payload: UpdatePayload = {};
-    const currentType = currentQuestion.type || selectedType;
-    if (currentType !== originalData.type) {
-      payload.type = currentType;
-    }
-
-    if (currentQuestion.question !== originalData.question) {
-      payload.question = currentQuestion.question;
-    }
-
-    if (settings.marks !== originalData.settings.marks) {
-      payload.marks = settings.marks;
-    }
-    if (settings.difficulty !== originalData.settings.difficulty) {
-      payload.difficulty = settings.difficulty;
-    }
-    if (settings.bloomsTaxonomy !== originalData.settings.bloomsTaxonomy) {
-      payload.bloomsTaxonomy = settings.bloomsTaxonomy;
-    }
-    if (settings.co !== originalData.settings.co) {
-      payload.co = settings.co;
-    }
-    if (settings.negativeMarks !== originalData.settings.negativeMarks) {
-      payload.negativeMarks = settings.negativeMarks;
-    }
-    const originalTopicIds = originalData.settings.topicIds.sort();
-    const currentTopicIds = settings.topicIds.sort();
-    if (JSON.stringify(originalTopicIds) !== JSON.stringify(currentTopicIds)) {
-      payload.topicIds = settings.topicIds;
-    }
-    if (currentType === "MCQ" || currentType === "MMCQ") {
-      const currentOptions = (currentQuestion as MCQ).options || [];
-      const originalOptions = originalData.options || [];
-
-      if (JSON.stringify(currentOptions) !== JSON.stringify(originalOptions)) {
-        payload.options = currentOptions;
-      }
-    }
-
-    if (currentType === "DESCRIPTIVE") {
-      const descriptiveQuestion = currentQuestion as DescriptiveQuestion;
-      const originalDescriptive = originalData;
-
-      if (
-        descriptiveQuestion.expectedAnswer !==
-        originalDescriptive.expectedAnswer
-      ) {
-        payload.expectedAnswer = descriptiveQuestion.expectedAnswer;
-      }
-      if (descriptiveQuestion.strictness !== originalDescriptive.strictness) {
-        payload.strictness = descriptiveQuestion.strictness;
-      }
-      if (descriptiveQuestion.guidelines !== originalDescriptive.guidelines) {
-        payload.guidelines = descriptiveQuestion.guidelines;
-      }
-    }
-
-    return payload;
-  };
 
   const handleSave = async () => {
     if (!currentQuestion || !bankId) {
@@ -270,47 +164,10 @@ export default function QuestionCreation({
     setIsSaving(true);
     try {
       if (isEditing && questionId) {
-        const updatePayload = buildUpdatePayload();
-
-        if (Object.keys(updatePayload).length === 0) {
-          success("No changes to save");
-          setIsSaving(false);
-          return;
-        }
-
-        await Bank.updateBankQuestion(bankId, questionId, updatePayload);
+        await Bank.updateBankQuestion(bankId, questionId, currentQuestion);
         success("Question updated successfully");
       } else {
-        const baseQuestionRequest = {
-          type: currentQuestion.type || selectedType,
-          question: currentQuestion.question,
-          topicIds: settings.topicIds,
-          marks: settings.marks,
-          difficulty: settings.difficulty,
-          bloomsTaxonomy: settings.bloomsTaxonomy,
-          co: settings.co,
-          negativeMarks: settings.negativeMarks,
-        };
-
-        let questionRequest;
-        if (selectedType === "MCQ" || selectedType === "MMCQ") {
-          questionRequest = {
-            ...baseQuestionRequest,
-            options: (currentQuestion as MCQ).options || [],
-          };
-        } else if (selectedType === "DESCRIPTIVE") {
-          const descriptiveQuestion = currentQuestion as DescriptiveQuestion;
-          questionRequest = {
-            ...baseQuestionRequest,
-            expectedAnswer: descriptiveQuestion.expectedAnswer,
-            strictness: descriptiveQuestion.strictness,
-            guidelines: descriptiveQuestion.guidelines,
-          };
-        } else {
-          questionRequest = baseQuestionRequest;
-        }
-
-        await Bank.addQuestionToBank(bankId, questionRequest);
+        await Bank.addQuestionToBank(bankId, currentQuestion);
         success("Question saved successfully");
       }
 

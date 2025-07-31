@@ -81,24 +81,16 @@ export default function CreateMCQQuestion({
         if (!prev) {
           return createNewQuestion();
         }
-        if (
-          prev.marks !== settings.marks ||
-          prev.difficulty !== settings.difficulty ||
-          prev.bloomsTaxonomy !== settings.bloomsTaxonomy ||
-          prev.co !== settings.co ||
-          prev.negativeMarks !== settings.negativeMarks
-        ) {
-          return {
-            ...prev,
-            type: allowMultipleCorrect ? "MMCQ" : "MCQ",
-            marks: settings.marks,
-            difficulty: settings.difficulty,
-            bloomsTaxonomy: settings.bloomsTaxonomy,
-            co: settings.co,
-            negativeMarks: settings.negativeMarks,
-          };
-        }
-        return prev;
+        return {
+          ...prev,
+          type: allowMultipleCorrect ? "MMCQ" : "MCQ",
+          marks: settings.marks,
+          difficulty: settings.difficulty,
+          bloomsTaxonomy: settings.bloomsTaxonomy,
+          co: settings.co,
+          negativeMarks: settings.negativeMarks,
+          topicIds: settings.topicIds,
+        };
       });
     }
   }, [createNewQuestion, settings, allowMultipleCorrect]);
