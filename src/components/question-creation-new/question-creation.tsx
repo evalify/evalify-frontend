@@ -16,6 +16,7 @@ import {
 } from "@/components/question-creation-new/question-types/base-question";
 import { MCQ } from "@/components/question-creation-new/question-types/mcq";
 import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
+import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
 import { validateQuestion } from "@/components/question-creation-new/validation/validation-factory";
 import { ValidationError } from "@/components/question-creation-new/validation/validation-factory";
 import { QuestionSettings as QuestionSettingsType } from "@/components/question-creation-new/settings-types/settings-types";
@@ -224,11 +225,14 @@ export default function QuestionCreation({
         ? Boolean(
             (currentQuestion as MCQ).options?.some((opt) => opt.isCorrect),
           )
-        : selectedType === "DESCRIPTIVE"
-          ? Boolean(
-              (currentQuestion as DescriptiveQuestion).expectedAnswer?.trim(),
-            )
-          : true)
+        : selectedType === "TRUEFALSE"
+          ? (currentQuestion as TrueFalseQuestion).answer !== null &&
+            (currentQuestion as TrueFalseQuestion).answer !== undefined
+          : selectedType === "DESCRIPTIVE"
+            ? Boolean(
+                (currentQuestion as DescriptiveQuestion).expectedAnswer?.trim(),
+              )
+            : true)
     : false;
 
   if (isLoading && isEditing) {

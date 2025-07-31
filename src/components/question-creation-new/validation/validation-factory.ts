@@ -1,6 +1,7 @@
 import { MCQ } from "@/components/question-creation-new/question-types/mcq";
 import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
 import { MatchTheFollowing } from "@/components/question-creation-new/question-types/match-the-following";
+import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
 import { Question } from "@/components/question-creation-new/question-types/base-question";
 import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
 import { QuestionType } from "@/components/question-creation-new/question-type-selector";
@@ -264,6 +265,29 @@ export function validateMatchTheFollowingQuestion(
   return { isValid: errors.length === 0, errors };
 }
 
+export function validateTrueFalseQuestion(
+  questionData: TrueFalseQuestion | null,
+  settings: QuestionSettings,
+): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  errors.push(...validateCommonQuestion(questionData));
+  errors.push(...validateCommonSettings(settings));
+
+  if (!questionData) {
+    return { isValid: false, errors };
+  }
+
+  if (questionData.answer === null || questionData.answer === undefined) {
+    errors.push({
+      field: "answer",
+      message: "An answer (True or False) must be selected",
+    });
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
 export function validateQuestion(
   questionData: Question | null,
   questionType: QuestionType,
@@ -273,6 +297,11 @@ export function validateQuestion(
     case "MCQ":
     case "MMCQ":
       return validateMCQQuestion(questionData as MCQ, settings);
+    case "TRUEFALSE":
+      return validateTrueFalseQuestion(
+        questionData as TrueFalseQuestion,
+        settings,
+      );
     case "DESCRIPTIVE":
       return validateDescriptiveQuestion(
         questionData as DescriptiveQuestion,

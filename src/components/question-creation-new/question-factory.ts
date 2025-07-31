@@ -1,5 +1,6 @@
 import CreateMCQQuestion from "./mcq";
 import CreateDescriptiveQuestion from "./descriptive";
+import CreateTrueFalseQuestion from "./true-false";
 import MatchTheFollowingComponent from "./match-the-following";
 
 export default function QuestionFactory(type: string) {
@@ -10,8 +11,8 @@ export default function QuestionFactory(type: string) {
     case "MMCQ":
       return CreateMCQQuestion;
 
-    case "true-false":
-      return;
+    case "TRUEFALSE":
+      return CreateTrueFalseQuestion;
 
     case "fillup":
       return;

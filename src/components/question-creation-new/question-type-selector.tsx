@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export type QuestionType =
   | "MCQ"
   | "MMCQ"
-  | "true-false"
+  | "TRUEFALSE"
   | "fillup"
   | "MATCH_THE_FOLLOWING"
   | "coding"
@@ -48,7 +48,7 @@ const questionTypes: {
     description: "Single correct answer",
   },
   {
-    type: "true-false",
+    type: "TRUEFALSE",
     label: "True or False",
     icon: <ToggleLeft className="h-4 w-4" />,
     description: "Binary choice question",
