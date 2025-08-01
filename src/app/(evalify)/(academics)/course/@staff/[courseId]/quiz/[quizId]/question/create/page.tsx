@@ -3,7 +3,7 @@
 import React from "react";
 import { use } from "react";
 import { useSearchParams } from "next/navigation";
-import { QuestionCreationPage } from "@/components/question_creation";
+import QuestionCreation from "@/components/question-creation-new/question-creation";
 
 type Props = {
   params: Promise<{
@@ -50,11 +50,7 @@ export default function CreateQuizQuestionPage({ params }: Props) {
           Create a new question for this quiz section.
         </p>
       </div>
-      <QuestionCreationPage
-        config={config}
-        // You might need to pass bankId if required for topics
-        // bankId={someBankId}
-      />
+      <QuestionCreation config={config} />
     </div>
   );
 }

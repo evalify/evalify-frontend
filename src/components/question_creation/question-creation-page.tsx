@@ -17,8 +17,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import Bank from "@/repo/bank/bank";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-
-// Quiz question DTO interfaces
 interface BaseQuizQuestionDTO {
   type: string;
   question: string;
@@ -152,12 +150,10 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   // Initialize toast hook
   const { success, error } = useToast();
 
-  // Routes configuration based on mode
   const routes = React.useMemo(() => {
     if (config.isQuiz) {
       return {
         create: (questionData: CreateQuestionRequest) => {
-          // Transform questionData to match the backend quiz DTO format
           const transformedData = transformQuestionForQuiz(
             questionData,
             config.sectionId!,
@@ -176,8 +172,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
           );
         },
         delete: () => Quiz.deleteQuizQuestion(config.quizId!, questionId!),
-        getTopics: () =>
-          bankId ? Bank.getBankTopics(bankId) : Promise.resolve([]),
+        getTopics: () => Promise.resolve([]),
       };
     } else {
       return {
@@ -197,20 +192,16 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   ): QuizQuestionDTO => {
     const { type, data, settings } = questionData;
 
-    // Extract topic IDs from settings
-    const topicIds = settings.topics.map((topic) => topic.value);
+    const topicIds: string[] = [];
 
-    // Parse course outcome to integer (extract number from "co1", "co2", etc.)
     const co = parseInt(settings.courseOutcome.replace(/^co/i, "")) || 0;
 
-    // Map difficulty to backend enum
     const difficultyMap: Record<string, string> = {
       easy: "EASY",
       medium: "MEDIUM",
       hard: "HARD",
     };
 
-    // Map blooms taxonomy to backend enum
     const taxonomyMap: Record<string, string> = {
       remember: "REMEMBER",
       understand: "UNDERSTAND",
@@ -220,7 +211,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       create: "CREATE",
     };
 
-    // Base DTO structure
     const baseDTO: BaseQuizQuestionDTO = {
       type: type.toUpperCase().replace("-", "_"),
       question: data.question,
@@ -243,7 +233,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
           options: data.options.map((option) => ({
             text: option.text,
             isCorrect: option.isCorrect,
-            // Don't send id for quiz questions - let backend generate
           })),
         } as MCQQuizQuestionDTO;
 
@@ -328,7 +317,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   const { data: allTopics = [] } = useQuery({
     queryKey: config.isQuiz ? ["bankTopics", bankId] : ["bankTopics", bankId],
     queryFn: routes.getTopics,
-    enabled: !!bankId,
+    enabled: !!bankId && !config.isQuiz,
   });
 
   // Fetch question details for edit mode
@@ -342,15 +331,12 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       : ["questionDetails", questionId],
     queryFn: async () => {
       if (config.isQuiz && config.quizId) {
-        // For quiz questions, use the quiz endpoint to get question data
         const quizQuestion = await Quiz.getQuizQuestionById(
           config.quizId,
           questionId!,
         );
-        // Transform the BankQuestionDTO to match the expected format
         return questionsService.transformBankQuestionToEdit(quizQuestion);
       } else {
-        // For bank questions, use the existing bank endpoint
         return questionsService.getQuestionForEdit(questionId!);
       }
     },
@@ -358,7 +344,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     retry: 1,
   });
 
-  // Handle question loading error
   React.useEffect(() => {
     if (questionError) {
       error("Failed to load question details", {
@@ -370,7 +355,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     }
   }, [questionError, error]);
 
-  // Reset form function
   const resetForm = React.useCallback(() => {
     setSelectedType("mcq");
     setQuestionData({
@@ -387,12 +371,11 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       bloomsTaxonomy: "",
       courseOutcome: "",
     });
-    setSelectedTopicIds([]); // Reset selected topic IDs
+    setSelectedTopicIds([]);
     setValidationErrors([]);
     setShowValidationModal(false);
   }, []);
 
-  // Mutations for create and update operations
   const createQuestionMutation = useMutation({
     mutationFn: async (questionToSave: CreateQuestionRequest) => {
       return await routes.create(questionToSave);
@@ -443,25 +426,27 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     },
   });
 
-  // State for selected topics (from URL or initial props)
   const [selectedTopicIds, setSelectedTopicIds] = React.useState<string[]>(
-    initialSelectedTopics,
+    config.isQuiz ? [] : initialSelectedTopics,
   );
 
   React.useEffect(() => {
-    const topicsParam = searchParams.get("topics");
-    const urlTopics = topicsParam ? topicsParam.split(",") : [];
-    setSelectedTopicIds(urlTopics);
-  }, [searchParams]);
+    if (!config.isQuiz) {
+      const topicsParam = searchParams.get("topics");
+      const urlTopics = topicsParam ? topicsParam.split(",") : [];
+      setSelectedTopicIds(urlTopics);
+    }
+  }, [searchParams, config.isQuiz]);
 
-  // Derive topics for QuestionSettings directly using useMemo
   const currentTopicsForSettings = React.useMemo(() => {
-    // If we have fetched edit data, use its topics
+    if (config.isQuiz) {
+      return [];
+    }
+
     if (editQuestionData?.questionSettings?.topics) {
       return editQuestionData.questionSettings.topics;
     }
 
-    // Otherwise, derive from selectedTopicIds and allTopics
     if (!allTopics.length || !selectedTopicIds.length) {
       return [];
     }
@@ -474,11 +459,17 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
         };
       })
       .filter((topic) => topic.label !== topic.value);
-  }, [selectedTopicIds, allTopics, editQuestionData?.questionSettings?.topics]);
+  }, [
+    selectedTopicIds,
+    allTopics,
+    editQuestionData?.questionSettings?.topics,
+    config.isQuiz,
+  ]);
 
-  // Update URL when selected topics change
   const updateTopicsInUrl = React.useCallback(
     (topicIds: string[]) => {
+      if (config.isQuiz) return;
+
       const params = new URLSearchParams(searchParams);
 
       if (topicIds.length > 0) {
@@ -489,15 +480,13 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
 
       router.replace(`${pathname}?${params.toString()}`);
     },
-    [router, pathname, searchParams],
+    [router, pathname, searchParams, config.isQuiz],
   );
 
-  // Initialize question type from fetched data, initial data, or default to "mcq"
   const [selectedType, setSelectedType] = React.useState<QuestionType>(
     editQuestionData?.questionData?.type || initialQuestionData?.type || "mcq",
   );
 
-  // Initialize question data from fetched data, initial data, or use defaults
   const [questionData, setQuestionData] = React.useState<QuestionData>(
     editQuestionData?.questionData ||
       initialQuestionData || {
@@ -510,7 +499,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       },
   );
 
-  // Initialize question settings from fetched data, initial data, or use defaults
   const [questionSettings, setQuestionSettings] =
     React.useState<QuestionBaseSettings>(() => {
       const sourceSettings =
@@ -530,13 +518,12 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
           };
     });
 
-  // Store initial state for change tracking
   const initialStateRef = React.useRef({
     type: selectedType,
     data: questionData,
     settings: {
       ...questionSettings,
-      topics: currentTopicsForSettings, // Include derived topics for initial state tracking
+      topics: currentTopicsForSettings,
     },
   });
 
@@ -567,11 +554,18 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
         bloomsTaxonomy: sourceQuestionSettings.bloomsTaxonomy,
         courseOutcome: sourceQuestionSettings.courseOutcome,
       });
-      setSelectedTopicIds(sourceQuestionSettings.topics.map((t) => t.value));
+      if (!config.isQuiz) {
+        setSelectedTopicIds(sourceQuestionSettings.topics.map((t) => t.value));
+      }
     }
-  }, [isEdit, editQuestionData, initialQuestionData, initialQuestionSettings]);
+  }, [
+    isEdit,
+    editQuestionData,
+    initialQuestionData,
+    initialQuestionSettings,
+    config.isQuiz,
+  ]);
 
-  // Track if there are changes
   const hasChanges = React.useMemo(() => {
     if (!isEdit) return false;
 
@@ -593,19 +587,15 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     currentTopicsForSettings,
   ]);
 
-  // Validation state
   const [validationErrors, setValidationErrors] = React.useState<
     ValidationError[]
   >([]);
-  const [showValidationModal, setShowValidationModal] = React.useState(false); // Handle question type change
+  const [showValidationModal, setShowValidationModal] = React.useState(false);
   const handleTypeSelect = (type: QuestionType) => {
     if (isEdit) {
-      // In edit mode, don't allow type changes
       return;
     }
     setSelectedType(type);
-
-    // Reset question data to default for the new type
     const baseData = {
       question: "",
       explanation: "",
@@ -697,7 +687,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   };
 
   const handleSave = async (): Promise<boolean> => {
-    // Comprehensive validation using the validation system
     const validationResult = validateQuestionData(
       questionData,
       questionSettings.marks,
@@ -709,7 +698,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       return false;
     }
 
-    // Only check for bankId if not in quiz mode
     if (!config.isQuiz && !bankId) {
       error("Bank ID is required", {
         description: "Cannot save question without a valid bank ID",
@@ -722,16 +710,14 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
       data: questionData,
       settings: {
         ...questionSettings,
-        topics: currentTopicsForSettings, // Ensure topics are included in saved data
+        topics: currentTopicsForSettings,
       },
     };
 
     try {
       if (isEdit && questionId) {
-        // Update existing question using mutation
         await updateQuestionMutation.mutateAsync(questionToSave);
       } else {
-        // Create new question using mutation
         await createQuestionMutation.mutateAsync(questionToSave);
       }
       return true;
@@ -741,13 +727,11 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
     }
   };
 
-  // Handle validation modal close
   const handleValidationModalClose = () => {
     setShowValidationModal(false);
     setValidationErrors([]);
   };
 
-  // Handle settings changes
   const handleMarksChange = (marks: number) => {
     setQuestionSettings((prev) => ({ ...prev, marks }));
   };
@@ -764,14 +748,13 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
   };
 
   const handleTopicsChange = (topicIds: string[]) => {
-    // This will update selectedTopicIds, which then causes currentTopicsForSettings to re-memoize.
-    // QuestionSettings will then re-render with the new currentTopicsForSettings.
+    if (config.isQuiz) return;
+
     setSelectedTopicIds(topicIds);
     updateTopicsInUrl(topicIds);
   };
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Show error state when failed to fetch question details */}
       {isEdit && questionError && !isLoadingQuestion && (
         <div className="flex items-center justify-center min-h-screen">
           <Card className="p-6 max-w-md">
@@ -802,17 +785,13 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
         </div>
       )}
 
-      {/* Show loading state when fetching question details for edit mode */}
       {isEdit && isLoadingQuestion && (
         <div className="min-h-screen flex flex-col bg-background">
-          {/* Question Type Selector Skeleton */}
           <div className="border-b bg-background p-4">
             <Skeleton className="h-12 w-full" />
           </div>
 
-          {/* Main Content Skeleton */}
           <div className="flex-grow flex flex-col lg:flex-row">
-            {/* Question Editor Skeleton */}
             <div className="flex-1 lg:w-2/3 order-1 lg:order-1">
               <div className="p-4 lg:p-6 bg-background h-full space-y-4">
                 <Skeleton className="h-8 w-1/3" />
@@ -827,7 +806,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
               </div>
             </div>
 
-            {/* Question Settings Skeleton */}
             <div className="lg:w-1/3 order-2 lg:order-2 lg:border-l bg-background">
               <Card className="m-4">
                 <CardContent className="p-4 space-y-4">
@@ -848,7 +826,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
         </div>
       )}
 
-      {/* Show content only when not loading, not in error state, or not in edit mode */}
       {(!isEdit || (!isLoadingQuestion && !questionError)) && (
         <>
           <QuestionTypeSelector
@@ -864,9 +841,7 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
             hasChanges={hasChanges}
           />
 
-          {/* Main Content Area - Two Column Layout */}
           <div className="flex-grow flex flex-col lg:flex-row">
-            {/* Question Editor - Left Column (Full width on mobile, 2/3 on desktop) */}
             <div className="flex-1 lg:w-2/3 order-1 lg:order-1">
               <div className="p-4 lg:p-6 bg-background h-full">
                 <QuestionEditor
@@ -877,7 +852,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
               </div>
             </div>
 
-            {/* Question Settings - Right Column (Full width on mobile, 1/3 on desktop) */}
             <div className="lg:w-1/3 order-2 lg:order-2 lg:border-l bg-background">
               <QuestionSettings
                 marks={questionSettings.marks}
@@ -885,10 +859,14 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
                 bloomsTaxonomy={questionSettings.bloomsTaxonomy}
                 courseOutcome={questionSettings.courseOutcome}
                 topics={currentTopicsForSettings}
-                availableTopics={allTopics.map((topic) => ({
-                  value: topic.id,
-                  label: topic.name,
-                }))}
+                availableTopics={
+                  config.isQuiz
+                    ? []
+                    : allTopics.map((topic) => ({
+                        value: topic.id,
+                        label: topic.name,
+                      }))
+                }
                 onMarksChange={handleMarksChange}
                 onDifficultyChange={handleDifficultyChange}
                 onBloomsTaxonomyChange={handleBloomsTaxonomyChange}
@@ -898,7 +876,6 @@ const QuestionCreationPage: React.FC<QuestionCreationPageProps> = ({
             </div>
           </div>
 
-          {/* Validation Error Modal */}
           <ValidationErrorModal
             isOpen={showValidationModal}
             onClose={handleValidationModalClose}

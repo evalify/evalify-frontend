@@ -27,6 +27,7 @@ import ValidationModal from "@/components/question-creation-new/validation-modal
 import { QuestionCreationSkeleton } from "@/components/question-creation-new/fallbacks";
 import { QuestionCreationError } from "@/components/question-creation-new/fallbacks";
 import Bank from "@/repo/bank/bank";
+import Quiz from "@/repo/quiz/quiz";
 
 interface QuestionComponentProps {
   type: QuestionType;
@@ -37,11 +38,20 @@ interface QuestionComponentProps {
   settings: QuestionSettingsType;
 }
 
+interface QuestionCreationConfig {
+  isQuiz: boolean;
+  quizId?: string;
+  sectionId?: string;
+  courseId?: string;
+  bankId?: string;
+}
+
 interface QuestionCreationProps {
   onSaveAndBack?: () => void;
   isEditing?: boolean;
   questionId?: string;
   bankId?: string;
+  config?: QuestionCreationConfig;
 }
 
 export default function QuestionCreation({
@@ -49,6 +59,7 @@ export default function QuestionCreation({
   isEditing = false,
   questionId,
   bankId,
+  config = { isQuiz: false, bankId },
 }: QuestionCreationProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,7 +71,7 @@ export default function QuestionCreation({
     bloomsTaxonomy: "REMEMBER",
     co: 1,
     negativeMarks: 1,
-    topicIds: [],
+    topicIds: config.isQuiz ? [] : [], // For quiz, topics are handled differently
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -71,17 +82,55 @@ export default function QuestionCreation({
   const { success, error } = useToast();
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
+  // Endpoints configuration based on isQuiz flag
+  const endpoints = {
+    bank: {
+      create: (bankId: string, questionData: Record<string, unknown>) =>
+        Bank.addQuestionToBank(bankId, questionData),
+      edit: (
+        bankId: string,
+        questionId: string,
+        questionData: Record<string, unknown>,
+      ) => Bank.updateBankQuestion(bankId, questionId, questionData),
+      get: (questionId: string) =>
+        questionsService.getBankQuestionById(questionId),
+    },
+    quiz: {
+      create: (quizId: string, questionData: Record<string, unknown>) =>
+        Quiz.createQuizQuestion(quizId, questionData),
+      edit: (
+        quizId: string,
+        questionId: string,
+        questionData: Record<string, unknown>,
+      ) => Quiz.updateQuizQuestion(quizId, questionId, questionData),
+      get: (quizId: string, questionId: string) =>
+        Quiz.getQuizQuestionById(quizId, questionId),
+    },
+  };
+
   const {
     data: questionData,
     error: fetchError,
     isLoading,
   } = useQuery({
-    queryKey: ["question", questionId],
+    queryKey: config.isQuiz
+      ? ["quiz-question", config.quizId, questionId]
+      : ["question", questionId],
     queryFn: () => {
       if (!questionId) {
         throw new Error("Question ID is required for fetching question data.");
       }
-      return questionsService.getBankQuestionById(questionId);
+
+      if (config.isQuiz) {
+        if (!config.quizId) {
+          throw new Error(
+            "Quiz ID is required for fetching quiz question data.",
+          );
+        }
+        return endpoints.quiz.get(config.quizId, questionId);
+      } else {
+        return endpoints.bank.get(questionId);
+      }
     },
     enabled: isEditing && !!questionId,
   });
@@ -108,7 +157,8 @@ export default function QuestionCreation({
   );
 
   useEffect(() => {
-    if (!isEditing) {
+    if (!isEditing && !config.isQuiz) {
+      // Only handle topics from URL for bank questions
       const topicsFromUrl = searchParams.getAll("topics");
       if (topicsFromUrl.length > 0) {
         setSettings((prev) => ({
@@ -117,7 +167,7 @@ export default function QuestionCreation({
         }));
       }
     }
-  }, [searchParams, isEditing, updateUrlWithTopics]);
+  }, [searchParams, isEditing, config.isQuiz, updateUrlWithTopics]);
 
   useEffect(() => {
     if (questionData && isEditing) {
@@ -125,8 +175,10 @@ export default function QuestionCreation({
         setSelectedType(questionData.type as QuestionType);
       }
 
-      const questionTopics =
-        questionData.topics?.map((topic: Topic) => topic.id) || [];
+      // Only handle topics for bank questions
+      const questionTopics = !config.isQuiz
+        ? questionData.topics?.map((topic: Topic) => topic.id) || []
+        : [];
 
       setSettings((prev) => ({
         ...prev,
@@ -138,15 +190,27 @@ export default function QuestionCreation({
         topicIds: questionTopics,
       }));
 
-      if (questionTopics.length > 0) {
+      // Only update URL with topics for bank questions
+      if (questionTopics.length > 0 && !config.isQuiz) {
         updateUrlWithTopics(questionTopics);
       }
     }
-  }, [questionData, isEditing, updateUrlWithTopics]);
+  }, [questionData, isEditing, config.isQuiz, updateUrlWithTopics]);
 
   const handleSave = async () => {
-    if (!currentQuestion || !bankId) {
-      error("Question data or bank ID is missing");
+    if (!currentQuestion) {
+      error("Question data is missing");
+      return;
+    }
+
+    // Validate required IDs based on config
+    if (config.isQuiz && !config.quizId) {
+      error("Quiz ID is required for quiz questions");
+      return;
+    }
+
+    if (!config.isQuiz && !config.bankId && !bankId) {
+      error("Bank ID is required for bank questions");
       return;
     }
 
@@ -164,21 +228,53 @@ export default function QuestionCreation({
 
     setIsSaving(true);
     try {
-      if (isEditing && questionId) {
-        await Bank.updateBankQuestion(bankId, questionId, currentQuestion);
-        success("Question updated successfully");
+      if (config.isQuiz) {
+        // Handle quiz questions
+        if (isEditing && questionId) {
+          await endpoints.quiz.edit(
+            config.quizId!,
+            questionId,
+            currentQuestion as Record<string, unknown>,
+          );
+          success("Quiz question updated successfully");
+        } else {
+          await endpoints.quiz.create(
+            config.quizId!,
+            currentQuestion as Record<string, unknown>,
+          );
+          success("Quiz question saved successfully");
+        }
       } else {
-        await Bank.addQuestionToBank(bankId, currentQuestion);
-        success("Question saved successfully");
+        // Handle bank questions
+        const targetBankId = config.bankId || bankId;
+        if (isEditing && questionId) {
+          await endpoints.bank.edit(
+            targetBankId!,
+            questionId,
+            currentQuestion as Record<string, unknown>,
+          );
+          success("Question updated successfully");
+        } else {
+          await endpoints.bank.create(
+            targetBankId!,
+            currentQuestion as Record<string, unknown>,
+          );
+          success("Question saved successfully");
+        }
       }
 
       setHasChanges(false);
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : "An unexpected error occurred";
-      error(
-        errorMessage || `Failed to ${isEditing ? "update" : "save"} question`,
-      );
+      const actionType = config.isQuiz
+        ? isEditing
+          ? "update quiz question"
+          : "save quiz question"
+        : isEditing
+          ? "update question"
+          : "save question";
+      error(errorMessage || `Failed to ${actionType}`);
     } finally {
       setIsSaving(false);
     }
@@ -210,7 +306,8 @@ export default function QuestionCreation({
     setSettings((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
 
-    if (key === "topicIds" && Array.isArray(value)) {
+    // Only update URL with topics for bank questions
+    if (key === "topicIds" && Array.isArray(value) && !config.isQuiz) {
       updateUrlWithTopics(value);
     }
   };
@@ -281,6 +378,7 @@ export default function QuestionCreation({
                 negativeMarks={settings.negativeMarks}
                 topicIds={settings.topicIds}
                 bankId={bankId}
+                showTopics={!config.isQuiz}
                 onMarksChange={(value) => handleSettingsChange("marks", value)}
                 onDifficultyChange={(value) =>
                   handleSettingsChange("difficulty", value)
@@ -324,6 +422,7 @@ export default function QuestionCreation({
                 negativeMarks={settings.negativeMarks}
                 topicIds={settings.topicIds}
                 bankId={bankId}
+                showTopics={!config.isQuiz}
                 onMarksChange={(value) => handleSettingsChange("marks", value)}
                 onDifficultyChange={(value) =>
                   handleSettingsChange("difficulty", value)

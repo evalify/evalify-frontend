@@ -31,6 +31,7 @@ interface QuestionSettingsProps {
   negativeMarks: number;
   topicIds: string[];
   bankId?: string;
+  showTopics?: boolean;
   onMarksChange: (marks: number) => void;
   onDifficultyChange: (difficulty: string) => void;
   onBloomsTaxonomyChange: (bloomsTaxonomy: string) => void;
@@ -71,6 +72,7 @@ export default function QuestionSettings({
   negativeMarks,
   topicIds,
   bankId,
+  showTopics = true,
   onMarksChange,
   onDifficultyChange,
   onBloomsTaxonomyChange,
@@ -81,7 +83,7 @@ export default function QuestionSettings({
   const { data: bankTopics = [] } = useQuery({
     queryKey: ["bank-topics", bankId],
     queryFn: () => (bankId ? Bank.getBankTopics(bankId) : Promise.resolve([])),
-    enabled: !!bankId,
+    enabled: !!bankId && showTopics,
   });
   const topicOptions = bankTopics.map((topic: BankTopic) => ({
     label: topic.name,
@@ -190,7 +192,7 @@ export default function QuestionSettings({
             </SelectContent>
           </Select>
         </div>
-        {bankId && (
+        {bankId && showTopics && (
           <div className="space-y-2">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Tags className="h-4 w-4 text-primary" />
