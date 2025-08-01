@@ -3,7 +3,10 @@ import { DescriptiveQuestion } from "@/components/question-creation-new/question
 import { MatchTheFollowing } from "@/components/question-creation-new/question-types/match-the-following";
 import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
 import { CodingQuestion } from "@/components/question-creation-new/question-types/coding-questions";
-import { FillUpQuestion } from "@/components/question-creation-new/question-types/fill-up";
+import {
+  FillUpQuestion,
+  BlankValueType,
+} from "@/components/question-creation-new/question-types/fill-up";
 import { Question } from "@/components/question-creation-new/question-types/base-question";
 import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
 import { QuestionType } from "@/components/question-creation-new/question-type-selector";
@@ -396,16 +399,64 @@ export function validateFillUpQuestion(
       }
 
       // Check for empty answers
-      if (blank.answers && blank.answers.some((answer) => !answer.trim())) {
+      if (
+        blank.answers &&
+        blank.answers.some((answer) => {
+          if (typeof answer === "string") {
+            return !answer.trim();
+          }
+          return false; // Numbers are never considered "empty"
+        })
+      ) {
         errors.push({
           field: "blanks",
           message: `Blank ${index + 1} contains empty answers. Please remove or fill them.`,
+        });
+      }
+
+      // Validate answers match their type
+      if (blank.answers && blank.type) {
+        blank.answers.forEach((answer, answerIndex) => {
+          const isValid = validateAnswerType(answer, blank.type);
+          if (!isValid) {
+            errors.push({
+              field: "blanks",
+              message: `Blank ${index + 1}, answer ${answerIndex + 1}: "${answer}" doesn't match the selected type (${blank.type}).`,
+            });
+          }
         });
       }
     });
   }
 
   return { isValid: errors.length === 0, errors };
+}
+
+function validateAnswerType(
+  answer: string | number,
+  type: BlankValueType,
+): boolean {
+  switch (type) {
+    case BlankValueType.LOWERCASE:
+      return (
+        typeof answer === "string" &&
+        answer === answer.toLowerCase() &&
+        /^[a-z\s]+$/.test(answer)
+      );
+    case BlankValueType.UPPERCASE:
+      return (
+        typeof answer === "string" &&
+        answer === answer.toUpperCase() &&
+        /^[A-Z\s]+$/.test(answer)
+      );
+    case BlankValueType.INTEGER:
+      return typeof answer === "number" && Number.isInteger(answer);
+    case BlankValueType.FLOAT:
+      return typeof answer === "number" && !isNaN(answer);
+    case BlankValueType.STRING:
+    default:
+      return typeof answer === "string";
+  }
 }
 
 export function validateQuestion(

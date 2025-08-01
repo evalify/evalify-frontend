@@ -1,4 +1,7 @@
-import { FillUpQuestion } from "@/components/question-creation-new/question-types/fill-up";
+import {
+  FillUpQuestion,
+  BlankValueType,
+} from "@/components/question-creation-new/question-types/fill-up";
 import { useEffect, useState, useCallback } from "react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -6,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Trash2, Plus, X, FileText, Edit3, AlertCircle } from "lucide-react";
 import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
 
@@ -28,6 +38,92 @@ export default function CreateFillUpQuestion({
   const [newAnswerInputs, setNewAnswerInputs] = useState<{
     [blankId: string]: string;
   }>({});
+
+  const getValidationMessage = (type: BlankValueType): string => {
+    switch (type) {
+      case BlankValueType.LOWERCASE:
+        return "Only lowercase letters and spaces allowed";
+      case BlankValueType.UPPERCASE:
+        return "Only uppercase letters and spaces allowed";
+      case BlankValueType.INTEGER:
+        return "Only whole numbers allowed (e.g., 42, -15)";
+      case BlankValueType.FLOAT:
+        return "Only decimal numbers allowed (e.g., 3.14, -2.5)";
+      case BlankValueType.STRING:
+      default:
+        return "Any text is allowed";
+    }
+  };
+
+  const getValidationError = (
+    answer: string,
+    type: BlankValueType,
+  ): string | null => {
+    if (!answer.trim()) return null;
+
+    switch (type) {
+      case BlankValueType.LOWERCASE:
+        if (answer !== answer.toLowerCase() || !/^[a-z\s]+$/.test(answer)) {
+          return "Must be lowercase letters only";
+        }
+        break;
+      case BlankValueType.UPPERCASE:
+        if (answer !== answer.toUpperCase() || !/^[A-Z\s]+$/.test(answer)) {
+          return "Must be uppercase letters only";
+        }
+        break;
+      case BlankValueType.INTEGER:
+        if (!/^-?\d+$/.test(answer)) {
+          return "Must be a whole number";
+        }
+        break;
+      case BlankValueType.FLOAT:
+        if (!/^-?\d*\.?\d+$/.test(answer)) {
+          return "Must be a valid decimal number";
+        }
+        break;
+    }
+    return null;
+  };
+
+  const convertAnswerToType = (
+    answer: string,
+    type: BlankValueType,
+  ): string | number => {
+    switch (type) {
+      case BlankValueType.INTEGER:
+        return parseInt(answer, 10);
+      case BlankValueType.FLOAT:
+        return parseFloat(answer);
+      case BlankValueType.LOWERCASE:
+      case BlankValueType.UPPERCASE:
+      case BlankValueType.STRING:
+      default:
+        return answer;
+    }
+  };
+
+  const convertExistingAnswersToType = (
+    answers: (string | number)[],
+    newType: BlankValueType,
+  ): (string | number)[] => {
+    return answers
+      .map((answer) => {
+        const answerStr =
+          typeof answer === "number" ? answer.toString() : answer;
+        return convertAnswerToType(answerStr, newType);
+      })
+      .filter((answer) => {
+        // Filter out invalid conversions
+        if (
+          newType === BlankValueType.INTEGER ||
+          newType === BlankValueType.FLOAT
+        ) {
+          return !isNaN(answer as number);
+        }
+        return true;
+      });
+  };
 
   const createNewQuestion = useCallback(
     (questionText: string = ""): FillUpQuestion => {
@@ -78,7 +174,7 @@ export default function CreateFillUpQuestion({
           existingBlank || {
             id: blankId,
             answers: [],
-            type: "text",
+            type: BlankValueType.STRING,
           }
         );
       });
@@ -183,9 +279,53 @@ export default function CreateFillUpQuestion({
     }));
   };
 
+  const validateAnswer = (answer: string, type: BlankValueType): boolean => {
+    switch (type) {
+      case BlankValueType.LOWERCASE:
+        return answer === answer.toLowerCase() && /^[a-z\s]+$/.test(answer);
+      case BlankValueType.UPPERCASE:
+        return answer === answer.toUpperCase() && /^[A-Z\s]+$/.test(answer);
+      case BlankValueType.INTEGER:
+        return /^-?\d+$/.test(answer);
+      case BlankValueType.FLOAT:
+        return /^-?\d*\.?\d+$/.test(answer);
+      case BlankValueType.STRING:
+      default:
+        return true;
+    }
+  };
+
+  const handleBlankTypeChange = (blankId: string, newType: BlankValueType) => {
+    setQuestion((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        blanks: prev.blanks.map((blank) =>
+          blank.id === blankId
+            ? {
+                ...blank,
+                type: newType,
+                answers: convertExistingAnswersToType(blank.answers, newType),
+              }
+            : blank,
+        ),
+      };
+    });
+  };
+
   const handleAddAnswer = (blankId: string) => {
     const newAnswer = newAnswerInputs[blankId]?.trim();
     if (!newAnswer) return;
+    const blank = question?.blanks.find((b) => b.id === blankId);
+    if (blank && !validateAnswer(newAnswer, blank.type)) {
+      return;
+    }
+
+    // Convert the answer to the appropriate type
+    const convertedAnswer = blank
+      ? convertAnswerToType(newAnswer, blank.type)
+      : newAnswer;
 
     setQuestion((prev) => {
       if (!prev) return prev;
@@ -194,7 +334,7 @@ export default function CreateFillUpQuestion({
         ...prev,
         blanks: prev.blanks.map((blank) =>
           blank.id === blankId
-            ? { ...blank, answers: [...blank.answers, newAnswer] }
+            ? { ...blank, answers: [...blank.answers, convertedAnswer] }
             : blank,
         ),
       };
@@ -439,26 +579,99 @@ export default function CreateFillUpQuestion({
                   )}
                 </div>
 
-                <div className="flex gap-2">
-                  <Input
-                    value={newAnswerInputs[blank.id] || ""}
-                    onChange={(e) =>
-                      handleAnswerChange(blank.id, e.target.value)
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground min-w-fit">
+                    Answer Type:
+                  </Label>
+                  <Select
+                    value={blank.type}
+                    onValueChange={(value: BlankValueType) =>
+                      handleBlankTypeChange(blank.id, value)
                     }
-                    placeholder="Enter a new expected answer"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleAddAnswer(blank.id);
-                      }
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => handleAddAnswer(blank.id)}
-                    disabled={!newAnswerInputs[blank.id]?.trim()}
+                    disabled={isEditing}
                   >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={BlankValueType.STRING}>
+                        String
+                      </SelectItem>
+                      <SelectItem value={BlankValueType.LOWERCASE}>
+                        Lowercase
+                      </SelectItem>
+                      <SelectItem value={BlankValueType.UPPERCASE}>
+                        Uppercase
+                      </SelectItem>
+                      <SelectItem value={BlankValueType.INTEGER}>
+                        Integer
+                      </SelectItem>
+                      <SelectItem value={BlankValueType.FLOAT}>
+                        Float
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="text-xs text-muted-foreground">
+                  {getValidationMessage(blank.type)}
+                  {(blank.type === BlankValueType.INTEGER ||
+                    blank.type === BlankValueType.FLOAT) && (
+                    <span className="block mt-1 text-blue-600 dark:text-blue-400">
+                      💡 Answers will be stored as numbers in the database
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newAnswerInputs[blank.id] || ""}
+                      onChange={(e) =>
+                        handleAnswerChange(blank.id, e.target.value)
+                      }
+                      placeholder="Enter a new expected answer"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleAddAnswer(blank.id);
+                        }
+                      }}
+                      className={
+                        getValidationError(
+                          newAnswerInputs[blank.id] || "",
+                          blank.type,
+                        )
+                          ? "border-red-300 focus:border-red-500"
+                          : ""
+                      }
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddAnswer(blank.id)}
+                      disabled={
+                        !newAnswerInputs[blank.id]?.trim() ||
+                        !!getValidationError(
+                          newAnswerInputs[blank.id] || "",
+                          blank.type,
+                        )
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {getValidationError(
+                    newAnswerInputs[blank.id] || "",
+                    blank.type,
+                  ) && (
+                    <div className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {getValidationError(
+                        newAnswerInputs[blank.id] || "",
+                        blank.type,
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {blank.answers.length > 0 && (
@@ -472,9 +685,14 @@ export default function CreateFillUpQuestion({
                           key={answerIndex}
                           className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded"
                         >
-                          <span className="text-sm text-green-800 dark:text-green-200">
-                            {answer}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-green-800 dark:text-green-200">
+                              {answer}
+                            </span>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                              {typeof answer === "number" ? "number" : "string"}
+                            </span>
+                          </div>
                           <Button
                             size="sm"
                             variant="ghost"
