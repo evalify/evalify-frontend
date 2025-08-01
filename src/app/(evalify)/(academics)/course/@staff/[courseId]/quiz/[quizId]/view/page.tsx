@@ -51,6 +51,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { MultiStepBankModal } from "@/components/bank/multi-step-bank-modal";
 
 type Props = {
   params: Promise<{
@@ -118,6 +119,8 @@ const Page = ({ params }: Props) => {
   const [isDeleteQuestionOpen, setIsDeleteQuestionOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
   const [isDeleteQuizOpen, setIsDeleteQuizOpen] = useState(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Custom hooks for quiz operations
   const useQuiz = (quizId: string, enabled = true) => {
@@ -328,18 +331,6 @@ const Page = ({ params }: Props) => {
       );
     },
     [router, quizId, param],
-  );
-
-  const handleAddQuestionFromBank = useCallback(
-    (sectionId: string) => {
-      // Navigate to question bank selection
-      console.log("Add question from bank to section:", sectionId);
-      // TODO: Implement question bank selection modal or page
-      success("Add from bank", {
-        description: `Add question from bank to section ${sectionId}`,
-      });
-    },
-    [success],
   );
 
   const handleEditQuiz = useCallback(() => {
@@ -657,7 +648,8 @@ const Page = ({ params }: Props) => {
                           </Button>
                           <Button
                             onClick={() =>
-                              handleAddQuestionFromBank(section.id)
+                              // handleAddQuestionFromBank(section.id)
+                              setIsModalOpen(true)
                             }
                             disabled={!isQuizEditable}
                             variant="outline"
@@ -666,6 +658,12 @@ const Page = ({ params }: Props) => {
                             <Library className="h-4 w-4 mr-2" />
                             From Bank
                           </Button>
+                          <MultiStepBankModal
+                            isOpen={isModalOpen}
+                            onClose={() => setIsModalOpen(false)}
+                            quizId={quizId}
+                            sectionId={section.id}
+                          />
                         </div>
 
                         {/* Questions List */}

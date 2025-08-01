@@ -184,17 +184,9 @@ export function MultiStepBankModal({
       // Extract backend IDs from questions
       const backendQuestionIds = selectedQuestions
         .map((q) => {
-          const originalData = q._originalData || q;
-          return (
-            originalData._id ||
-            originalData.questionId ||
-            originalData.uuid ||
-            originalData.question_id ||
-            originalData.id ||
-            q.id
-          );
+          return q.questionId;
         })
-        .filter((id) => id);
+        .filter((id): id is string => !!id);
 
       if (backendQuestionIds.length === 0) {
         error("Could not find valid question IDs. Please try again.");
@@ -266,12 +258,7 @@ export function MultiStepBankModal({
           />
         );
       case "success":
-        return (
-          <SuccessStep
-            addedCount={stepData.addedCount || 0}
-            onClose={handleClose}
-          />
-        );
+        return <SuccessStep onClose={handleClose} />;
       default:
         return null;
     }

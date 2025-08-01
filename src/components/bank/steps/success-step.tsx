@@ -141,8 +141,6 @@ export function SuccessStep({ onClose }: SuccessStepProps) {
           </p>
         </div>
 
-        {/* Added Count Badge */}
-
         {/* Success Card */}
         <motion.div
           variants={successVariants}

@@ -128,6 +128,7 @@ import React, {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useFilterDebounce } from "@/hooks/use-filter-debounce";
 import Bank, { BankQuestion } from "@/repo/bank/bank";
 import { QuestionTypes, Difficulty } from "@/components/render-questions/types";
 import axios from "axios";
@@ -182,20 +183,6 @@ export function FilterSelectionComponent({
   // Add refs for request cancellation and debouncing
   const abortControllersRef = useRef<Record<string, AbortController>>({});
   const debounceTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
-
-  // Cleanup effect to cancel pending requests on unmount
-  useEffect(() => {
-    return () => {
-      // Cancel all pending requests
-      Object.values(abortControllersRef.current).forEach((controller) => {
-        controller.abort();
-      });
-      // Clear all debounce timers
-      Object.values(debounceTimersRef.current).forEach((timer) => {
-        clearTimeout(timer);
-      });
-    };
-  }, []);
 
   // Fetch topics for the bank
   const { data: topics } = useQuery({
@@ -300,7 +287,31 @@ export function FilterSelectionComponent({
     [bankId, sectionId, quizId, error],
   );
 
-  // Effect to handle initial fetch when bankId is available
+  // Create debounced version with 3 second delay
+  const debouncedFetchQuestions = useFilterDebounce(
+    (filterId: string, entity: FilterEntity) => {
+      fetchQuestionsForFilter(filterId, entity);
+    },
+    3000, // 3 second debounce delay
+  );
+
+  // Cleanup effect to cancel pending requests on unmount
+  useEffect(() => {
+    return () => {
+      // Cancel all pending requests
+      Object.values(abortControllersRef.current).forEach((controller) => {
+        controller.abort();
+      });
+      // Clear all debounce timers
+      Object.values(debounceTimersRef.current).forEach((timer) => {
+        clearTimeout(timer);
+      });
+      // Cancel debounced function
+      debouncedFetchQuestions.cancel();
+    };
+  }, [debouncedFetchQuestions]);
+
+  // Effect to handle initial fetch when bankId is available - FIXED to prevent infinite loops
   useEffect(() => {
     if (bankId && filters.length > 0) {
       filters.forEach((filter) => {
@@ -310,11 +321,16 @@ export function FilterSelectionComponent({
           filter.questions.length === 0 &&
           !filter.isLoading
         ) {
-          fetchQuestionsForFilter(filter.id, filter);
+          // Use setTimeout to prevent immediate API calls on component mount
+          setTimeout(() => {
+            fetchQuestionsForFilter(filter.id, filter);
+          }, 3000); // Increased to 3 seconds delay for initial load
         }
       });
     }
-  }, [bankId, filters, fetchQuestionsForFilter]);
+    // Remove filters from dependency array to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bankId, fetchQuestionsForFilter]);
 
   const addFilterEntity = useCallback(() => {
     // Simplified check - just limit to a reasonable number of filters
@@ -341,11 +357,9 @@ export function FilterSelectionComponent({
       return updatedFilters;
     });
 
-    // Trigger initial fetch for the new filter after state update
-    setTimeout(() => {
-      fetchQuestionsForFilter(filterId, newFilter);
-    }, 100);
-  }, [filters.length, error, fetchQuestionsForFilter]);
+    // Trigger initial fetch for the new filter with proper debouncing
+    debouncedFetchQuestions(filterId, newFilter);
+  }, [filters.length, error, debouncedFetchQuestions]);
 
   const removeFilterEntity = (filterId: string) => {
     // Cancel any pending request for this filter
@@ -360,69 +374,82 @@ export function FilterSelectionComponent({
       delete debounceTimersRef.current[filterId];
     }
 
+    // Cancel any pending debounced fetch
+    debouncedFetchQuestions.cancel();
+
     setFilters((prev) => prev.filter((entity) => entity.id !== filterId));
   };
 
-  const updateFilterEntity = (
-    filterId: string,
-    updates: Partial<FilterEntity>,
-  ) => {
-    setFilters((prev) => {
-      const currentEntity = prev.find((e) => e.id === filterId);
-      if (!currentEntity) return prev;
+  // Simplified update function that only updates UI state
+  const updateFilterEntityUI = useCallback(
+    (filterId: string, updates: Partial<FilterEntity>) => {
+      setFilters((prev) => {
+        const currentEntity = prev.find((e) => e.id === filterId);
+        if (!currentEntity) return prev;
 
-      const updatedEntity = { ...currentEntity, ...updates };
+        const updatedEntity = { ...currentEntity, ...updates };
 
-      // Check for complete duplicate
-      if (
-        updatedEntity.topic &&
-        updatedEntity.difficulty &&
-        updatedEntity.questionType
-      ) {
-        const isDuplicate = prev.some(
-          (entity) =>
-            entity.id !== filterId &&
-            entity.topic === updatedEntity.topic &&
-            entity.difficulty === updatedEntity.difficulty &&
-            entity.questionType === updatedEntity.questionType,
-        );
-
-        if (isDuplicate) {
-          const topic = topics?.find((t) => t.id === updatedEntity.topic);
-          error(
-            `This exact combination already exists: ${topic?.name} - ${updatedEntity.difficulty} - ${updatedEntity.questionType.replace(/_/g, " ")}`,
+        // Check for complete duplicate
+        if (
+          updatedEntity.topic &&
+          updatedEntity.difficulty &&
+          updatedEntity.questionType
+        ) {
+          const isDuplicate = prev.some(
+            (entity) =>
+              entity.id !== filterId &&
+              entity.topic === updatedEntity.topic &&
+              entity.difficulty === updatedEntity.difficulty &&
+              entity.questionType === updatedEntity.questionType,
           );
-          return prev;
-        }
-      }
 
-      const updatedEntities = prev.map((entity) =>
-        entity.id === filterId ? updatedEntity : entity,
-      );
-
-      // Auto-fetch questions if entity has valid noOfQuestions with debouncing
-      if (updatedEntity.noOfQuestions > 0) {
-        // Clear existing debounce timer
-        if (debounceTimersRef.current[filterId]) {
-          clearTimeout(debounceTimersRef.current[filterId]);
+          if (isDuplicate) {
+            const topic = topics?.find((t) => t.id === updatedEntity.topic);
+            error(
+              `This exact combination already exists: ${topic?.name} - ${updatedEntity.difficulty} - ${updatedEntity.questionType.replace(/_/g, " ")}`,
+            );
+            return prev;
+          }
         }
 
-        // Set new debounce timer
-        debounceTimersRef.current[filterId] = setTimeout(() => {
-          fetchQuestionsForFilter(filterId, updatedEntity);
-          delete debounceTimersRef.current[filterId];
-        }, 500); // 500ms debounce delay
-      } else if (updatedEntity.noOfQuestions === 0) {
-        // Clear questions if noOfQuestions is 0
-        const clearedEntities = prev.map((entity) =>
-          entity.id === filterId ? { ...entity, questions: [] } : entity,
+        return prev.map((entity) =>
+          entity.id === filterId ? updatedEntity : entity,
         );
-        return clearedEntities;
-      }
+      });
+    },
+    [topics, error],
+  );
 
-      return updatedEntities;
-    });
-  };
+  // Function to update filter and trigger debounced API call
+  const updateFilterWithDebounce = useCallback(
+    (filterId: string, updates: Partial<FilterEntity>) => {
+      // Immediately update the UI state
+      updateFilterEntityUI(filterId, updates);
+
+      // Get the updated entity for API call
+      const currentEntity = filters.find((e) => e.id === filterId);
+      if (currentEntity) {
+        const updatedEntity = { ...currentEntity, ...updates };
+
+        // Only trigger API call if entity has valid criteria
+        if (updatedEntity.noOfQuestions > 0) {
+          // Cancel any existing debounced call
+          debouncedFetchQuestions.cancel();
+
+          // Trigger new debounced API call
+          debouncedFetchQuestions(filterId, updatedEntity);
+        } else if (updatedEntity.noOfQuestions === 0) {
+          // Clear questions if noOfQuestions is 0
+          setFilters((prev) =>
+            prev.map((entity) =>
+              entity.id === filterId ? { ...entity, questions: [] } : entity,
+            ),
+          );
+        }
+      }
+    },
+    [updateFilterEntityUI, filters, debouncedFetchQuestions],
+  );
 
   const applyFilters = async () => {
     if (filters.length === 0) {
@@ -595,7 +622,9 @@ export function FilterSelectionComponent({
                           topics={topics || []}
                           value={entity.topic}
                           onChange={(value) =>
-                            updateFilterEntity(entity.id, { topic: value })
+                            updateFilterWithDebounce(entity.id, {
+                              topic: value,
+                            })
                           }
                           disabled={entity.isLoading}
                         />
@@ -611,7 +640,7 @@ export function FilterSelectionComponent({
                         <Select
                           value={entity.difficulty}
                           onValueChange={(value) =>
-                            updateFilterEntity(entity.id, {
+                            updateFilterWithDebounce(entity.id, {
                               difficulty: value as Difficulty | "any",
                             })
                           }
@@ -643,7 +672,7 @@ export function FilterSelectionComponent({
                         <Select
                           value={entity.questionType}
                           onValueChange={(value) =>
-                            updateFilterEntity(entity.id, {
+                            updateFilterWithDebounce(entity.id, {
                               questionType: value as QuestionTypes | "any",
                             })
                           }
@@ -679,18 +708,18 @@ export function FilterSelectionComponent({
                           onChange={(e) => {
                             const value = e.target.value;
                             if (value === "") {
-                              updateFilterEntity(entity.id, {
+                              updateFilterWithDebounce(entity.id, {
                                 noOfQuestions: 0,
                               });
                             } else {
                               const numericValue = value.replace(/[^0-9]/g, "");
                               const num = parseInt(numericValue, 10);
-                              if (!isNaN(num) && num >= 0 && num <= 50) {
-                                updateFilterEntity(entity.id, {
+                              if (!isNaN(num)) {
+                                updateFilterWithDebounce(entity.id, {
                                   noOfQuestions: num,
                                 });
                               } else if (numericValue === "") {
-                                updateFilterEntity(entity.id, {
+                                updateFilterWithDebounce(entity.id, {
                                   noOfQuestions: 0,
                                 });
                               }
@@ -855,8 +884,8 @@ export function FilterSelectionComponent({
             </h3>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
               Create your first filter to find questions from your bank. You can
-              filter by topic, difficulty, question type, or set all to
-              &quot;Any&quot; to get all questions.
+              filter by topic, difficulty, question type, or set all to Any to
+              get all questions.
             </p>
             <Button
               onClick={addFilterEntity}
