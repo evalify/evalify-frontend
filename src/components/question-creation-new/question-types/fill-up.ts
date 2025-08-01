@@ -1,8 +1,9 @@
 import { BaseQuestion } from "./base-question";
 
 export interface Blanks {
-  id: number;
+  id: string;
   answers: string[];
+  type: string;
 }
 
 export interface FillUpQuestion extends BaseQuestion {
