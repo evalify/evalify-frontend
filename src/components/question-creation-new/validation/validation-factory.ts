@@ -3,6 +3,7 @@ import { DescriptiveQuestion } from "@/components/question-creation-new/question
 import { MatchTheFollowing } from "@/components/question-creation-new/question-types/match-the-following";
 import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
 import { CodingQuestion } from "@/components/question-creation-new/question-types/coding-questions";
+import { FillUpQuestion } from "@/components/question-creation-new/question-types/fill-up";
 import { Question } from "@/components/question-creation-new/question-types/base-question";
 import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
 import { QuestionType } from "@/components/question-creation-new/question-type-selector";
@@ -302,10 +303,10 @@ export function validateCodingQuestion(
     return { isValid: false, errors };
   }
 
-  if (!questionData.language?.trim()) {
+  if (!questionData.language || questionData.language.length === 0) {
     errors.push({
       field: "language",
-      message: "Programming language must be selected",
+      message: "At least one programming language must be selected",
     });
   }
 
@@ -316,47 +317,92 @@ export function validateCodingQuestion(
     });
   }
 
-  if (!questionData.testCases || questionData.testCases.length === 0) {
+  if (!questionData.testcases || questionData.testcases.length === 0) {
     errors.push({
-      field: "testCases",
+      field: "testcases",
       message: "At least one test case is required",
     });
   }
 
-  if (questionData.testCases) {
-    questionData.testCases.forEach((testCase, index) => {
+  if (questionData.testcases) {
+    questionData.testcases.forEach((testCase, index) => {
       if (!testCase.code?.trim()) {
         errors.push({
-          field: "testCases",
+          field: "testcases",
           message: `Test case ${index + 1} code cannot be empty`,
         });
       }
 
       if (!testCase.language?.trim()) {
         errors.push({
-          field: "testCases",
+          field: "testcases",
           message: `Test case ${index + 1} must have a language specified`,
         });
       }
 
-      if (testCase.language !== questionData.language) {
+      if (!questionData.language.includes(testCase.language)) {
         errors.push({
-          field: "testCases",
-          message: `Test case ${index + 1} language must match question language (${questionData.language})`,
+          field: "testcases",
+          message: `Test case ${index + 1} language must be one of the selected question languages`,
         });
       }
     });
 
-    const hasSampleTestCase = questionData.testCases.some(
+    const hasSampleTestCase = questionData.testcases.some(
       (tc) => tc.tags === "SAMPLE",
     );
     if (!hasSampleTestCase) {
       errors.push({
-        field: "testCases",
+        field: "testcases",
         message:
           "At least one SAMPLE test case is required for students to see",
       });
     }
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+export function validateFillUpQuestion(
+  questionData: FillUpQuestion | null,
+  settings: QuestionSettings,
+): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  errors.push(...validateCommonQuestion(questionData));
+  errors.push(...validateCommonSettings(settings));
+
+  if (!questionData) {
+    return { isValid: false, errors };
+  }
+
+  // Check if there are blanks in the question
+  if (!questionData.blanks || questionData.blanks.length === 0) {
+    errors.push({
+      field: "blanks",
+      message:
+        "At least one blank is required. Use ___ in your question text to create blanks.",
+    });
+  }
+
+  // Check if all blanks have answers
+  if (questionData.blanks) {
+    questionData.blanks.forEach((blank, index) => {
+      if (!blank.answers || blank.answers.length === 0) {
+        errors.push({
+          field: "blanks",
+          message: `Blank ${index + 1} must have at least one expected answer.`,
+        });
+      }
+
+      // Check for empty answers
+      if (blank.answers && blank.answers.some((answer) => !answer.trim())) {
+        errors.push({
+          field: "blanks",
+          message: `Blank ${index + 1} contains empty answers. Please remove or fill them.`,
+        });
+      }
+    });
   }
 
   return { isValid: errors.length === 0, errors };
@@ -376,6 +422,8 @@ export function validateQuestion(
         questionData as TrueFalseQuestion,
         settings,
       );
+    case "FILL_UP":
+      return validateFillUpQuestion(questionData as FillUpQuestion, settings);
     case "DESCRIPTIVE":
       return validateDescriptiveQuestion(
         questionData as DescriptiveQuestion,

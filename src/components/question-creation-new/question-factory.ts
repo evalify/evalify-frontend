@@ -3,6 +3,7 @@ import CreateDescriptiveQuestion from "./descriptive";
 import CreateTrueFalseQuestion from "./true-false";
 import MatchTheFollowingComponent from "./match-the-following";
 import CreateCodingQuestion from "./coding-question";
+import CreateFillUpQuestion from "./fill-up";
 
 export default function QuestionFactory(type: string) {
   switch (type) {
@@ -15,8 +16,8 @@ export default function QuestionFactory(type: string) {
     case "TRUEFALSE":
       return CreateTrueFalseQuestion;
 
-    case "fillup":
-      return;
+    case "FILL_UP":
+      return CreateFillUpQuestion;
 
     case "MATCH_THE_FOLLOWING":
       return MatchTheFollowingComponent;

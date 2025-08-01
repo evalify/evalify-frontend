@@ -17,6 +17,7 @@ import {
 import { MCQ } from "@/components/question-creation-new/question-types/mcq";
 import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
 import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
+import { FillUpQuestion } from "@/components/question-creation-new/question-types/fill-up";
 import { validateQuestion } from "@/components/question-creation-new/validation/validation-factory";
 import { ValidationError } from "@/components/question-creation-new/validation/validation-factory";
 import { QuestionSettings as QuestionSettingsType } from "@/components/question-creation-new/settings-types/settings-types";
@@ -150,7 +151,7 @@ export default function QuestionCreation({
     }
 
     const validation = validateQuestion(
-      currentQuestion as MCQ | DescriptiveQuestion,
+      currentQuestion as MCQ | DescriptiveQuestion | FillUpQuestion,
       selectedType,
       settings,
     );

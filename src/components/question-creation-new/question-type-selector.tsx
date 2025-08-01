@@ -17,7 +17,7 @@ export type QuestionType =
   | "MCQ"
   | "MMCQ"
   | "TRUEFALSE"
-  | "fillup"
+  | "FILL_UP"
   | "MATCH_THE_FOLLOWING"
   | "CODING"
   | "file-upload"
@@ -54,7 +54,7 @@ const questionTypes: {
     description: "Binary choice question",
   },
   {
-    type: "fillup",
+    type: "FILL_UP",
     label: "Fill in Blanks",
     icon: <FileInput className="h-4 w-4" />,
     description: "Complete the sentence",
