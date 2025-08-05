@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { BankSchema } from "@/repo/bank/bank";
-import Bank from "@/repo/bank/bank";
-import { BankCard } from "@/components/bank/bank-card";
-import { BankSearchFilters } from "@/components/bank/bank-search-filters";
-import { BankTable } from "@/components/bank/bank-table";
-import { useQuery } from "@tanstack/react-query";
+import { useBanks } from "@/components/bank/quiztobank/hooks/use-bank-operations";
+import { Bank } from "@/components/bank/types/bank-types";
+import { BankCard } from "@/components/bank/views/bank-card";
+import { BankSearchFilters } from "@/components/bank/quiztobank/bank-search-filters";
+import { BankTable } from "@/components/bank/views/bank-table";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,8 +24,8 @@ type SortField =
 type SortOrder = "asc" | "desc";
 
 interface BankSelectionComponentProps {
-  onBankSelect?: (bank: BankSchema) => void;
-  selectedBank?: BankSchema;
+  onBankSelect?: (bank: Bank) => void;
+  selectedBank?: Bank;
   isInModal?: boolean;
 }
 
@@ -66,25 +65,22 @@ export function BankSelectionComponent({
     return bankColors[index];
   };
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["banks"],
-    queryFn: () => Bank.getAllBanks(),
-  });
+  const { data, isLoading, error } = useBanks();
 
   const banks = useMemo(() => data?.content || [], [data?.content]);
 
   const semesters = useMemo(() => {
     if (!banks.length) return [];
     const uniqueSemesters = Array.from(
-      new Set(banks.map((bank: BankSchema) => bank.semester)),
-    );
+      new Set(banks.map((bank: Bank) => bank.semester)),
+    ) as string[];
     return uniqueSemesters.sort();
   }, [banks]);
 
   const filteredAndSortedBanks = useMemo(() => {
     if (!banks.length) return [];
 
-    const filtered = banks.filter((bank: BankSchema) => {
+    const filtered = banks.filter((bank: Bank) => {
       const matchesSearch =
         bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bank.courseCode.toLowerCase().includes(searchTerm.toLowerCase());
@@ -95,7 +91,7 @@ export function BankSelectionComponent({
       return matchesSearch && matchesSemester;
     });
 
-    filtered.sort((a: BankSchema, b: BankSchema) => {
+    filtered.sort((a: Bank, b: Bank) => {
       let comparison = 0;
 
       switch (sortField) {
@@ -135,7 +131,7 @@ export function BankSelectionComponent({
     }
   };
 
-  const handleBankClick = (bank: BankSchema) => {
+  const handleBankClick = (bank: Bank) => {
     onBankSelect?.(bank);
   };
 
@@ -143,7 +139,7 @@ export function BankSelectionComponent({
     if (viewMode === "cards") {
       return (
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredAndSortedBanks.map((bank) => (
+          {filteredAndSortedBanks.map((bank: Bank) => (
             <div
               key={bank.id}
               className={`relative transition-all ${
@@ -170,7 +166,6 @@ export function BankSelectionComponent({
         sortOrder={sortOrder}
         onSort={toggleSort}
         getColorForBank={getColorForBank}
-        onSelectBank={handleBankClick}
       />
     );
   };
