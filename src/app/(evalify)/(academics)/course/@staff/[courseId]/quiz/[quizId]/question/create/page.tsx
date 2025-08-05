@@ -3,7 +3,7 @@
 import React from "react";
 import { use } from "react";
 import { useSearchParams } from "next/navigation";
-import QuestionCreation from "@/components/question-creation-new/question-creation";
+import QuestionCreation from "@/components/question-creation/question-creation";
 
 type Props = {
   params: Promise<{

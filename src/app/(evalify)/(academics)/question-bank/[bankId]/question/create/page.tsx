@@ -1,4 +1,4 @@
-import QuestionCreation from "@/components/question-creation-new/question-creation";
+import QuestionCreation from "@/components/question-creation/question-creation";
 import { use } from "react";
 
 export default function CreateQuestionPage({

@@ -5,7 +5,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDebounce } from "@/hooks/use-debounce";
 import { BankQuestion as RepoBankQuestion } from "@/repo/bank/bank";
 import { Question, QuestionTypes } from "@/components/render-questions/types";
-import { QuestionRenderer } from "@/components/render-questions/question-renderer-fixed";
+import { QuestionRenderer } from "@/components/render-questions/question-renderer";
 
 // Components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

@@ -6,5 +6,12 @@ class StudentQuiz {
     const result = await axiosInstance.get("/api/students/quiz", { params });
     return await result.data;
   }
+
+  static async startQuiz(quizId: string) {
+    const result = await axiosInstance.post(`/api/quiz/${quizId}/start`, {
+      password: "1234",
+    });
+    return await result.data;
+  }
 }
 export default StudentQuiz;

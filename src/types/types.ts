@@ -19,9 +19,9 @@ export interface Semester extends Record<string, unknown> {
 export interface Batch {
   id: string;
   name: string;
-  graduationYear: number;
-  section: string;
-  isActive: boolean;
+  graduationYear?: number;
+  section?: string;
+  isActive?: boolean;
   students?: User[];
   managers?: User[];
   semester?: Semester[];

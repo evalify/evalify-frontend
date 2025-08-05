@@ -1,15 +1,15 @@
-import { MCQ } from "@/components/question-creation-new/question-types/mcq";
-import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
-import { MatchTheFollowing } from "@/components/question-creation-new/question-types/match-the-following";
-import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
-import { CodingQuestion } from "@/components/question-creation-new/question-types/coding-questions";
+import { MCQ } from "@/components/question-creation/question-types/mcq";
+import { DescriptiveQuestion } from "@/components/question-creation/question-types/descriptive-question";
+import { MatchTheFollowing } from "@/components/question-creation/question-types/match-the-following";
+import { TrueFalseQuestion } from "@/components/question-creation/question-types/true-false";
+import { CodingQuestion } from "@/components/question-creation/question-types/coding-questions";
 import {
   FillUpQuestion,
   BlankValueType,
-} from "@/components/question-creation-new/question-types/fill-up";
-import { Question } from "@/components/question-creation-new/question-types/base-question";
-import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
-import { QuestionType } from "@/components/question-creation-new/question-type-selector";
+} from "@/components/question-creation/question-types/fill-up";
+import { Question } from "@/components/question-creation/question-types/base-question";
+import { QuestionSettings } from "@/components/question-creation/settings-types/settings-types";
+import { QuestionType } from "@/components/question-creation/question-type-selector";
 
 export interface ValidationError {
   field: string;
@@ -75,7 +75,10 @@ function validateCommonSettings(settings: QuestionSettings): ValidationError[] {
     });
   }
 
-  if (!settings.topicIds || settings.topicIds.length === 0) {
+  if (
+    (!settings.topicIds || settings.topicIds.length === 0) &&
+    !settings.isQuiz
+  ) {
     errors.push({
       field: "topicIds",
       message: "At least one topic must be selected",

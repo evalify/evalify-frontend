@@ -39,14 +39,15 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { use, useState, useMemo, useRef } from "react";
+import React, { use, useState, useMemo, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { QuestionRenderer } from "@/components/render-questions";
 import { Question } from "@/components/render-questions/types";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDebounce } from "@/hooks/use-debounce";
-import { CopyMoveDialog } from "@/components/bank/copy-move-dialog";
+import { CopyMoveDialog } from "@/components/bank/views/copy-move-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface Topic {
   id: string;
@@ -74,6 +75,14 @@ function TopicSidebar({
   bank?: BankSchema;
   selectedTopicNames?: string[];
 }) {
+  const { open, toggleSidebar } = useSidebar();
+
+  useEffect(() => {
+    if (open) {
+      toggleSidebar();
+    }
+  }, []);
+
   const [newTopicName, setNewTopicName] = useState("");
   const [editingTopic, setEditingTopic] = useState<{
     id: string;

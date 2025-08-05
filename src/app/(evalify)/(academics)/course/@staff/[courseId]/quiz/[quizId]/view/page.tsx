@@ -6,19 +6,19 @@ import React, { use, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
-  Calendar,
-  Users,
   FileText,
-  Plus,
+  Calendar,
   Edit,
   Trash2,
+  Users,
+  Monitor,
+  HelpCircle,
   Settings,
   Award,
   Timer,
   Shield,
-  Monitor,
+  Plus,
   MoreVertical,
-  HelpCircle,
   Library,
 } from "lucide-react";
 import { QuestionRenderer, Question } from "@/components/render-questions";
@@ -51,7 +51,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { MultiStepBankModal } from "@/components/bank/multi-step-bank-modal";
+import { MultiStepBankModal } from "@/components/bank/quiztobank/multi-step-bank-modal";
+import { Course } from "@/types/types";
 
 type Props = {
   params: Promise<{
@@ -530,9 +531,9 @@ const Page = ({ params }: Props) => {
               <div>
                 <p className="text-sm font-medium">Courses</p>
                 <div className="flex gap-1 flex-wrap">
-                  {quiz.courseCodes?.map((code: string, index: number) => (
-                    <Badge key={index} variant="outline">
-                      {code}
+                  {quiz.courseCodes?.map((course: Course, index: number) => (
+                    <Badge key={course.id || index} variant="outline">
+                      {course.code || course.name}
                     </Badge>
                   ))}
                 </div>

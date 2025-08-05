@@ -3,7 +3,6 @@ import {
   MatchTheFollowingQuestion,
   QuestionConfig,
   MatchTheFollowingAnswer,
-  MatchPairItem,
 } from "../types";
 import {
   Select,
@@ -23,11 +22,15 @@ interface MatchTheFollowingRendererProps {
   onAnswerChange?: (answer: MatchTheFollowingAnswer) => void;
 }
 
+/**
+ * Match the Following Question Renderer Component
+ * Renders matching questions where users match left items to right items
+ */
 export const MatchTheFollowingRenderer: React.FC<
   MatchTheFollowingRendererProps
 > = ({ question, config, onAnswerChange }) => {
   const [matches, setMatches] = React.useState<{
-    [leftPairId: string]: string;
+    [leftPairId: string]: string[];
   }>({});
 
   // Initialize matches from config if provided (for display mode)
@@ -37,50 +40,52 @@ export const MatchTheFollowingRenderer: React.FC<
     }
   }, [config.userAnswers]);
 
+  /**
+   * Handle match change for a left item
+   */
   const handleMatchChange = (leftPairId: string, rightPairId: string) => {
     if (config.readOnly) return;
 
-    const newMatches = { ...matches, [leftPairId]: rightPairId };
+    const newMatches = { ...matches, [leftPairId]: [rightPairId] };
     setMatches(newMatches);
     if (onAnswerChange) {
       onAnswerChange({ matches: newMatches });
     }
   };
 
-  // Shuffle right options if required (but maintain original order in display mode)
+  /**
+   * Get shuffled right options if required
+   */
   const rightOptions = React.useMemo(() => {
     if (config.shuffleOptions && !config.showCorrectAnswers) {
-      return [...question.keys].sort(() => Math.random() - 0.5);
+      return [...question.keyValues.right].sort(() => Math.random() - 0.5);
     }
-    return question.keys;
-  }, [question.keys, config.shuffleOptions, config.showCorrectAnswers]);
+    return question.keyValues.right;
+  }, [
+    question.keyValues.right,
+    config.shuffleOptions,
+    config.showCorrectAnswers,
+  ]);
 
-  // Get unique ID for left or right pair
-  const getPairId = (
-    pair: MatchPairItem,
-    index: number,
-    side: "left" | "right",
-  ): string => {
-    return pair.id || `${side}-${index}`;
+  /**
+   * Check if a match is correct
+   */
+  const isMatchCorrect = (leftPairId: string): boolean => {
+    const userMatch = matches[leftPairId];
+    if (!userMatch || userMatch.length === 0) return false;
+
+    const correctMatch = question.matchPair.find(
+      (pair) => pair.leftPair === leftPairId,
+    );
+
+    return correctMatch ? correctMatch.rightPair.includes(userMatch[0]) : false;
   };
 
-  const isMatchCorrect = (leftPairId: string) => {
-    const correctPair = question.keys.find(
-      (pair, index) => getPairId(pair.leftPair, index, "left") === leftPairId,
-    );
-    return (
-      correctPair &&
-      matches[leftPairId] ===
-        getPairId(
-          correctPair.rightPair,
-          question.keys.indexOf(correctPair),
-          "right",
-        )
-    );
-  };
-
+  /**
+   * Get CSS classes for row styling
+   */
   const getRowClass = (leftPairId: string) => {
-    if (config.showCorrectAnswers) {
+    if (config.showCorrectAnswers || config.highlightCorrectness) {
       return isMatchCorrect(leftPairId)
         ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
         : matches[leftPairId]
@@ -89,6 +94,7 @@ export const MatchTheFollowingRenderer: React.FC<
     }
     return "border-gray-200 dark:border-gray-700";
   };
+
   return (
     <div className="space-y-4">
       {/* Instructions */}
@@ -106,11 +112,21 @@ export const MatchTheFollowingRenderer: React.FC<
               Correct Matches:
             </h4>
             <div className="space-y-3">
-              {question.keys.map((pair, index) => {
-                const leftPairId = getPairId(pair.leftPair, index, "left");
+              {question.matchPair.map((pair, index) => {
+                const leftItem = question.keyValues.left.find(
+                  (item) => item.id === pair.leftPair,
+                );
+                const rightItems = pair.rightPair
+                  .map((rightId) =>
+                    question.keyValues.right.find(
+                      (item) => item.id === rightId,
+                    ),
+                  )
+                  .filter(Boolean);
+
                 return (
                   <div
-                    key={leftPairId}
+                    key={pair.leftPair}
                     className="flex items-center gap-4 p-3 bg-white dark:bg-gray-800 rounded border"
                   >
                     <div className="flex items-center gap-2 flex-1">
@@ -122,17 +138,21 @@ export const MatchTheFollowingRenderer: React.FC<
                       </Badge>
                       <div className="flex-1">
                         <ContentPreview
-                          content={pair.leftPair.text}
+                          content={leftItem?.text || ""}
                           className="border-none p-0 bg-transparent text-sm"
                         />
                       </div>
                     </div>
                     <div className="w-8 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
                     <div className="flex-1">
-                      <ContentPreview
-                        content={pair.rightPair.text}
-                        className="border-none p-0 bg-transparent text-sm"
-                      />
+                      {rightItems.map((rightItem) => (
+                        <div key={rightItem?.id}>
+                          <ContentPreview
+                            content={rightItem?.text || ""}
+                            className="border-none p-0 bg-transparent text-sm"
+                          />
+                        </div>
+                      ))}
                     </div>
                     <Check className="w-5 h-5 text-green-600" />
                   </div>
@@ -148,17 +168,19 @@ export const MatchTheFollowingRenderer: React.FC<
                 Your Answers:
               </h4>
               <div className="space-y-2">
-                {question.keys.map((pair, index) => {
-                  const leftPairId = getPairId(pair.leftPair, index, "left");
-                  const userAnswer = matches[leftPairId];
-                  const correctAnswer = question.keys.find(
-                    (p, i) => getPairId(p.rightPair, i, "right") === userAnswer,
-                  );
-                  const isCorrect = isMatchCorrect(leftPairId);
+                {question.keyValues.left.map((leftItem, index) => {
+                  const userAnswer = matches[leftItem.id];
+                  const rightItem =
+                    userAnswer && userAnswer.length > 0
+                      ? question.keyValues.right.find(
+                          (item) => item.id === userAnswer[0],
+                        )
+                      : null;
+                  const isCorrect = isMatchCorrect(leftItem.id);
 
                   return (
                     <div
-                      key={leftPairId}
+                      key={leftItem.id}
                       className={cn(
                         "flex items-center gap-4 p-2 rounded text-sm",
                         isCorrect
@@ -174,17 +196,15 @@ export const MatchTheFollowingRenderer: React.FC<
                       </Badge>
                       <div className="flex-1">
                         <ContentPreview
-                          content={pair.leftPair.text}
+                          content={leftItem.text}
                           className="border-none p-0 bg-transparent text-xs"
                         />
                       </div>
                       <div className="w-6 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
                       <div className="flex-1">
-                        {userAnswer ? (
+                        {rightItem ? (
                           <ContentPreview
-                            content={
-                              correctAnswer?.rightPair.text || "No answer"
-                            }
+                            content={rightItem.text}
                             className="border-none p-0 bg-transparent text-xs"
                           />
                         ) : (
@@ -208,14 +228,13 @@ export const MatchTheFollowingRenderer: React.FC<
       ) : (
         /* Interactive matching interface for edit mode */
         <div className="space-y-3">
-          {question.keys.map((pair, index) => {
-            const leftPairId = getPairId(pair.leftPair, index, "left");
+          {question.keyValues.left.map((leftItem, index) => {
             return (
               <div
-                key={leftPairId}
+                key={leftItem.id}
                 className={cn(
                   "border rounded-lg p-4 transition-colors",
-                  getRowClass(leftPairId),
+                  getRowClass(leftItem.id),
                 )}
               >
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
@@ -227,7 +246,7 @@ export const MatchTheFollowingRenderer: React.FC<
                       </Badge>
                       <div className="flex-1">
                         <ContentPreview
-                          content={pair.leftPair.text}
+                          content={leftItem.text}
                           className="border-none p-0 bg-transparent text-sm"
                         />
                       </div>
@@ -240,9 +259,9 @@ export const MatchTheFollowingRenderer: React.FC<
                   {/* Right selection */}
                   <div className="md:col-span-5">
                     <Select
-                      value={matches[leftPairId] || ""}
+                      value={matches[leftItem.id]?.[0] || ""}
                       onValueChange={(value) =>
-                        handleMatchChange(leftPairId, value)
+                        handleMatchChange(leftItem.id, value)
                       }
                       disabled={config.readOnly}
                     >
@@ -250,35 +269,30 @@ export const MatchTheFollowingRenderer: React.FC<
                         <SelectValue placeholder="Select match..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {rightOptions.map((option, optionIndex) => {
-                          const rightPairId = getPairId(
-                            option.rightPair,
-                            optionIndex,
-                            "right",
-                          );
-                          return (
-                            <SelectItem key={rightPairId} value={rightPairId}>
-                              <ContentPreview
-                                content={option.rightPair.text}
-                                className="border-none p-0 bg-transparent text-sm"
-                              />
-                            </SelectItem>
-                          );
-                        })}
+                        {rightOptions.map((rightItem) => (
+                          <SelectItem key={rightItem.id} value={rightItem.id}>
+                            <ContentPreview
+                              content={rightItem.text}
+                              className="border-none p-0 bg-transparent text-sm"
+                            />
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   {/* Status indicator */}
                   <div className="md:col-span-1 flex justify-center">
-                    {config.showCorrectAnswers && matches[leftPairId] && (
-                      <>
-                        {isMatchCorrect(leftPairId) ? (
-                          <Check className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <X className="w-5 h-5 text-red-600" />
-                        )}
-                      </>
-                    )}
+                    {(config.showCorrectAnswers ||
+                      config.highlightCorrectness) &&
+                      matches[leftItem.id] && (
+                        <>
+                          {isMatchCorrect(leftItem.id) ? (
+                            <Check className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <X className="w-5 h-5 text-red-600" />
+                          )}
+                        </>
+                      )}
                   </div>
                 </div>
               </div>

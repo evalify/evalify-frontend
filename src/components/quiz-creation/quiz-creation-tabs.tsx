@@ -20,6 +20,7 @@ import { format, differenceInMinutes } from "date-fns";
 import { QuizParticipant } from "./quiz-participant";
 import { QuizParticipantData } from "./types";
 import Quiz, { CreateQuizDTO, PatchQuizDTO, QuizData } from "@/repo/quiz/quiz";
+import { Course, Batch, Lab } from "@/types/types";
 
 // Query keys for quiz operations
 const quizKeys = {
@@ -314,9 +315,18 @@ export function QuizCreationTabs({
 
       setParticipantData({
         students: existingQuiz.studentIds || [],
-        courses: existingQuiz.courseIds || [],
-        labs: existingQuiz.labIds || [],
-        batches: existingQuiz.batchIds || [],
+        courses:
+          existingQuiz.courseIds ||
+          existingQuiz.courseCodes?.map((course: Course) => course.id) ||
+          [],
+        labs:
+          existingQuiz.labIds ||
+          existingQuiz.labs?.map((lab: Lab) => lab.id) ||
+          [],
+        batches:
+          existingQuiz.batchIds ||
+          existingQuiz.batches?.map((batch: Batch) => batch.id) ||
+          [],
       });
     }
   }, [isEdit, existingQuiz, isLoadingQuiz]);

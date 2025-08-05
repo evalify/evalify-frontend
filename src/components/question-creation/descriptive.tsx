@@ -1,10 +1,10 @@
-import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
+import { DescriptiveQuestion } from "@/components/question-creation/question-types/descriptive-question";
 import { useEffect, useState, useCallback } from "react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Save, FileText, Edit3 } from "lucide-react";
-import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
+import { QuestionSettings } from "@/components/question-creation/settings-types/settings-types";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 

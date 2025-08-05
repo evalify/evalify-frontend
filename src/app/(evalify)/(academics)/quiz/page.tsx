@@ -31,7 +31,7 @@ import AuthGuard from "@/components/auth/auth-guard";
 import { UserType } from "@/lib/auth/utils";
 import StudentQuiz from "@/repo/student/quiz/student-quiz";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useQuizPreferences } from "@/hooks/use-quiz-preferences";
+import { useQuizPreferences } from "@/components/quiz/hooks/use-quiz-preferences";
 import QuizCard, { QuizData } from "@/components/student/quiz/quiz-card";
 import QuizTable from "@/components/student/quiz/quiz-table";
 
@@ -154,7 +154,7 @@ const Page = () => {
     const allQuizzes = quizData;
     return {
       all: allQuizzes.length,
-      live: allQuizzes.filter((quiz: QuizData) => quiz.status === "LIVE")
+      live: allQuizzes.filter((quiz: QuizData) => quiz.status === "ACTIVE")
         .length,
       upcoming: allQuizzes.filter(
         (quiz: QuizData) => quiz.status === "UPCOMING",
@@ -180,6 +180,59 @@ const Page = () => {
     },
     [router],
   );
+
+  // Auto-redirect logic for quiz instructions
+  useEffect(() => {
+    if (!quizData) return;
+
+    const now = Date.now();
+
+    // Check for quizzes that just became available for instructions (5 minutes before start)
+    const readyForInstructionsQuiz = quizData.find((quiz: QuizData) => {
+      if (quiz.status !== "UPCOMING") return false;
+
+      const startDate = new Date(quiz.startTime);
+      const instructionsAccessTime = new Date(
+        startDate.getTime() - 5 * 60 * 1000,
+      );
+
+      // Quiz instructions just became available
+      return (
+        now >= instructionsAccessTime.getTime() && now < startDate.getTime()
+      );
+    });
+
+    if (readyForInstructionsQuiz) {
+      // Check if we're not already on an instructions page to avoid infinite redirects
+      if (!window.location.pathname.includes("/instructions")) {
+        router.push(`/quiz/${readyForInstructionsQuiz.id}/instructions`);
+      }
+    }
+  }, [quizData, router]);
+
+  // Refetch quiz data when a quiz becomes active
+  useEffect(() => {
+    if (!quizData) return;
+
+    const checkInterval = setInterval(() => {
+      const currentTime = Date.now();
+
+      // Check if any upcoming quiz should now be active
+      const shouldRefetch = quizData.some((quiz: QuizData) => {
+        if (quiz.status !== "UPCOMING") return false;
+        const startDate = new Date(quiz.startTime);
+        return currentTime >= startDate.getTime();
+      });
+
+      if (shouldRefetch) {
+        // Refetch quiz data to update statuses
+        // The useQuery will automatically update when we invalidate
+        window.location.reload(); // Simple approach, can be refined with query invalidation
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(checkInterval);
+  }, [quizData]);
 
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);

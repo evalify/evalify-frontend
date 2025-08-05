@@ -12,6 +12,10 @@ interface MCQRendererProps {
   onAnswerChange?: (answer: MCQAnswer) => void;
 }
 
+/**
+ * MCQ Question Renderer Component
+ * Renders Multiple Choice Questions with single selection
+ */
 export const MCQRenderer: React.FC<MCQRendererProps> = ({
   question,
   config,
@@ -25,6 +29,9 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
     }
   }, [config.userAnswers]);
 
+  /**
+   * Handle option selection change
+   */
   const handleSelectionChange = (value: string) => {
     if (config.readOnly) return;
 
@@ -34,22 +41,26 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
     }
   };
 
-  const displayOptions = config.shuffleOptions
-    ? [...(question.options || [])].sort(() => Math.random() - 0.5)
-    : question.options || [];
+  /**
+   * Get options to display (shuffled or original order)
+   */
+  const displayOptions = React.useMemo(() => {
+    if (config.shuffleOptions && !config.showCorrectAnswers) {
+      return [...(question.options || [])].sort(() => Math.random() - 0.5);
+    }
+    return question.options || [];
+  }, [question.options, config.shuffleOptions, config.showCorrectAnswers]);
 
-  if (!displayOptions || displayOptions.length === 0) {
-    return (
-      <div className="text-gray-500 italic">
-        No options available for this question.
-      </div>
-    );
-  }
-
+  /**
+   * Get unique option key for each option
+   */
   const getOptionKey = (option: MCQOption, index: number): string => {
-    return option.id && option.id.trim() ? option.id : `option-${index}`;
+    return option.id || `option-${index}`;
   };
 
+  /**
+   * Get CSS classes for option styling based on state
+   */
   const getOptionClass = (option: MCQOption, index: number) => {
     const optionKey = getOptionKey(option, index);
     const isSelected = selectedOption === optionKey;
@@ -77,6 +88,9 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
       : "border-gray-200 dark:border-gray-700";
   };
 
+  /**
+   * Get icon to display for option (check/x based on correctness)
+   */
   const getOptionIcon = (option: MCQOption, index: number) => {
     const optionKey = getOptionKey(option, index);
     const isSelected = selectedOption === optionKey;
@@ -95,6 +109,15 @@ export const MCQRenderer: React.FC<MCQRendererProps> = ({
 
     return null;
   };
+
+  // Handle empty options
+  if (!displayOptions || displayOptions.length === 0) {
+    return (
+      <div className="text-gray-500 italic">
+        No options available for this question.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

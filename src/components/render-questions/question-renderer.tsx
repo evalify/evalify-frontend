@@ -4,11 +4,12 @@ import {
   MCQQuestion,
   MMCQQuestion,
   TrueFalseQuestion,
-  FillUpQuestion,
-  MatchTheFollowingQuestion,
   DescriptiveQuestion,
-  FileUploadQuestion,
+  MatchTheFollowingQuestion,
   CodingQuestion,
+  FillUpQuestion,
+  FileUploadQuestion,
+  BaseQuestion,
 } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,14 +40,17 @@ import { useToast } from "@/hooks/use-toast";
 import { MCQRenderer } from "./question-types/mcq-renderer";
 import { MMCQRenderer } from "./question-types/mmcq-renderer";
 import { TrueFalseRenderer } from "./question-types/true-false-renderer";
-import { FillUpRenderer } from "./question-types/fill-up-renderer";
 import { MatchTheFollowingRenderer } from "./question-types/match-the-following-renderer";
 import { DescriptiveRenderer } from "./question-types/descriptive-renderer";
-import { FileUploadRenderer } from "./question-types/file-upload-renderer";
 import { CodingRenderer } from "./question-types/coding-renderer";
+import FillUpRenderer from "./question-types/fill-up-renderer";
+import FileUploadRenderer from "./question-types/file-upload-renderer";
 
-const getDifficultyColor = (difficultyLevel: string) => {
-  switch (difficultyLevel) {
+/**
+ * Get difficulty color based on difficulty level
+ */
+const getDifficultyColor = (difficulty: string) => {
+  switch (difficulty) {
     case "EASY":
       return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
     case "MEDIUM":
@@ -58,6 +62,9 @@ const getDifficultyColor = (difficultyLevel: string) => {
   }
 };
 
+/**
+ * Get taxonomy color based on Bloom's taxonomy level
+ */
 const getTaxonomyColor = (taxonomy: string) => {
   switch (taxonomy) {
     case "REMEMBER":
@@ -77,6 +84,9 @@ const getTaxonomyColor = (taxonomy: string) => {
   }
 };
 
+/**
+ * Main question renderer component
+ */
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   question,
   config,
@@ -85,10 +95,10 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   questionNumber,
   className,
 }) => {
-  const { success: showSuccess } = useToast();
+  const { success } = useToast();
   const [showHint, setShowHint] = React.useState(false);
 
-  // Determine if we should show explanations and correct answers
+  // Determine what to show based on config
   const shouldShowCorrectAnswers =
     config.mode === "display" ||
     config.mode === "review" ||
@@ -103,39 +113,40 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     config.mode === "review" || config.highlightCorrectness;
   const shouldShowScore = config.mode === "review" || config.showScore;
 
+  /**
+   * Handle edit action
+   */
   const handleEdit = () => {
     if (actions?.onEdit) {
-      const questionId = (question as unknown as Record<string, unknown>)
-        .questionId as string;
-      actions.onEdit(questionId || `question-${questionNumber || 1}`);
+      actions.onEdit(question.questionId);
     }
   };
 
+  /**
+   * Handle delete action
+   */
   const handleDelete = () => {
     if (actions?.onDelete) {
-      const questionId = (question as unknown as Record<string, unknown>)
-        .questionId as string;
-      actions.onDelete(questionId || `question-${questionNumber || 1}`);
+      actions.onDelete(question.questionId);
     }
   };
 
+  /**
+   * Handle edit marks action
+   */
   const handleEditMarks = () => {
     if (actions?.onEditMarks) {
-      const currentMarks = (question as unknown as Record<string, unknown>)
-        .marks;
-      const questionId = (question as unknown as Record<string, unknown>)
-        .questionId as string;
-      const newMarks = prompt("Enter new marks:", currentMarks?.toString());
+      const newMarks = prompt("Enter new marks:", question.marks.toString());
       if (newMarks && !isNaN(Number(newMarks))) {
-        actions.onEditMarks(
-          questionId || `question-${questionNumber || 1}`,
-          Number(newMarks),
-        );
-        showSuccess("Marks updated successfully");
+        actions.onEditMarks(question.questionId, Number(newMarks));
+        success("Marks updated successfully");
       }
     }
   };
 
+  /**
+   * Render question content based on type
+   */
   const renderQuestionContent = () => {
     const enhancedConfig = {
       ...config,
@@ -175,6 +186,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           <FillUpRenderer
             question={question as FillUpQuestion}
             config={enhancedConfig}
+            actions={actions}
             onAnswerChange={onAnswerChange}
           />
         );
@@ -199,6 +211,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           <FileUploadRenderer
             question={question as FileUploadQuestion}
             config={enhancedConfig}
+            actions={actions}
             onAnswerChange={onAnswerChange}
           />
         );
@@ -213,7 +226,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       default:
         return (
           <div className="text-red-500">
-            Unknown question type: {question.type}
+            Unknown question type: {(question as BaseQuestion).type}
           </div>
         );
     }
@@ -225,7 +238,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         <CardHeader className={cn("pb-4", config.compact && "pb-2")}>
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              {/* min-w-0 prevents flex item from overflowing */}
               {/* Question Number and Type */}
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {questionNumber && (
@@ -240,16 +252,12 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 {config.showMarks && (
                   <Badge variant="outline" className="font-medium text-xs">
                     <Award className="w-3 h-3 mr-1" />
-                    {String(
-                      (question as unknown as Record<string, unknown>).marks,
-                    )}
-                    {(question as unknown as Record<string, unknown>).marks ===
-                    1
-                      ? " mark"
-                      : " marks"}
+                    {question.marks}
+                    {question.marks === 1 ? " mark" : " marks"}
                   </Badge>
                 )}
               </div>
+
               {/* Metadata Badges */}
               {!config.compact && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
@@ -277,20 +285,12 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                       <TooltipTrigger>
                         <Badge
                           className={cn(
-                            getTaxonomyColor(
-                              String(
-                                (question as unknown as Record<string, unknown>)
-                                  .bloomsTaxonomy || "",
-                              ),
-                            ),
+                            getTaxonomyColor(question.bloomsTaxonomy),
                             "text-xs",
                           )}
                         >
                           <BookOpen className="w-3 h-3 mr-1" />
-                          {String(
-                            (question as unknown as Record<string, unknown>)
-                              .bloomsTaxonomy || "",
-                          )}
+                          {question.bloomsTaxonomy}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -299,27 +299,18 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                     </Tooltip>
                   )}
 
-                  {typeof (question as unknown as Record<string, unknown>)
-                    .co === "number" ? (
+                  {question.co !== undefined && question.co !== null && (
                     <Tooltip>
                       <TooltipTrigger>
                         <Badge variant="outline" className="text-xs">
-                          CO-
-                          {String(
-                            (question as unknown as Record<string, unknown>).co,
-                          )}
+                          CO-{question.co}
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>
-                          Course Outcome{" "}
-                          {String(
-                            (question as unknown as Record<string, unknown>).co,
-                          )}
-                        </p>
+                        <p>Course Outcome {question.co}</p>
                       </TooltipContent>
                     </Tooltip>
-                  ) : null}
+                  )}
 
                   {config.showTopics &&
                     question.topics &&
@@ -343,6 +334,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
                 </div>
               )}
             </div>
+
             {/* Score Display for Student Mode or Review Mode */}
             {shouldShowScore && config.userAnswers ? (
               <div className="flex items-center gap-2 lg:ml-4">
@@ -420,8 +412,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               )
             )}
           </div>
+
           {/* Hint Toggle */}
-          {config.showHint && question.hintText && (
+          {config.showHint && question.hint && (
             <div className="flex items-center gap-2 mt-2">
               <Button
                 variant="ghost"
@@ -442,6 +435,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               </Button>
             </div>
           )}
+
           {/* Question Text */}
           <div className="question-content">
             <ContentPreview
@@ -449,14 +443,15 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
               className="border-none p-0 bg-transparent"
             />
           </div>
+
           {/* Hint Display */}
-          {showHint && question.hintText && (
+          {showHint && question.hint && (
             <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
               <div className="flex items-start gap-2">
                 <Lightbulb className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
                   <ContentPreview
-                    content={question.hintText}
+                    content={question.hint}
                     className="border-none p-0 bg-transparent"
                   />
                 </div>
@@ -464,9 +459,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
             </div>
           )}
         </CardHeader>
+
         <CardContent className={cn("pt-0", config.compact && "px-4 pb-4")}>
           {/* Question Type Specific Content */}
           {renderQuestionContent()}
+
           {/* Explanation */}
           {shouldShowExplanation && question.explanation && (
             <>

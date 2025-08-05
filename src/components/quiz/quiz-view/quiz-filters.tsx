@@ -35,6 +35,7 @@ export interface FilterState {
   search: string;
   status: string[];
   courseCode: string[];
+  publishStatus: string[];
   dateRange: {
     from: Date | null;
     to: Date | null;
@@ -107,12 +108,24 @@ export function QuizFilters({
     });
   };
 
+  const togglePublishStatusFilter = (publishStatus: string) => {
+    const newPublishStatuses = filters.publishStatus.includes(publishStatus)
+      ? filters.publishStatus.filter((p) => p !== publishStatus)
+      : [...filters.publishStatus, publishStatus];
+
+    onFiltersChange({
+      ...filters,
+      publishStatus: newPublishStatuses,
+    });
+  };
+
   const clearAllFilters = () => {
     setSearchValue("");
     onFiltersChange({
       search: "",
       status: [],
       courseCode: [],
+      publishStatus: [],
       dateRange: { from: null, to: null },
     });
   };
@@ -121,6 +134,7 @@ export function QuizFilters({
     (filters.search ? 1 : 0) +
     filters.status.length +
     filters.courseCode.length +
+    filters.publishStatus.length +
     (filters.dateRange.from || filters.dateRange.to ? 1 : 0);
 
   const statusColors: Record<string, string> = {
@@ -260,6 +274,40 @@ export function QuizFilters({
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Publish Status filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9">
+              <Settings className="h-4 w-4 mr-2" />
+              Visibility
+              {filters.publishStatus.length > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 px-1 text-xs">
+                  {filters.publishStatus.length}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuLabel className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Filter by Visibility
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={filters.publishStatus.includes("published")}
+              onCheckedChange={() => togglePublishStatusFilter("published")}
+            >
+              Published
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={filters.publishStatus.includes("unpublished")}
+              onCheckedChange={() => togglePublishStatusFilter("unpublished")}
+            >
+              Unpublished
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Clear filters button */}
         {activeFiltersCount > 0 && (
           <Button
@@ -324,6 +372,20 @@ export function QuizFilters({
               <X
                 className="h-3 w-3 cursor-pointer hover:text-red-600"
                 onClick={() => toggleCourseFilter(code)}
+              />
+            </Badge>
+          ))}
+
+          {filters.publishStatus.map((status) => (
+            <Badge
+              key={status}
+              variant="outline"
+              className="gap-1 bg-blue-50 text-blue-700 border-blue-300"
+            >
+              {status}
+              <X
+                className="h-3 w-3 cursor-pointer hover:text-red-600"
+                onClick={() => togglePublishStatusFilter(status)}
               />
             </Badge>
           ))}

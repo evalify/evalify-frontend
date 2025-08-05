@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Bank from "@/repo/bank/bank";
-import { QuestionFilters } from "@/types/quiz-types";
-import { useQuestionFilters } from "@/hooks/use-question-filters";
+import { QuestionFilters } from "@/components/quiz/types/quiz-types";
+import { useQuestionFilters } from "@/components/quiz/hooks/use-question-filters";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -16,10 +16,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 
-/**
- * Example component showing how to integrate the backend API
- * This replaces the mock filtering with actual backend calls
- */
 export function BackendQuestionFilters() {
   const { quizId } = useParams();
   const [selectedBankId, setSelectedBankId] = useState<string>("any");

@@ -2,6 +2,7 @@
 
 import { QuizCard } from "./quiz-card";
 import { FileText } from "lucide-react";
+import { Course } from "@/types/types";
 
 interface Quiz {
   id: string;
@@ -13,7 +14,8 @@ interface Quiz {
   status: string;
   isProtected: boolean;
   publishResult: boolean;
-  courseCodes: string[];
+  isPublished: boolean;
+  courseCodes: Course[];
 }
 
 interface QuizGridProps {
@@ -24,6 +26,7 @@ interface QuizGridProps {
   onDelete?: (quizId: string) => void;
   onManage?: (quizId: string) => void;
   onShare?: (quizId: string) => void;
+  onPublishToggle?: (quizId: string, isPublished: boolean) => void;
   isLoading?: boolean;
 }
 
@@ -35,6 +38,7 @@ export function QuizGrid({
   onDelete,
   onManage,
   onShare,
+  onPublishToggle,
   isLoading = false,
 }: QuizGridProps) {
   if (isLoading) {
@@ -80,6 +84,7 @@ export function QuizGrid({
           onDelete={onDelete}
           onManage={onManage}
           onShare={onShare}
+          onPublishToggle={onPublishToggle}
         />
       ))}
     </div>

@@ -27,10 +27,13 @@ import {
   Globe,
   Lock,
   Share,
+  Users,
+  EyeOff,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
+import { Course } from "@/types/types";
 
 interface Quiz {
   id: string;
@@ -42,7 +45,8 @@ interface Quiz {
   status: string;
   isProtected: boolean;
   publishResult: boolean;
-  courseCodes: string[];
+  isPublished: boolean;
+  courseCodes: Course[];
 }
 
 interface QuizTableProps {
@@ -53,6 +57,7 @@ interface QuizTableProps {
   onDelete?: (quizId: string) => void;
   onManage?: (quizId: string) => void;
   onShare?: (quizId: string) => void;
+  onPublishToggle?: (quizId: string, isPublished: boolean) => void;
   isLoading?: boolean;
   currentPage?: number;
   totalPages?: number;
@@ -109,6 +114,7 @@ export function QuizTable({
   onDelete,
   onManage,
   onShare,
+  onPublishToggle,
   isLoading = false,
   currentPage = 1,
   totalPages = 1,
@@ -136,6 +142,11 @@ export function QuizTable({
           <div className="text-center">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-medium truncate">{quiz.name}</span>
+              {quiz.isPublished ? (
+                <Users className="h-3 w-3 text-green-600 flex-shrink-0" />
+              ) : (
+                <EyeOff className="h-3 w-3 text-gray-400 flex-shrink-0" />
+              )}
               {quiz.isProtected && (
                 <Lock className="h-3 w-3 text-amber-600 flex-shrink-0" />
               )}
@@ -169,19 +180,24 @@ export function QuizTable({
       accessorKey: "courseCodes",
       header: "Courses",
       cell: ({ getValue }) => {
-        const codes = getValue() as string[];
-        if (codes.length === 0) return <span className="text-gray-400">-</span>;
+        const courses = getValue() as Course[];
+        if (courses.length === 0)
+          return <span className="text-gray-400">-</span>;
 
         return (
           <div className="flex flex-wrap gap-1">
-            {codes.slice(0, 2).map((code) => (
-              <Badge key={code} variant="outline" className="text-xs">
-                {code}
+            {courses.slice(0, 2).map((course, index) => (
+              <Badge
+                key={course.id || index}
+                variant="outline"
+                className="text-xs"
+              >
+                {course.code || course.name || course.id}
               </Badge>
             ))}
-            {codes.length > 2 && (
+            {courses.length > 2 && (
               <Badge variant="outline" className="text-xs">
-                +{codes.length - 2}
+                +{courses.length - 2}
               </Badge>
             )}
           </div>
@@ -232,6 +248,7 @@ export function QuizTable({
                 variant="ghost"
                 className="h-8 w-8 p-0"
                 onClick={() => onEdit?.(quiz.id)}
+                disabled={quiz.isPublished}
               >
                 <Edit className="h-3 w-3" />
               </Button>
@@ -243,6 +260,7 @@ export function QuizTable({
                 variant="ghost"
                 className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
                 onClick={() => onManage?.(quiz.id)}
+                disabled={quiz.isPublished}
               >
                 <Settings className="h-3 w-3" />
               </Button>
@@ -271,17 +289,44 @@ export function QuizTable({
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit?.(quiz.id)}>
+                <DropdownMenuItem
+                  onClick={() => onEdit?.(quiz.id)}
+                  disabled={quiz.isPublished}
+                >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Quiz
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onManage?.(quiz.id)}>
+                <DropdownMenuItem
+                  onClick={() => onManage?.(quiz.id)}
+                  disabled={quiz.isPublished}
+                >
                   <Settings className="h-4 w-4 mr-2" />
                   Manage
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onShare?.(quiz.id)}>
                   <Share className="h-4 w-4 mr-2" />
                   Share Quiz
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onPublishToggle?.(quiz.id, quiz.isPublished)}
+                  className={
+                    quiz.isPublished
+                      ? "text-red-600 focus:text-red-600"
+                      : "text-green-600 focus:text-green-600"
+                  }
+                >
+                  {quiz.isPublished ? (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Unpublish Quiz
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-4 w-4 mr-2" />
+                      Publish Quiz
+                    </>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onDuplicate?.(quiz.id)}>
@@ -291,6 +336,7 @@ export function QuizTable({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => onDelete?.(quiz.id)}
+                  disabled={quiz.isPublished}
                   className="text-red-600 focus:text-red-600"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />

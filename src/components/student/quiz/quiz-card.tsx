@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -18,7 +19,6 @@ import {
   XCircle,
   AlertCircle,
   Timer,
-  Eye,
   Lock,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -30,7 +30,7 @@ export interface QuizData {
   startTime: string;
   endTime: string;
   duration: number;
-  status: "LIVE" | "UPCOMING" | "MISSED" | "COMPLETED";
+  status: "ACTIVE" | "UPCOMING" | "MISSED" | "COMPLETED";
   quizTags: string[];
   instructions: string;
   linearQuiz: boolean;
@@ -45,7 +45,7 @@ interface QuizCardProps {
 
 const getStatusConfig = (status: QuizData["status"]) => {
   switch (status) {
-    case "LIVE":
+    case "ACTIVE":
       return {
         badge: "bg-green-500 hover:bg-green-600 text-white",
         icon: Play,
@@ -100,22 +100,43 @@ const formatDuration = (duration: number) => {
   return `${minutes}m`;
 };
 
-const QuizCard: React.FC<QuizCardProps> = ({
-  quiz,
-  onTakeQuiz,
-  onViewResults,
-}) => {
+const formatTimeUntilStart = (startDate: Date, now: number) => {
+  const diff = startDate.getTime() - now;
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(minutes / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  }
+  return `${minutes}m`;
+};
+
+const formatTimeUntilInstructions = (instructionsTime: Date, now: number) => {
+  const diff = instructionsTime.getTime() - now;
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(minutes / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  }
+  return `${minutes}m`;
+};
+
+const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
   const statusConfig = getStatusConfig(quiz.status);
   const StatusIcon = statusConfig.icon;
 
   const startDate = new Date(quiz.startTime);
   const endDate = new Date(quiz.endTime);
-  const now = new Date();
+  const now = Date.now();
 
-  const isLive = quiz.status === "LIVE";
-  const isCompleted = quiz.status === "COMPLETED";
-  const canTakeQuiz = isLive && onTakeQuiz;
-  const canViewResults = isCompleted && onViewResults;
+  // Check if instructions should be accessible (5 minutes before start)
+  const instructionsAccessTime = new Date(startDate.getTime() - 5 * 60 * 1000);
+  const canAccessInstructions =
+    now >= instructionsAccessTime.getTime() &&
+    (quiz.status === "UPCOMING" || quiz.status === "ACTIVE");
+
+  const isLive = quiz.status === "ACTIVE";
 
   return (
     <Card
@@ -261,7 +282,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
                   100,
                   Math.max(
                     0,
-                    ((now.getTime() - startDate.getTime()) /
+                    ((now - startDate.getTime()) /
                       (endDate.getTime() - startDate.getTime())) *
                       100,
                   ),
@@ -273,7 +294,7 @@ const QuizCard: React.FC<QuizCardProps> = ({
               <div
                 className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-1000 shadow-sm"
                 style={{
-                  width: `${Math.min(100, Math.max(0, ((now.getTime() - startDate.getTime()) / (endDate.getTime() - startDate.getTime())) * 100))}%`,
+                  width: `${Math.min(100, Math.max(0, ((now - startDate.getTime()) / (endDate.getTime() - startDate.getTime())) * 100))}%`,
                 }}
               />
             </div>
@@ -282,52 +303,90 @@ const QuizCard: React.FC<QuizCardProps> = ({
       </CardContent>
 
       <CardFooter className="pt-0 bg-gradient-to-r from-transparent via-muted/20 to-transparent">
-        <div className="flex gap-2 w-full">
-          {canTakeQuiz && (
-            <Button
-              onClick={() => onTakeQuiz(quiz.id)}
-              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-              size="sm"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Take Quiz
-            </Button>
+        <div className="w-full space-y-3">
+          {/* Instructions Button - 5 minutes before quiz */}
+          {canAccessInstructions && (
+            <Link href={`/quiz/${quiz.id}/instructions`} className="block">
+              <Button
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                size="sm"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                View Instructions
+              </Button>
+            </Link>
           )}
 
-          {canViewResults && (
+          {/* Main Action Button */}
+          {quiz.status === "ACTIVE" && now >= startDate.getTime() ? (
+            <Link href={`/quiz/${quiz.id}/instructions`} className="block">
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700 text-white transition-colors"
+                size="sm"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Start Quiz
+              </Button>
+            </Link>
+          ) : quiz.status === "UPCOMING" ? (
             <Button
-              onClick={() => onViewResults(quiz.id)}
-              variant="outline"
-              className="flex-1 border-2 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200"
-              size="sm"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              View Results
-            </Button>
-          )}
-
-          {quiz.status === "UPCOMING" && (
-            <Button
-              variant="outline"
-              className="flex-1 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
-              size="sm"
               disabled
+              className="w-full bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+              size="sm"
+              variant="outline"
             >
-              <Clock className="h-4 w-4 mr-2" />
-              Upcoming
+              <Clock className="w-4 h-4 mr-2" />
+              Quiz Not Started
             </Button>
+          ) : quiz.status === "COMPLETED" ? (
+            <Link href={`/results/${quiz.id}`} className="block">
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                size="sm"
+                variant="outline"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                View Results
+              </Button>
+            </Link>
+          ) : quiz.status === "MISSED" ? (
+            <Button
+              disabled
+              className="w-full bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+              size="sm"
+              variant="outline"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Quiz Missed
+            </Button>
+          ) : null}
+
+          {/* Time-based Messages */}
+          {quiz.status === "UPCOMING" && canAccessInstructions && (
+            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-3 py-2 rounded-lg">
+              <AlertCircle className="w-4 h-4" />
+              <span>
+                Instructions available! Quiz starts in{" "}
+                {formatTimeUntilStart(startDate, now)}
+              </span>
+            </div>
           )}
 
-          {quiz.status === "MISSED" && (
-            <Button
-              variant="outline"
-              className="flex-1 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
-              size="sm"
-              disabled
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Missed
-            </Button>
+          {quiz.status === "UPCOMING" && !canAccessInstructions && (
+            <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-300 px-3 py-2 rounded-lg">
+              <Clock className="w-4 h-4" />
+              <span>
+                Instructions available in{" "}
+                {formatTimeUntilInstructions(instructionsAccessTime, now)}
+              </span>
+            </div>
+          )}
+
+          {quiz.status === "ACTIVE" && now < startDate.getTime() && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-300 px-3 py-2 rounded-lg">
+              <Play className="w-4 h-4" />
+              <span>Quiz starts in {formatTimeUntilStart(startDate, now)}</span>
+            </div>
           )}
         </div>
       </CardFooter>

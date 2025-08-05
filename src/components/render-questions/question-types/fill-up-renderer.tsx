@@ -1,174 +1,318 @@
-import React from "react";
-import { FillUpQuestion, QuestionConfig, FillUpAnswer, Blank } from "../types";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ContentPreview } from "@/components/rich-text-editor/content-preview";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { Check, AlertCircle, Lightbulb } from "lucide-react";
+"use client";
 
+import React, { useState, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  FillUpQuestion,
+  FillUpAnswer,
+  QuestionConfig,
+  QuestionActions,
+} from "../types";
+import { cn } from "@/lib/utils";
+
+/**
+ * Props for FillUpRenderer component
+ */
 interface FillUpRendererProps {
   question: FillUpQuestion;
   config: QuestionConfig;
+  actions?: QuestionActions;
   onAnswerChange?: (answer: FillUpAnswer) => void;
+  questionNumber?: number;
+  className?: string;
 }
 
-export const FillUpRenderer: React.FC<FillUpRendererProps> = ({
+/**
+ * Fill Up Question Renderer Component
+ *
+ * Renders fill-in-the-blank questions where students enter text for missing words/phrases.
+ * The question text contains underscores (___) which are replaced with input fields.
+ *
+ * Features:
+ * - Interactive text inputs for each blank
+ * - Real-time answer change callbacks
+ * - Support for multiple correct answers per blank
+ * - Display of correct answers in review mode
+ * - Strict/loose matching configuration
+ * - Support for different blank types (STRING, INTEGER)
+ *
+ * @param question - The fill-up question data from backend
+ * @param config - Display configuration and mode settings
+ * @param actions - Optional action handlers (edit, delete, etc.)
+ * @param onAnswerChange - Callback when user answers change
+ * @param questionNumber - Optional question number for display
+ * @param className - Additional CSS classes
+ */
+const FillUpRenderer: React.FC<FillUpRendererProps> = ({
   question,
   config,
   onAnswerChange,
+  questionNumber,
+  className,
 }) => {
-  const [answers, setAnswers] = React.useState<{ [blankId: string]: string }>(
-    {},
+  // State for user answers (blank ID -> user input)
+  const [userAnswers, setUserAnswers] = useState<{ [blankId: number]: string }>(
+    () => {
+      const initialAnswers: { [blankId: number]: string } = {};
+      question.blanks.forEach((blank) => {
+        initialAnswers[blank.id] = "";
+      });
+      return initialAnswers;
+    },
   );
 
-  // Initialize answers from config if provided (for display mode)
-  React.useEffect(() => {
-    if (config.userAnswers && "blanks" in config.userAnswers) {
-      setAnswers(config.userAnswers.blanks);
-    }
-  }, [config.userAnswers]);
+  /**
+   * Handle input change for a specific blank
+   */
+  const handleInputChange = useCallback(
+    (blankId: number, value: string) => {
+      const newAnswers = {
+        ...userAnswers,
+        [blankId]: value,
+      };
+      setUserAnswers(newAnswers);
 
-  const handleAnswerChange = (blankId: string, value: string) => {
-    if (config.readOnly) return;
+      // Trigger answer change callback
+      if (onAnswerChange) {
+        const answer: FillUpAnswer = {
+          blanks: newAnswers,
+          ...(config.mode === "review" && {
+            correctBlanks: question.blanks.reduce(
+              (acc, blank) => {
+                acc[blank.id] = blank.answers;
+                return acc;
+              },
+              {} as { [blankId: number]: string[] },
+            ),
+          }),
+        };
+        onAnswerChange(answer);
+      }
+    },
+    [userAnswers, onAnswerChange, config.mode, question.blanks],
+  );
 
-    const newAnswers = { ...answers, [blankId]: value };
-    setAnswers(newAnswers);
-    if (onAnswerChange) {
-      onAnswerChange({ blanks: newAnswers });
-    }
-  };
+  /**
+   * Check if a user answer is correct for a given blank
+   */
+  const isAnswerCorrect = useCallback(
+    (blankId: number, userAnswer: string): boolean => {
+      const blank = question.blanks.find((b) => b.id === blankId);
+      if (!blank) return false;
 
-  const isAnswerCorrect = (blankId: string, userAnswer: string) => {
-    const blanks = question.blanks || [];
-    const blank = blanks.find((b: Blank) => b.id === blankId);
-    if (!blank) return false;
+      const normalizedUserAnswer = question.strictMatch
+        ? userAnswer.trim()
+        : userAnswer.trim().toLowerCase();
 
-    const strictMatch = question.strictMatch;
-    if (strictMatch) {
-      return blank.answers.some(
-        (answer: string) =>
-          answer.toLowerCase().trim() === userAnswer.toLowerCase().trim(),
+      return blank.answers.some((correctAnswer) => {
+        const normalizedCorrectAnswer = question.strictMatch
+          ? correctAnswer.trim()
+          : correctAnswer.trim().toLowerCase();
+        return normalizedUserAnswer === normalizedCorrectAnswer;
+      });
+    },
+    [question.blanks, question.strictMatch],
+  );
+
+  /**
+   * Render question text with input fields for blanks
+   */
+  const renderQuestionWithBlanks = () => {
+    // Sort blanks by their serial number to maintain order
+    const sortedBlanks = [...question.blanks].sort((a, b) => a.sno - b.sno);
+
+    const questionText = question.question;
+    const parts: React.ReactNode[] = [];
+    let currentIndex = 0;
+    let blankIndex = 0;
+
+    // Find all underscore patterns and replace with input fields
+    const underscorePattern = /___+/g;
+    let match;
+
+    while (
+      (match = underscorePattern.exec(questionText)) !== null &&
+      blankIndex < sortedBlanks.length
+    ) {
+      const blank = sortedBlanks[blankIndex];
+
+      // Add text before the blank
+      if (match.index > currentIndex) {
+        parts.push(
+          <span key={`text-${blankIndex}-before`}>
+            {questionText.substring(currentIndex, match.index)}
+          </span>,
+        );
+      }
+
+      // Add input field for the blank
+      const userAnswer = userAnswers[blank.id] || "";
+      const isCorrect =
+        config.mode === "review" && userAnswer
+          ? isAnswerCorrect(blank.id, userAnswer)
+          : undefined;
+
+      parts.push(
+        <span
+          key={`blank-${blank.id}`}
+          className="inline-flex items-center mx-1"
+        >
+          <Input
+            value={userAnswer}
+            onChange={(e) => handleInputChange(blank.id, e.target.value)}
+            placeholder={`Blank ${blank.sno}`}
+            type={blank.type === "INTEGER" ? "number" : "text"}
+            className={cn(
+              "w-32 h-8 text-sm inline-block",
+              config.readOnly && "bg-gray-50",
+              config.mode === "review" &&
+                isCorrect !== undefined &&
+                (isCorrect
+                  ? "border-green-500 bg-green-50"
+                  : "border-red-500 bg-red-50"),
+            )}
+            disabled={config.readOnly || config.mode === "display"}
+          />
+
+          {/* Show correct answers in review mode */}
+          {config.mode === "review" && config.showCorrectAnswers && (
+            <div className="ml-2 text-xs text-gray-600">
+              <span className="font-medium">Correct:</span>{" "}
+              {blank.answers.join(" / ")}
+            </div>
+          )}
+        </span>,
       );
-    } else {
-      return blank.answers.some(
-        (answer: string) =>
-          answer.toLowerCase().includes(userAnswer.toLowerCase().trim()) ||
-          userAnswer.toLowerCase().trim().includes(answer.toLowerCase()),
+
+      currentIndex = match.index + match[0].length;
+      blankIndex++;
+    }
+
+    // Add remaining text after the last blank
+    if (currentIndex < questionText.length) {
+      parts.push(
+        <span key={`text-${blankIndex}-after`}>
+          {questionText.substring(currentIndex)}
+        </span>,
       );
     }
-  };
 
-  const getInputClass = (blankId: string) => {
-    if (config.showCorrectAnswers && answers[blankId]) {
-      return isAnswerCorrect(blankId, answers[blankId])
-        ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-        : "border-red-500 bg-red-50 dark:bg-red-900/20";
-    }
-    return "";
+    return parts;
   };
 
   return (
-    <div className="space-y-4">
-      {/* Early return if no blanks */}
-      {!question.blanks || question.blanks.length === 0 ? (
-        <div className="text-gray-500 italic">
-          No blanks available for this question.
+    <div className={cn("fill-up-question space-y-4", className)}>
+      {/* Question Text with Blanks */}
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          {questionNumber && (
+            <span className="text-sm font-medium text-gray-600 mr-2">
+              Q{questionNumber}.
+            </span>
+          )}
+          <div className="text-base leading-relaxed">
+            {renderQuestionWithBlanks()}
+          </div>
         </div>
-      ) : (
-        <>
-          {/* Individual blanks */}
-          <div className="space-y-4">
-            {question.blanks.map((blank: Blank, index: number) => (
-              <div key={blank.id} className="space-y-2">
-                <Label htmlFor={blank.id} className="text-sm font-medium">
-                  Blank {index + 1}
-                </Label>
-                {/* User Answer Section */}
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Input
-                      id={blank.id}
-                      value={answers[blank.id] || ""}
-                      onChange={(e) =>
-                        handleAnswerChange(blank.id, e.target.value)
-                      }
-                      placeholder={`Enter answer for blank ${index + 1}`}
-                      disabled={config.readOnly}
-                      className={cn("pr-10", getInputClass(blank.id))}
-                    />
-                    {config.showCorrectAnswers && answers[blank.id] && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        {isAnswerCorrect(blank.id, answers[blank.id]) ? (
-                          <Check className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-red-600" />
-                        )}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Show user answer in student mode */}
-                  {config.mode === "student" && answers[blank.id] && (
-                    <div className="text-sm p-2 bg-gray-100 dark:bg-gray-800 rounded">
-                      <p className="text-gray-600 dark:text-gray-400">
-                        <strong>Your answer:</strong>
-                        <span className="font-medium">{answers[blank.id]}</span>
-                      </p>
+        {/* Marks Display */}
+        {config.showMarks && (
+          <Badge variant="secondary" className="ml-2">
+            {question.marks} mark{question.marks !== 1 ? "s" : ""}
+          </Badge>
+        )}
+      </div>
+
+      {/* Blanks Summary (for display/edit mode) */}
+      {(config.mode === "display" || config.mode === "edit") &&
+        question.blanks.length > 0 && (
+          <div className=" p-3 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Blanks:
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {question.blanks
+                .sort((a, b) => a.sno - b.sno)
+                .map((blank) => (
+                  <div key={blank.id} className="text-xs p-2 rounded border">
+                    <div className="font-medium">
+                      Blank {blank.sno} ({blank.type})
                     </div>
-                  )}
-                </div>
-
-                {/* Expected answers in display modes */}
-                {config.showCorrectAnswers && (
-                  <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                    <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-1">
-                      Expected answer(s):
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {blank.answers.map(
-                        (answer: string, answerIndex: number) => (
-                          <Badge
-                            key={answerIndex}
-                            variant="outline"
-                            className="text-xs bg-green-100 dark:bg-green-800"
-                          >
-                            {answer}
-                          </Badge>
-                        ),
-                      )}
+                    <div className="text-gray-600 dark:text-gray-300">
+                      Answers: {blank.answers.join(", ")}
                     </div>
                   </div>
-                )}
-              </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+      {/* Additional Information */}
+      <div className="space-y-2">
+        {/* Hint */}
+        {config.showHint && question.hint && (
+          <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+            <strong>Hint:</strong> {question.hint}
+          </div>
+        )}
+
+        {/* Configuration Info */}
+        {config.mode === "display" && (
+          <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+            {question.strictMatch && (
+              <Badge variant="outline" className="text-xs">
+                Strict Matching
+              </Badge>
+            )}
+            {question.llmEval && (
+              <Badge variant="outline" className="text-xs">
+                AI Evaluation
+              </Badge>
+            )}
+            <span>
+              {question.blanks.length} blank
+              {question.blanks.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+        )}
+
+        {/* Topics */}
+        {config.showTopics && question.topics.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {question.topics.map((topic) => (
+              <Badge key={topic.id} variant="outline" className="text-xs">
+                {topic.name}
+              </Badge>
             ))}
           </div>
-          {/* Show explanation in student mode */}
-          {config.mode === "student" && question.explanation && (
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
-                <Lightbulb className="w-4 h-4" />
-                Explanation
-              </h4>
-              <div className="text-sm text-blue-800 dark:text-blue-200">
-                <ContentPreview
-                  content={question.explanation}
-                  className="border-none p-0 bg-transparent"
-                />
-              </div>
-            </div>
-          )}
-          {/* Evaluation method indicator */}
-          {!config.compact && (
-            <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex gap-4">
-              <span>
-                Matching: {question.strictMatch ? "Strict" : "Flexible"}
-              </span>
-              {question.llmEval && <span>LLM Evaluation: Enabled</span>}
-            </div>
-          )}
-        </>
-      )}
+        )}
+
+        {/* Difficulty and Bloom's Taxonomy */}
+        {(config.showDifficulty || config.showBloomsTaxonomy) && (
+          <div className="flex gap-2">
+            {config.showDifficulty && (
+              <Badge variant="secondary" className="text-xs">
+                {question.difficulty}
+              </Badge>
+            )}
+            {config.showBloomsTaxonomy && (
+              <Badge variant="secondary" className="text-xs">
+                {question.bloomsTaxonomy}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Explanation */}
+        {config.showExplanation && question.explanation && (
+          <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded">
+            <strong>Explanation:</strong> {question.explanation}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
+export default FillUpRenderer;

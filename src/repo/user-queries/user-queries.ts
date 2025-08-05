@@ -82,11 +82,6 @@ const userQueries = {
       ? response.data
       : response.data.data || [];
   },
-
-  fetchAllStaff: async (): Promise<User[]> => {
-    const response = await axiosInstance.get("/api/user/faculty/all");
-    return response.data;
-  },
 };
 
 export default userQueries;

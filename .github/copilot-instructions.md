@@ -22,7 +22,17 @@ Use `axiosInstance` from `src/lib/axios/axios-client.ts` for making API requests
 ### Code Style
 - Modularize the code and keep it clean.
 - Strictly use TypeScript for type safety.
+- Strictly donot use `any` or `unknown` type.
 
 ### Package Management
 - Use `pnpm` for package management.
 
+### Documentation
+- Use JSDoc comments for documenting functions and components.
+- Keep the documentation up-to-date with the code changes.
+
+### Files and Directories
+- Follow the existing directory structure.
+- Do not create new directories unless absolutely necessary.
+- Create local components in the same directory as the parent component.
+- Create local hooks, utils, types and constants in the same directory as the parent component.

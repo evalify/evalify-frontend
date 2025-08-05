@@ -1,10 +1,10 @@
-import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
+import { TrueFalseQuestion } from "@/components/question-creation/question-types/true-false";
 import { useEffect, useState, useCallback } from "react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Check, X } from "lucide-react";
-import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
+import { QuestionSettings } from "@/components/question-creation/settings-types/settings-types";
 import { cn } from "@/lib/utils";
 
 interface CreateTrueFalseQuestionProps {

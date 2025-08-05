@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -32,7 +33,7 @@ interface QuizTableProps {
 
 const getStatusConfig = (status: QuizData["status"]) => {
   switch (status) {
-    case "LIVE":
+    case "ACTIVE":
       return {
         badge: "bg-green-500 hover:bg-green-600 text-white",
         icon: Play,
@@ -112,10 +113,20 @@ const QuizTable: React.FC<QuizTableProps> = ({
               const StatusIcon = statusConfig.icon;
               const startDate = new Date(quiz.startTime);
               const endDate = new Date(quiz.endTime);
+              const now = Date.now();
 
-              const isLive = quiz.status === "LIVE";
+              // Check if instructions should be accessible (5 minutes before start)
+              const instructionsAccessTime = new Date(
+                startDate.getTime() - 5 * 60 * 1000,
+              );
+              const canAccessInstructions =
+                now >= instructionsAccessTime.getTime() &&
+                (quiz.status === "UPCOMING" || quiz.status === "ACTIVE");
+
+              const isActive = quiz.status === "ACTIVE";
               const isCompleted = quiz.status === "COMPLETED";
-              const canTakeQuiz = isLive && onTakeQuiz;
+              const canTakeQuiz =
+                isActive && now >= startDate.getTime() && onTakeQuiz;
               const canViewResults = isCompleted && onViewResults;
 
               return (
@@ -198,30 +209,35 @@ const QuizTable: React.FC<QuizTableProps> = ({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
+                      {/* Instructions Button - 5 minutes before quiz */}
+                      {canAccessInstructions && (
+                        <Link href={`/quiz/${quiz.id}/instructions`}>
+                          <Button variant="outline" size="sm" className="h-8">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Instructions
+                          </Button>
+                        </Link>
+                      )}
+
                       {canTakeQuiz && (
-                        <Button
-                          onClick={() => onTakeQuiz(quiz.id)}
-                          size="sm"
-                          className="h-8"
-                        >
-                          <Play className="h-3 w-3 mr-1" />
-                          Take
-                        </Button>
+                        <Link href={`/take-quiz/${quiz.id}`}>
+                          <Button size="sm" className="h-8">
+                            <Play className="h-3 w-3 mr-1" />
+                            Take
+                          </Button>
+                        </Link>
                       )}
 
                       {canViewResults && (
-                        <Button
-                          onClick={() => onViewResults(quiz.id)}
-                          variant="outline"
-                          size="sm"
-                          className="h-8"
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Results
-                        </Button>
+                        <Link href={`/results/${quiz.id}`}>
+                          <Button variant="outline" size="sm" className="h-8">
+                            <Eye className="h-3 w-3 mr-1" />
+                            Results
+                          </Button>
+                        </Link>
                       )}
 
-                      {quiz.status === "UPCOMING" && (
+                      {quiz.status === "UPCOMING" && !canAccessInstructions && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -232,6 +248,19 @@ const QuizTable: React.FC<QuizTableProps> = ({
                           Upcoming
                         </Button>
                       )}
+
+                      {quiz.status === "ACTIVE" &&
+                        now < startDate.getTime() && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            disabled
+                          >
+                            <Clock className="h-3 w-3 mr-1" />
+                            Starting Soon
+                          </Button>
+                        )}
 
                       {quiz.status === "MISSED" && (
                         <Button

@@ -1,4 +1,4 @@
-import { MCQ } from "@/components/question-creation-new/question-types/mcq";
+import { MCQ } from "@/components/question-creation/question-types/mcq";
 import { useEffect, useState, useCallback } from "react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import {
   Edit3,
   Check,
 } from "lucide-react";
-import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
+import { QuestionSettings } from "@/components/question-creation/settings-types/settings-types";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 

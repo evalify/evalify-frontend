@@ -1,4 +1,6 @@
-// Question Types based on backend enum
+/**
+ * Question types based on backend enum
+ */
 export enum QuestionTypes {
   MCQ = "MCQ",
   MMCQ = "MMCQ",
@@ -25,160 +27,183 @@ export enum Difficulty {
   HARD = "HARD",
 }
 
-// Base Question Interface - using backend format directly
+/**
+ * Topic interface as received from backend
+ */
+export interface Topic {
+  id: string;
+  name: string;
+}
+
+/**
+ * Base question interface matching backend DTO structure exactly
+ */
 export interface BaseQuestion {
-  id?: string;
   question: string;
-  explanation?: string | null;
-  hintText?: string | null;
+  questionId: string;
+  hint?: string | null;
+  marks: number;
   bloomsTaxonomy: string;
   co: number;
   difficulty: string;
-  marks: number;
-  hint?: string;
-  bank?: {
-    id: string;
-    name: string;
-  };
-  topics?: {
-    id: string;
-    name: string;
-  }[];
+  explanation?: string | null;
+  type: string;
+  topics: Topic[];
 }
 
-// MCQ Option Interface - backend format
+/**
+ * MCQ Option interface matching backend structure
+ */
 export interface MCQOption {
-  id?: string | null;
+  id: string | null;
   text: string;
   isCorrect: boolean;
 }
 
-// Specific Question Types
+/**
+ * MCQ Question interface
+ */
 export interface MCQQuestion extends BaseQuestion {
-  type: QuestionTypes.MCQ;
+  type: "MCQ";
   options: MCQOption[];
 }
 
+/**
+ * MMCQ (Multiple MCQ) Question interface
+ */
 export interface MMCQQuestion extends BaseQuestion {
-  type: QuestionTypes.MMCQ;
+  type: "MMCQ";
   options: MCQOption[];
 }
 
+/**
+ * True/False Question interface
+ */
 export interface TrueFalseQuestion extends BaseQuestion {
-  type: QuestionTypes.TRUEFALSE;
+  type: "TRUEFALSE";
   answers: boolean;
 }
 
+/**
+ * Blank interface for Fill Up questions matching new backend structure
+ */
 export interface Blank {
-  id: string;
+  id: number;
+  type: "STRING" | "INTEGER";
   answers: string[];
+  sno: number;
 }
 
+/**
+ * Fill Up Question interface
+ */
 export interface FillUpQuestion extends BaseQuestion {
-  type: QuestionTypes.FILL_UP;
-  strictMatch?: boolean;
-  llmEval?: boolean | null;
-  template?: string;
+  type: "FILL_UP";
   blanks: Blank[];
-}
-
-export interface MatchPairItem {
-  id?: string;
-  text: string;
-}
-
-export interface MatchPair {
-  leftPair: MatchPairItem;
-  rightPair: MatchPairItem;
-}
-
-export interface MatchTheFollowingQuestion extends BaseQuestion {
-  type: QuestionTypes.MATCH_THE_FOLLOWING;
-  keys: MatchPair[];
-}
-
-export interface DescriptiveQuestion extends BaseQuestion {
-  type: QuestionTypes.DESCRIPTIVE;
-  expectedAnswer?: string;
-  strictness?: number;
-  guidelines?: string;
-}
-
-export interface FileUploadQuestion extends BaseQuestion {
-  type: QuestionTypes.FILE_UPLOAD;
-  expectedAnswer?: string;
-  strictness?: number;
-  guidelines?: string;
-}
-
-export interface TestCase {
-  code: string; // Backend sends code to execute
-  tags: string; // Backend sends tags like "HIDDEN", "SAMPLE"
-  isMinimal: boolean; // Backend sends isMinimal flag
-  language: string; // Backend sends language for each test case
-}
-
-export interface CodingQuestion extends BaseQuestion {
-  type: QuestionTypes.CODING;
-  driverCode?: string;
-  boilerCode?: string;
-  testcases?: TestCase[];
-  language?: string[];
-  answer?: string | null;
   strictMatch?: boolean;
   llmEval?: boolean;
 }
 
-// Union type for all questions
+/**
+ * Descriptive Question interface
+ */
+export interface DescriptiveQuestion extends BaseQuestion {
+  type: "DESCRIPTIVE";
+  expectedAnswer: string;
+  strictness: number;
+  guidelines: string;
+}
+
+/**
+ * File Upload Question interface
+ */
+export interface FileUploadQuestion extends BaseQuestion {
+  type: "FILE_UPLOAD";
+  expectedAnswer?: string;
+  strictness?: number;
+  guidelines?: string;
+  allowedFileTypes?: string[];
+  maxFileSize?: number;
+}
+
+/**
+ * Key-Value pair for Match the Following questions
+ */
+export interface KeyValueItem {
+  id: string;
+  text: string;
+}
+
+/**
+ * Key-Value structure for Match the Following questions
+ */
+export interface KeyValues {
+  left: KeyValueItem[];
+  right: KeyValueItem[];
+}
+
+/**
+ * Match pair for storing correct answers
+ */
+export interface MatchPair {
+  leftPair: string;
+  rightPair: string[];
+}
+
+/**
+ * Match the Following Question interface
+ */
+export interface MatchTheFollowingQuestion extends BaseQuestion {
+  type: "MATCH_THE_FOLLOWING";
+  keyValues: KeyValues;
+  matchPair: MatchPair[];
+}
+
+/**
+ * Test case for coding questions
+ */
+export interface TestCase {
+  code: string;
+  tags: string;
+  isMinimal: boolean;
+  language: string;
+}
+
+/**
+ * Coding Question interface
+ */
+export interface CodingQuestion extends BaseQuestion {
+  type: "CODING";
+  language: string[];
+  driverCode: string;
+  boilerCode: string;
+  testcases: TestCase[];
+}
+
+/**
+ * Union type for all supported questions
+ */
 export type Question =
   | MCQQuestion
   | MMCQQuestion
   | TrueFalseQuestion
   | FillUpQuestion
-  | MatchTheFollowingQuestion
   | DescriptiveQuestion
   | FileUploadQuestion
+  | MatchTheFollowingQuestion
   | CodingQuestion;
 
-// Component Configuration
-export interface QuestionConfig {
-  mode: "display" | "student" | "edit" | "review";
-  showActions?: boolean;
-  showExplanation?: boolean;
-  showHint?: boolean;
-  showMarks?: boolean;
-  showTopics?: boolean;
-  showDifficulty?: boolean;
-  showBloomsTaxonomy?: boolean;
-  shuffleOptions?: boolean;
-  readOnly?: boolean;
-  compact?: boolean;
-  // For student mode - show user answers and correct answers
-  userAnswers?: QuestionAnswer;
-  showCorrectAnswers?: boolean;
-  showUserAnswers?: boolean;
-  showScore?: boolean;
-  highlightCorrectness?: boolean; // Highlight correct/incorrect answers
-}
-
-// Action handlers
-export interface QuestionActions {
-  onEdit?: (questionId: string) => void;
-  onDelete?: (questionId: string) => void;
-  onEditMarks?: (questionId: string, newMarks: number) => void;
-}
-
-// Component Props
-export interface QuestionRendererProps {
+/**
+ * Question with section info as received from backend
+ */
+export interface QuestionWithSection {
   question: Question;
-  config: QuestionConfig;
-  actions?: QuestionActions;
-  onAnswerChange?: (answer: QuestionAnswer) => void;
-  questionNumber?: number;
-  className?: string;
+  sectionId: string;
 }
 
-// Answer types for different question types
+/**
+ * Answer types for different question types
+ */
 export interface MCQAnswer {
   selectedOption: string;
   isCorrect?: boolean;
@@ -198,14 +223,8 @@ export interface TrueFalseAnswer {
 }
 
 export interface FillUpAnswer {
-  blanks: { [blankId: string]: string };
-  correctBlanks?: { [blankId: string]: string[] };
-  score?: number;
-}
-
-export interface MatchTheFollowingAnswer {
-  matches: { [leftPairId: string]: string };
-  correctMatches?: { [leftPairId: string]: string };
+  blanks: { [blankId: number]: string };
+  correctBlanks?: { [blankId: number]: string[] };
   score?: number;
 }
 
@@ -219,6 +238,12 @@ export interface FileUploadAnswer {
   files: File[];
   score?: number;
   feedback?: string;
+}
+
+export interface MatchTheFollowingAnswer {
+  matches: { [leftPairId: string]: string[] };
+  correctMatches?: { [leftPairId: string]: string[] };
+  score?: number;
 }
 
 export interface CodingAnswer {
@@ -244,7 +269,51 @@ export type QuestionAnswer =
   | MMCQAnswer
   | TrueFalseAnswer
   | FillUpAnswer
-  | MatchTheFollowingAnswer
   | DescriptiveAnswer
   | FileUploadAnswer
+  | MatchTheFollowingAnswer
   | CodingAnswer;
+
+/**
+ * Component Configuration
+ */
+export interface QuestionConfig {
+  mode: "display" | "student" | "edit" | "review";
+  showActions?: boolean;
+  showExplanation?: boolean;
+  showHint?: boolean;
+  showMarks?: boolean;
+  showTopics?: boolean;
+  showDifficulty?: boolean;
+  showBloomsTaxonomy?: boolean;
+  shuffleOptions?: boolean;
+  readOnly?: boolean;
+  compact?: boolean;
+  // For student mode - show user answers and correct answers
+  userAnswers?: QuestionAnswer;
+  showCorrectAnswers?: boolean;
+  showUserAnswers?: boolean;
+  showScore?: boolean;
+  highlightCorrectness?: boolean; // Highlight correct/incorrect answers
+}
+
+/**
+ * Action handlers
+ */
+export interface QuestionActions {
+  onEdit?: (questionId: string) => void;
+  onDelete?: (questionId: string) => void;
+  onEditMarks?: (questionId: string, newMarks: number) => void;
+}
+
+/**
+ * Component Props
+ */
+export interface QuestionRendererProps {
+  question: Question;
+  config: QuestionConfig;
+  actions?: QuestionActions;
+  onAnswerChange?: (answer: QuestionAnswer) => void;
+  questionNumber?: number;
+  className?: string;
+}

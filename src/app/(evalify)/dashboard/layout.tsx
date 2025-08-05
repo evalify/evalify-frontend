@@ -1,6 +1,8 @@
-import React, { ReactNode } from "react";
+"use client";
+import React, { ReactNode, useEffect } from "react";
 import AuthGuard from "@/components/auth/auth-guard";
 import { UserType } from "@/lib/auth/utils";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export default function Layout({
   admin,
@@ -11,6 +13,14 @@ export default function Layout({
   staff: ReactNode;
   student: ReactNode;
 }) {
+  const { open, toggleSidebar } = useSidebar();
+
+  useEffect(() => {
+    if (!open) {
+      toggleSidebar();
+    }
+  }, []);
+
   return (
     <div>
       <AuthGuard

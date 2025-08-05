@@ -1,4 +1,4 @@
-import { CodingQuestion } from "@/components/question-creation-new/question-types/coding-questions";
+import { CodingQuestion } from "@/components/question-creation/question-types/coding-questions";
 import { useEffect, useState, useCallback } from "react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -25,7 +25,7 @@ import {
   TestTube,
   Edit,
 } from "lucide-react";
-import { QuestionSettings } from "@/components/question-creation-new/settings-types/settings-types";
+import { QuestionSettings } from "@/components/question-creation/settings-types/settings-types";
 import CodeEditor from "@/components/ui/code-editor";
 
 interface CreateCodingQuestionProps {

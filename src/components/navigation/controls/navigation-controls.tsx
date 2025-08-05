@@ -3,7 +3,7 @@
 import React from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigation } from "@/hooks/use-navigation";
+import { useNavigation } from "@/hooks/navigation/use-navigation";
 import { cn } from "@/lib/utils";
 
 interface NavigationControlsProps {

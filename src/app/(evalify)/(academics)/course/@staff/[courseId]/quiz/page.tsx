@@ -10,6 +10,7 @@ import { courseQueries } from "@/repo/course-queries/course-queries";
 import QuizRepo from "@/repo/quiz/quiz";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { Course } from "@/types/types";
 import {
   Plus,
   BookOpen,
@@ -21,7 +22,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { use } from "react";
-import { useQuizState } from "@/hooks/use-quiz-state";
+import { useQuizState } from "@/components/quiz/hooks/use-quiz-state";
 
 // Import our new components
 import {
@@ -31,6 +32,7 @@ import {
 import { QuizGrid } from "@/components/quiz/quiz-view/quiz-grid";
 import { QuizTable } from "@/components/quiz/quiz-view/quiz-table";
 import ShareQuizDialog from "@/components/quiz/ShareQuizDialog";
+import { PublishQuizDialog } from "@/components/quiz/PublishQuizDialog";
 
 type Props = {
   params: Promise<{
@@ -48,7 +50,8 @@ interface Quiz {
   status: string;
   isProtected: boolean;
   publishResult: boolean;
-  courseCodes: string[];
+  isPublished: boolean;
+  courseCodes: Course[];
 }
 
 // Define the type for raw quiz data from API
@@ -62,9 +65,9 @@ interface RawQuizData {
   status?: string;
   isProtected?: boolean;
   publishResult?: boolean;
-  courseCodes?: string[];
+  isPublished?: boolean;
+  courseCodes?: Course[];
 }
-
 export default function QuizManagementPage({ params }: Props) {
   const { courseId } = use(params);
   const router = useRouter();
@@ -75,6 +78,12 @@ export default function QuizManagementPage({ params }: Props) {
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [quizToShare, setQuizToShare] = useState<string | null>(null);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [quizToPublish, setQuizToPublish] = useState<{
+    id: string;
+    name: string;
+    isPublished: boolean;
+  } | null>(null);
 
   const {
     viewMode,
@@ -116,6 +125,32 @@ export default function QuizManagementPage({ params }: Props) {
     },
   });
 
+  const publishQuizMutation = useMutation({
+    mutationFn: ({
+      quizId,
+      isPublished,
+    }: {
+      quizId: string;
+      isPublished: boolean;
+    }) =>
+      isPublished
+        ? QuizRepo.unpublishQuiz(quizId)
+        : QuizRepo.publishQuiz(quizId),
+    onSuccess: (_, variables) => {
+      const action = variables.isPublished ? "unpublished" : "published";
+      success(`Quiz ${action} successfully!`);
+      queryClient.invalidateQueries({ queryKey: ["quizzes", courseId] });
+      setPublishDialogOpen(false);
+      setQuizToPublish(null);
+    },
+    onError: (_, variables) => {
+      const action = variables.isPublished ? "unpublish" : "publish";
+      error(`Failed to ${action} quiz. Please try again.`);
+      setPublishDialogOpen(false);
+      setQuizToPublish(null);
+    },
+  });
+
   // Transform quiz data to match our interface
   const transformedQuizzes: Quiz[] = useMemo(() => {
     if (!quizData) return [];
@@ -129,6 +164,7 @@ export default function QuizManagementPage({ params }: Props) {
       status: quiz.status || "DRAFT",
       isProtected: quiz.isProtected || false,
       publishResult: quiz.publishResult || false,
+      isPublished: quiz.isPublished || false,
       courseCodes: quiz.courseCodes || [],
     }));
   }, [quizData]);
@@ -144,8 +180,10 @@ export default function QuizManagementPage({ params }: Props) {
         (quiz) =>
           quiz.name.toLowerCase().includes(searchLower) ||
           quiz.description.toLowerCase().includes(searchLower) ||
-          quiz.courseCodes.some((code) =>
-            code.toLowerCase().includes(searchLower),
+          quiz.courseCodes.some(
+            (course) =>
+              course.name?.toLowerCase().includes(searchLower) ||
+              course.code?.toLowerCase().includes(searchLower),
           ),
       );
     }
@@ -158,8 +196,26 @@ export default function QuizManagementPage({ params }: Props) {
     // Apply course code filter
     if (filters.courseCode.length > 0) {
       result = result.filter((quiz) =>
-        quiz.courseCodes.some((code) => filters.courseCode.includes(code)),
+        quiz.courseCodes.some((course) =>
+          filters.courseCode.includes(course.code || course.name || course.id),
+        ),
       );
+    }
+
+    // Apply publish status filter
+    if (filters.publishStatus.length > 0) {
+      result = result.filter((quiz) => {
+        if (filters.publishStatus.includes("published") && quiz.isPublished) {
+          return true;
+        }
+        if (
+          filters.publishStatus.includes("unpublished") &&
+          !quiz.isPublished
+        ) {
+          return true;
+        }
+        return false;
+      });
     }
 
     // Apply sorting
@@ -200,9 +256,13 @@ export default function QuizManagementPage({ params }: Props) {
   }, [transformedQuizzes]);
 
   const availableCourseCodes = useMemo(() => {
-    const codes = new Set(
-      transformedQuizzes.flatMap((quiz) => quiz.courseCodes),
-    );
+    const codes = new Set<string>();
+    transformedQuizzes.forEach((quiz) => {
+      quiz.courseCodes.forEach((course) => {
+        const displayCode = course.code || course.name || course.id;
+        codes.add(displayCode);
+      });
+    });
     return Array.from(codes);
   }, [transformedQuizzes]);
 
@@ -225,6 +285,8 @@ export default function QuizManagementPage({ params }: Props) {
       scheduled: 0,
       completed: 0,
       draft: 0,
+      published: 0,
+      unpublished: 0,
     };
 
     transformedQuizzes.forEach((quiz) => {
@@ -241,6 +303,12 @@ export default function QuizManagementPage({ params }: Props) {
         case "DRAFT":
           stats.draft++;
           break;
+      }
+
+      if (quiz.isPublished) {
+        stats.published++;
+      } else {
+        stats.unpublished++;
       }
     });
 
@@ -292,11 +360,31 @@ export default function QuizManagementPage({ params }: Props) {
     setShareDialogOpen(true);
   }, []);
 
+  const handlePublishToggle = useCallback(
+    (quizId: string, isPublished: boolean) => {
+      const quiz = transformedQuizzes.find((q) => q.id === quizId);
+      if (quiz) {
+        setQuizToPublish({ id: quizId, name: quiz.name, isPublished });
+        setPublishDialogOpen(true);
+      }
+    },
+    [transformedQuizzes],
+  );
+
   const confirmDeleteQuiz = useCallback(() => {
     if (quizToDelete) {
       deleteQuizMutation.mutate(quizToDelete);
     }
   }, [quizToDelete, deleteQuizMutation]);
+
+  const confirmPublishToggle = useCallback(() => {
+    if (quizToPublish) {
+      publishQuizMutation.mutate({
+        quizId: quizToPublish.id,
+        isPublished: quizToPublish.isPublished,
+      });
+    }
+  }, [quizToPublish, publishQuizMutation]);
 
   // Loading state
   if (courseLoading || quizzesLoading) {
@@ -390,9 +478,9 @@ export default function QuizManagementPage({ params }: Props) {
                 <PlayCircle className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm ">Active</p>
+                <p className="text-sm ">Published</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {quizStats.active}
+                  {quizStats.published}
                 </p>
               </div>
             </div>
@@ -402,13 +490,13 @@ export default function QuizManagementPage({ params }: Props) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Calendar className="h-5 w-5 text-gray-600" />
               </div>
               <div>
-                <p className="text-sm ">Scheduled</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {quizStats.scheduled}
+                <p className="text-sm ">Draft</p>
+                <p className="text-2xl font-bold text-gray-600">
+                  {quizStats.unpublished}
                 </p>
               </div>
             </div>
@@ -457,6 +545,7 @@ export default function QuizManagementPage({ params }: Props) {
           onDelete={handleDeleteQuiz}
           onManage={handleManageQuiz}
           onShare={handleShareQuiz}
+          onPublishToggle={handlePublishToggle}
           isLoading={quizzesLoading}
         />
       ) : (
@@ -468,6 +557,7 @@ export default function QuizManagementPage({ params }: Props) {
           onDelete={handleDeleteQuiz}
           onManage={handleManageQuiz}
           onShare={handleShareQuiz}
+          onPublishToggle={handlePublishToggle}
           isLoading={quizzesLoading}
         />
       )}
@@ -494,6 +584,21 @@ export default function QuizManagementPage({ params }: Props) {
             setShareDialogOpen(false);
             setQuizToShare(null);
           }}
+        />
+      )}
+
+      {/* Publish Quiz Dialog */}
+      {quizToPublish && (
+        <PublishQuizDialog
+          open={publishDialogOpen}
+          onClose={() => {
+            setPublishDialogOpen(false);
+            setQuizToPublish(null);
+          }}
+          onConfirm={confirmPublishToggle}
+          isLoading={publishQuizMutation.isPending}
+          isPublished={quizToPublish.isPublished}
+          quizName={quizToPublish.name}
         />
       )}
     </div>

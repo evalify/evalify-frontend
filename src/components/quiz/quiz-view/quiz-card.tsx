@@ -29,9 +29,12 @@ import {
   Activity,
   Zap,
   Share,
+  Users,
+  EyeOff,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Course } from "@/types/types";
 
 interface QuizCardProps {
   quiz: {
@@ -44,7 +47,8 @@ interface QuizCardProps {
     status: string;
     isProtected: boolean;
     publishResult: boolean;
-    courseCodes: string[];
+    isPublished: boolean;
+    courseCodes: Course[];
   };
   onEdit?: (quizId: string) => void;
   onView?: (quizId: string) => void;
@@ -52,6 +56,7 @@ interface QuizCardProps {
   onDelete?: (quizId: string) => void;
   onManage?: (quizId: string) => void;
   onShare?: (quizId: string) => void;
+  onPublishToggle?: (quizId: string, isPublished: boolean) => void;
   isShared?: boolean;
 }
 
@@ -132,6 +137,7 @@ export function QuizCard({
   onDelete,
   onManage,
   onShare,
+  onPublishToggle,
   isShared = false,
 }: QuizCardProps) {
   const currentStatus =
@@ -209,6 +215,26 @@ export function QuizCard({
           <div className="flex items-center gap-1">
             {/* Security Indicators */}
             <div className="flex items-center gap-1.5">
+              {quiz.isPublished ? (
+                <div className="group/tooltip relative">
+                  <div className="p-1.5 rounded-lg bg-green-100/80 dark:bg-green-900/30 border border-green-200/60 dark:border-green-800/60">
+                    <Users className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs py-1.5 px-2.5 rounded-md opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 font-medium">
+                    Published to Students
+                  </div>
+                </div>
+              ) : (
+                <div className="group/tooltip relative">
+                  <div className="p-1.5 rounded-lg bg-gray-100/80 dark:bg-gray-900/30 border border-gray-200/60 dark:border-gray-800/60">
+                    <EyeOff className="h-3 w-3 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-xs py-1.5 px-2.5 rounded-md opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 font-medium">
+                    Hidden from Students
+                  </div>
+                </div>
+              )}
+
               {quiz.isProtected && (
                 <div className="group/tooltip relative">
                   <div className="p-1.5 rounded-lg bg-amber-100/80 dark:bg-amber-900/30 border border-amber-200/60 dark:border-amber-800/60">
@@ -245,7 +271,10 @@ export function QuizCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 {!isShared && (
-                  <DropdownMenuItem onClick={() => onEdit?.(quiz.id)}>
+                  <DropdownMenuItem
+                    onClick={() => onEdit?.(quiz.id)}
+                    disabled={quiz.isPublished}
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Edit Quiz
                   </DropdownMenuItem>
@@ -260,6 +289,29 @@ export function QuizCard({
                   <DropdownMenuItem onClick={() => onShare?.(quiz.id)}>
                     <Share className="h-4 w-4 mr-2" />
                     Share Quiz
+                  </DropdownMenuItem>
+                )}
+                {!isShared && <DropdownMenuSeparator />}
+                {!isShared && (
+                  <DropdownMenuItem
+                    onClick={() => onPublishToggle?.(quiz.id, quiz.isPublished)}
+                    className={
+                      quiz.isPublished
+                        ? "text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                        : "text-green-600 focus:text-green-600 dark:text-green-400 dark:focus:text-green-400"
+                    }
+                  >
+                    {quiz.isPublished ? (
+                      <>
+                        <EyeOff className="h-4 w-4 mr-2" />
+                        Unpublish Quiz
+                      </>
+                    ) : (
+                      <>
+                        <Users className="h-4 w-4 mr-2" />
+                        Publish Quiz
+                      </>
+                    )}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => onView?.(quiz.id)}>
@@ -280,6 +332,7 @@ export function QuizCard({
                 {!isShared && (
                   <DropdownMenuItem
                     onClick={() => onDelete?.(quiz.id)}
+                    disabled={quiz.isPublished}
                     className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -306,14 +359,14 @@ export function QuizCard({
         {/* Course Codes */}
         {quiz.courseCodes.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
-            {quiz.courseCodes.slice(0, 2).map((code) => (
+            {quiz.courseCodes.slice(0, 2).map((course, index) => (
               <div
-                key={code}
+                key={course.id || index}
                 className="inline-flex items-center gap-1.5 bg-neutral-100/80 dark:bg-neutral-800/50 border border-neutral-200/60 dark:border-neutral-700/60 rounded-lg px-2.5 py-1.5"
               >
                 <BookOpen className="h-3 w-3 text-neutral-500 dark:text-neutral-400" />
                 <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                  {code}
+                  {course.code || course.name || course.id}
                 </span>
               </div>
             ))}
@@ -396,6 +449,7 @@ export function QuizCard({
               variant="ghost"
               className="px-3"
               onClick={() => onEdit?.(quiz.id)}
+              disabled={quiz.isPublished}
             >
               <Settings className="h-3.5 w-3.5" />
             </Button>

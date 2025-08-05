@@ -5,27 +5,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import QuestionFactory from "@/components/question-creation-new/question-factory";
-import QuestionSettings from "@/components/question-creation-new/question-settings";
+import QuestionFactory from "@/components/question-creation/question-factory";
+import QuestionSettings from "@/components/question-creation/question-settings";
 import QuestionTypeSelector, {
   QuestionType,
-} from "@/components/question-creation-new/question-type-selector";
+} from "@/components/question-creation/question-type-selector";
 import {
   Question,
   Topic,
-} from "@/components/question-creation-new/question-types/base-question";
-import { MCQ } from "@/components/question-creation-new/question-types/mcq";
-import { DescriptiveQuestion } from "@/components/question-creation-new/question-types/descriptive-question";
-import { TrueFalseQuestion } from "@/components/question-creation-new/question-types/true-false";
-import { FillUpQuestion } from "@/components/question-creation-new/question-types/fill-up";
-import { validateQuestion } from "@/components/question-creation-new/validation/validation-factory";
-import { ValidationError } from "@/components/question-creation-new/validation/validation-factory";
-import { QuestionSettings as QuestionSettingsType } from "@/components/question-creation-new/settings-types/settings-types";
+} from "@/components/question-creation/question-types/base-question";
+import { MCQ } from "@/components/question-creation/question-types/mcq";
+import { DescriptiveQuestion } from "@/components/question-creation/question-types/descriptive-question";
+import { TrueFalseQuestion } from "@/components/question-creation/question-types/true-false";
+import { FillUpQuestion } from "@/components/question-creation/question-types/fill-up";
+import { validateQuestion } from "@/components/question-creation/validation/validation-factory";
+import { ValidationError } from "@/components/question-creation/validation/validation-factory";
+import { QuestionSettings as QuestionSettingsType } from "@/components/question-creation/settings-types/settings-types";
 import { useToast } from "@/hooks/use-toast";
 import { questionsService } from "@/repo/question-queries/questions";
-import ValidationModal from "@/components/question-creation-new/validation-modal";
-import { QuestionCreationSkeleton } from "@/components/question-creation-new/fallbacks";
-import { QuestionCreationError } from "@/components/question-creation-new/fallbacks";
+import ValidationModal from "@/components/question-creation/validation-modal";
+import { QuestionCreationSkeleton } from "@/components/question-creation/fallbacks";
+import { QuestionCreationError } from "@/components/question-creation/fallbacks";
 import Bank from "@/repo/bank/bank";
 import Quiz from "@/repo/quiz/quiz";
 
@@ -66,6 +66,7 @@ export default function QuestionCreation({
 
   const [selectedType, setSelectedType] = useState<QuestionType>("MCQ");
   const [settings, setSettings] = useState<QuestionSettingsType>({
+    isQuiz: config.isQuiz,
     marks: 1,
     difficulty: "MEDIUM",
     bloomsTaxonomy: "REMEMBER",
@@ -97,7 +98,10 @@ export default function QuestionCreation({
     },
     quiz: {
       create: (quizId: string, questionData: Record<string, unknown>) =>
-        Quiz.createQuizQuestion(quizId, questionData),
+        Quiz.createQuizQuestion(quizId, {
+          ...questionData,
+          sectionId: config.sectionId,
+        }),
       edit: (
         quizId: string,
         questionId: string,

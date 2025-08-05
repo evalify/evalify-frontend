@@ -1,4 +1,11 @@
+import { Difficulty, QuestionTypes } from "@/components/render-questions";
 import axiosInstance from "@/lib/axios/axios-client";
+import {
+  AddQuestionsToQuizDTO,
+  BankQuestionsReturnDTO,
+  QuestionFilters,
+} from "@/components/quiz/types/quiz-types";
+import { Course, Batch, Lab } from "@/types/types";
 
 // DTOs matching backend structure
 export interface CreateQuizDTO {
@@ -66,11 +73,15 @@ export interface QuizData {
   autoSubmit: boolean;
   publishResult: boolean;
   publishQuiz: boolean;
+  isPublished: boolean;
   password?: string;
   courseIds: string[];
+  courseCodes: Course[]; // Changed from string[] to Course[]
   batchIds: string[];
+  batches: Batch[]; // Added batches array
   studentIds: string[];
   labIds: string[];
+  labs: Lab[]; // Added labs array
   quizTags: string[];
   createdAt?: string;
   createdBy?: string;
@@ -96,7 +107,6 @@ class Quiz {
     const response = await axiosInstance.post("/api/quiz", quizData);
     return response.data;
   }
-
 
   static async getQuizById(quizId: string) {
     const response = await axiosInstance.get(`/api/quiz/${quizId}`);
@@ -335,6 +345,16 @@ class Quiz {
 
   static async getQuizUsers(quizId: string) {
     const response = await axiosInstance.get(`/api/quiz/${quizId}/share`);
+    return response.data;
+  }
+
+  static async publishQuiz(quizId: string) {
+    const response = await axiosInstance.patch(`/api/quiz/${quizId}/publish`);
+    return response.data;
+  }
+
+  static async unpublishQuiz(quizId: string) {
+    const response = await axiosInstance.delete(`/api/quiz/${quizId}/publish`);
     return response.data;
   }
 }
