@@ -52,7 +52,6 @@ const QuizInstructionsPage = (props: Props) => {
     enabled: !!quizId,
   });
 
-  // Update current time every second for precise timing
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(Date.now());

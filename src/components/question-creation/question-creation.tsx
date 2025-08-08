@@ -72,7 +72,7 @@ export default function QuestionCreation({
     bloomsTaxonomy: "REMEMBER",
     co: 1,
     negativeMarks: 1,
-    topicIds: config.isQuiz ? [] : [], // For quiz, topics are handled differently
+    topicIds: config.isQuiz ? [] : [],
   });
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -83,7 +83,6 @@ export default function QuestionCreation({
   const { success, error } = useToast();
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
-  // Endpoints configuration based on isQuiz flag
   const endpoints = {
     bank: {
       create: (bankId: string, questionData: Record<string, unknown>) =>
@@ -330,9 +329,7 @@ export default function QuestionCreation({
           ? (currentQuestion as TrueFalseQuestion).answer !== null &&
             (currentQuestion as TrueFalseQuestion).answer !== undefined
           : selectedType === "DESCRIPTIVE"
-            ? Boolean(
-                (currentQuestion as DescriptiveQuestion).expectedAnswer?.trim(),
-              )
+            ? Boolean(currentQuestion.question?.trim()) // Only require question text for descriptive
             : true)
     : false;
 
