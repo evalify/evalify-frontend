@@ -304,7 +304,7 @@ const Page = ({ params }: Props) => {
       // Navigate to question edit page with quiz and course context
       const { courseId } = param;
       router.push(
-        `/question/${questionId}/edit?quizId=${quizId}&courseId=${courseId}`,
+        `/quiz/question/${questionId}/edit?quizId=${quizId}&courseId=${courseId}`,
       );
     },
     [router, quizId, param],
