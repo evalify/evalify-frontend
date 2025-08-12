@@ -26,7 +26,7 @@ import {
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Course name is required." }),
-  code: z.string().min(1, { message: "Course code is required." }),
+  code: z.string().optional(),
   description: z.string().optional(),
   type: z.nativeEnum(CourseType),
 });
@@ -86,10 +86,8 @@ export function CourseForm({ onSubmit, isLoading, course }: CourseFormProps) {
             <FormItem>
               <FormLabel>Type</FormLabel>
               <Select
-                onValueChange={(value) =>
-                  field.onChange(CourseType[value as keyof typeof CourseType])
-                }
-                defaultValue={CourseType[field.value]}
+                onValueChange={(value) => field.onChange(value as CourseType)}
+                defaultValue={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -97,13 +95,11 @@ export function CourseForm({ onSubmit, isLoading, course }: CourseFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.keys(CourseType)
-                    .filter((key) => isNaN(Number(key)))
-                    .map((key) => (
-                      <SelectItem key={key} value={key}>
-                        {key}
-                      </SelectItem>
-                    ))}
+                  {Object.values(CourseType).map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
