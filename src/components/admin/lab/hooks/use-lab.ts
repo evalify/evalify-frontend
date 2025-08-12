@@ -41,7 +41,7 @@ export const useLabs = (
         params.query = searchQuery;
       }
 
-      const endpoint = searchQuery ? "/lab/search" : "/lab";
+      const endpoint = searchQuery ? "/api/lab/search" : "/api/lab";
       const response = await axiosInstance.get(endpoint, { params });
       const backendResponse = response.data;
 

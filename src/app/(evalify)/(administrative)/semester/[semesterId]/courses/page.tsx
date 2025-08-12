@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import semesterQueries from "@/repo/semester-queries/semester-queries";
-import { Course, User } from "@/types/types";
+import { Course, User, CreateCourseRequest } from "@/types/types";
 import { useToast } from "@/hooks/use-toast";
 import { CourseDialog } from "@/components/admin/semesters/courses/course-dialog";
 import { AddManagerDialog } from "@/components/admin/semesters/managers/add-manager-dialog";
@@ -106,17 +106,8 @@ export default function SemesterCoursesPage() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (course: Course) => {
-      const newCourse: Course = {
-        id: "",
-        name: course.name,
-        code: course.code,
-        description: course.description,
-        type: course.type,
-        createdAt: course.createdAt,
-        updatedAt: course.updatedAt,
-      };
-      return semesterQueries.createCourseForSemester(semesterId, newCourse);
+    mutationFn: (course: CreateCourseRequest) => {
+      return semesterQueries.createCourseForSemester(semesterId, course);
     },
     onSuccess: () => handleMutationSuccess("created"),
     onError: (actionError) => handleMutationError(actionError, "create"),
