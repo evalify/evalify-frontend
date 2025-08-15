@@ -140,6 +140,9 @@ importers:
       dnd-kit:
         specifier: ^0.0.2
         version: 0.0.2
+      dompurify:
+        specifier: ^3.2.6
+        version: 3.2.6
       framer-motion:
         specifier: ^12.11.4
         version: 12.23.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

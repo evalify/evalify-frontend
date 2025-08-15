@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { use, useMemo, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
@@ -23,10 +23,22 @@ import {
 } from "lucide-react";
 
 import Quiz from "@/repo/quiz/quiz";
+import StudentQuiz from "@/repo/student/quiz/student-quiz";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { Course, Lab } from "@/types/types";
 
 type Props = {
@@ -40,6 +52,9 @@ const QuizInstructionsPage = (props: Props) => {
   const { quizId } = use(params);
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [password, setPassword] = useState("");
+  const { success, error: showErrorToast } = useToast();
 
   const {
     data: quizData,
@@ -50,6 +65,23 @@ const QuizInstructionsPage = (props: Props) => {
     queryFn: async () => await Quiz.getQuizById(quizId),
     refetchOnWindowFocus: false,
     enabled: !!quizId,
+  });
+
+  const startQuizMutation = useMutation({
+    mutationFn: async (password?: string) => {
+      return await StudentQuiz.startQuiz(quizId, password);
+    },
+    onSuccess: () => {
+      success("Quiz started successfully!");
+      router.push(`/exam/quiz/${quizId}`);
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message ||
+        "Failed to start quiz. Please check your password and try again.";
+      showErrorToast(errorMessage);
+    },
   });
 
   // Update current time every second for precise timing
@@ -123,10 +155,58 @@ const QuizInstructionsPage = (props: Props) => {
   }, [quizData, isQuizUpcoming, currentTime]);
 
   const handleStartQuiz = () => {
-    router.push(`/exam/quiz/${quizId}`);
+    if (quizData?.isProtected) {
+      setShowPasswordDialog(true);
+    } else {
+      startQuizMutation.mutate(undefined);
+    }
   };
 
-  if (error || !quizData) {
+  const handlePasswordSubmit = () => {
+    if (!password.trim()) {
+      showErrorToast("Please enter the quiz password");
+      return;
+    }
+
+    startQuizMutation.mutate(password);
+    setShowPasswordDialog(false);
+    setPassword("");
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordDialog(false);
+    setPassword("");
+  };
+
+  if (!quizData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-muted border-t-primary mx-auto"></div>
+              <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-t-primary/30 mx-auto animate-ping"></div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-foreground">
+                Starting Your Quiz
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Setting up your exam environment and loading questions...
+              </p>
+            </div>
+            <div className="flex justify-center space-x-1">
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         <Card className="max-w-lg w-full mx-4">
@@ -255,6 +335,32 @@ const QuizInstructionsPage = (props: Props) => {
                   "EEEE, MMMM dd, yyyy 'at' hh:mm a",
                 )}
                 .
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {quizData.status === "COMPLETED" && (
+            <Alert className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/20">
+              <CheckCircle className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <AlertTitle className="text-purple-800 dark:text-purple-200 text-sm font-bold">
+                Quiz Completed
+              </AlertTitle>
+              <AlertDescription className="text-purple-700 dark:text-purple-300 text-xs">
+                You have successfully completed this quiz. You are viewing these
+                instructions for reference.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {quizData.status === "MISSED" && (
+            <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/20">
+              <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <AlertTitle className="text-orange-800 dark:text-orange-200 text-sm font-bold">
+                Quiz Missed
+              </AlertTitle>
+              <AlertDescription className="text-orange-700 dark:text-orange-300 text-xs">
+                This quiz has ended. You are viewing these instructions for
+                reference.
               </AlertDescription>
             </Alert>
           )}
@@ -578,12 +684,21 @@ const QuizInstructionsPage = (props: Props) => {
                   size="lg"
                   className="relative px-12 py-4 text-xl font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-0 rounded-2xl shadow-2xl transform transition-all duration-200 hover:scale-105 hover:shadow-green-500/25"
                   onClick={handleStartQuiz}
+                  disabled={startQuizMutation.isPending}
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-white/20 rounded-full">
-                      <Play className="h-6 w-6" />
+                      {startQuizMutation.isPending ? (
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      ) : (
+                        <Play className="h-6 w-6" />
+                      )}
                     </div>
-                    <span>Start Quiz Now</span>
+                    <span>
+                      {startQuizMutation.isPending
+                        ? "Starting..."
+                        : "Start Quiz Now"}
+                    </span>
                   </div>
                 </Button>
               </div>
@@ -600,6 +715,55 @@ const QuizInstructionsPage = (props: Props) => {
                       <Clock className="h-6 w-6" />
                     </div>
                     <span>Quiz Not Yet Available</span>
+                  </div>
+                </Button>
+              </div>
+            ) : quizData.status === "COMPLETED" ? (
+              <div className="flex gap-4">
+                <div className="relative">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => router.push(`/results/${quizId}`)}
+                    className="px-8 py-4 text-lg font-semibold bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-2xl shadow-lg text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-200 dark:bg-purple-800 rounded-full">
+                        <Eye className="h-5 w-5" />
+                      </div>
+                      <span>View Results</span>
+                    </div>
+                  </Button>
+                </div>
+                <div className="relative">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => router.push("/quiz")}
+                    className="px-8 py-4 text-lg font-semibold bg-slate-50 dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-2xl shadow-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-slate-200 dark:bg-slate-800 rounded-full">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <span>Back to Quizzes</span>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+            ) : quizData.status === "MISSED" ? (
+              <div className="relative">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => router.push("/quiz")}
+                  className="px-12 py-4 text-xl font-semibold bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-300 dark:border-orange-700 rounded-2xl shadow-lg text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-200 dark:bg-orange-800 rounded-full">
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <span>Back to Quizzes</span>
                   </div>
                 </Button>
               </div>
@@ -638,6 +802,24 @@ const QuizInstructionsPage = (props: Props) => {
               </p>
             </div>
           )}
+
+          {quizData.status === "COMPLETED" && (
+            <div className="text-center mt-6">
+              <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+                ✅ Quiz completed successfully! You can review these
+                instructions anytime.
+              </p>
+            </div>
+          )}
+
+          {quizData.status === "MISSED" && (
+            <div className="text-center mt-6">
+              <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">
+                ⏰ This quiz has ended. You can review these instructions for
+                reference.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer Note */}
@@ -648,6 +830,65 @@ const QuizInstructionsPage = (props: Props) => {
           </p>
         </div>
       </div>
+
+      {/* Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              Protected Quiz
+            </DialogTitle>
+            <DialogDescription>
+              This quiz is password protected. Please enter the password
+              provided by your instructor to start the quiz.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="quiz-password">Quiz Password</Label>
+              <Input
+                id="quiz-password"
+                type="password"
+                placeholder="Enter quiz password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handlePasswordSubmit();
+                  }
+                }}
+                className="w-full"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handlePasswordCancel}
+              disabled={startQuizMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePasswordSubmit}
+              disabled={startQuizMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {startQuizMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Starting...
+                </div>
+              ) : (
+                "Start Quiz"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

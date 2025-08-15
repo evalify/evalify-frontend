@@ -27,7 +27,6 @@ import { QuizData } from "../quiz/quiz-card";
 
 interface QuizTableProps {
   quizzes: QuizData[];
-  onTakeQuiz?: (quizId: string) => void;
   onViewResults?: (quizId: string) => void;
 }
 
@@ -35,22 +34,26 @@ const getStatusConfig = (status: QuizData["status"]) => {
   switch (status) {
     case "ACTIVE":
       return {
-        badge: "bg-green-500 hover:bg-green-600 text-white",
+        badge:
+          "bg-emerald-100/80 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200 border border-emerald-200/60 dark:border-emerald-700/40",
         icon: Play,
       };
     case "UPCOMING":
       return {
-        badge: "bg-blue-500 hover:bg-blue-600 text-white",
+        badge:
+          "bg-blue-100/80 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 border border-blue-200/60 dark:border-blue-700/40",
         icon: Clock,
       };
     case "COMPLETED":
       return {
-        badge: "bg-emerald-500 hover:bg-emerald-600 text-white",
+        badge:
+          "bg-violet-100/80 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200 border border-violet-200/60 dark:border-violet-700/40",
         icon: CheckCircle,
       };
     case "MISSED":
       return {
-        badge: "bg-red-500 hover:bg-red-600 text-white",
+        badge:
+          "bg-amber-100/80 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 border border-amber-200/60 dark:border-amber-700/40",
         icon: XCircle,
       };
     default:
@@ -73,11 +76,7 @@ const formatDuration = (duration: number) => {
   return `${minutes}m`;
 };
 
-const QuizTable: React.FC<QuizTableProps> = ({
-  quizzes,
-  onTakeQuiz,
-  onViewResults,
-}) => {
+const QuizTable: React.FC<QuizTableProps> = ({ quizzes, onViewResults }) => {
   return (
     <div className="border rounded-lg">
       <Table>
@@ -123,10 +122,15 @@ const QuizTable: React.FC<QuizTableProps> = ({
                 now >= instructionsAccessTime.getTime() &&
                 (quiz.status === "UPCOMING" || quiz.status === "ACTIVE");
 
+              // Allow instructions access for completed/missed quizzes for review
+              const canViewInstructions =
+                canAccessInstructions ||
+                quiz.status === "COMPLETED" ||
+                quiz.status === "MISSED";
+
               const isActive = quiz.status === "ACTIVE";
               const isCompleted = quiz.status === "COMPLETED";
-              const canTakeQuiz =
-                isActive && now >= startDate.getTime() && onTakeQuiz;
+              const canTakeQuiz = isActive && now >= startDate.getTime();
               const canViewResults = isCompleted && onViewResults;
 
               return (
@@ -209,21 +213,24 @@ const QuizTable: React.FC<QuizTableProps> = ({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end">
-                      {/* Instructions Button - 5 minutes before quiz */}
-                      {canAccessInstructions && (
+                      {/* Instructions Button - 5 minutes before quiz or for review, but not when Start Quiz is visible */}
+                      {canViewInstructions && !canTakeQuiz && (
                         <Link href={`/quiz/${quiz.id}/instructions`}>
                           <Button variant="outline" size="sm" className="h-8">
                             <FileText className="h-3 w-3 mr-1" />
-                            Instructions
+                            {quiz.status === "COMPLETED" ||
+                            quiz.status === "MISSED"
+                              ? "Review"
+                              : "Instructions"}
                           </Button>
                         </Link>
                       )}
 
                       {canTakeQuiz && (
-                        <Link href={`/take-quiz/${quiz.id}`}>
+                        <Link href={`/quiz/${quiz.id}/instructions`}>
                           <Button size="sm" className="h-8">
                             <Play className="h-3 w-3 mr-1" />
-                            Take
+                            Start Quiz
                           </Button>
                         </Link>
                       )}
@@ -236,6 +243,19 @@ const QuizTable: React.FC<QuizTableProps> = ({
                           </Button>
                         </Link>
                       )}
+
+                      {/* Additional Review Instructions for completed/missed if not already shown */}
+                      {(quiz.status === "COMPLETED" ||
+                        quiz.status === "MISSED") &&
+                        !canViewInstructions &&
+                        !canTakeQuiz && (
+                          <Link href={`/quiz/${quiz.id}/instructions`}>
+                            <Button variant="outline" size="sm" className="h-8">
+                              <FileText className="h-3 w-3 mr-1" />
+                              Review
+                            </Button>
+                          </Link>
+                        )}
 
                       {quiz.status === "UPCOMING" && !canAccessInstructions && (
                         <Button

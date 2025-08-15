@@ -19,7 +19,7 @@ export default function Layout({
     if (!open) {
       toggleSidebar();
     }
-  }, []);
+  });
 
   return (
     <div>
