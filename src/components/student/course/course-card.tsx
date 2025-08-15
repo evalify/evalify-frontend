@@ -114,6 +114,7 @@ export function StudentCourseCard({ course }: StudentCourseCardProps) {
               size="sm"
               variant="ghost"
               className="h-8 px-3 text-xs"
+              disabled
               onClick={() => {
                 router.push(`/course/${course.id}/quiz`);
               }}

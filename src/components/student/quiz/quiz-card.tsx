@@ -39,7 +39,6 @@ export interface QuizData {
 
 interface QuizCardProps {
   quiz: QuizData;
-  onTakeQuiz?: (quizId: string) => void;
   onViewResults?: (quizId: string) => void;
 }
 
@@ -47,43 +46,38 @@ const getStatusConfig = (status: QuizData["status"]) => {
   switch (status) {
     case "ACTIVE":
       return {
-        badge: "bg-green-500 hover:bg-green-600 text-white",
+        badge:
+          "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300 border border-green-200/50 dark:border-green-800/50",
         icon: Play,
-        color: "text-green-600",
-        bgColor: "bg-green-50 dark:bg-green-950",
-        borderColor: "border-green-200 dark:border-green-800",
+        stripeColor: "bg-green-400/70 dark:bg-green-500/70",
       };
     case "UPCOMING":
       return {
-        badge: "bg-blue-500 hover:bg-blue-600 text-white",
+        badge:
+          "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/50",
         icon: Clock,
-        color: "text-blue-600",
-        bgColor: "bg-blue-50 dark:bg-blue-950",
-        borderColor: "border-blue-200 dark:border-blue-800",
+        stripeColor: "bg-blue-400/70 dark:bg-blue-500/70",
       };
     case "COMPLETED":
       return {
-        badge: "bg-emerald-500 hover:bg-emerald-600 text-white",
+        badge:
+          "bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300 border border-purple-200/50 dark:border-purple-800/50",
         icon: CheckCircle,
-        color: "text-emerald-600",
-        bgColor: "bg-emerald-50 dark:bg-emerald-950",
-        borderColor: "border-emerald-200 dark:border-emerald-800",
+        stripeColor: "bg-purple-400/70 dark:bg-purple-500/70",
       };
     case "MISSED":
       return {
-        badge: "bg-red-500 hover:bg-red-600 text-white",
+        badge:
+          "bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300 border border-orange-200/50 dark:border-orange-800/50",
         icon: XCircle,
-        color: "text-red-600",
-        bgColor: "bg-red-50 dark:bg-red-950",
-        borderColor: "border-red-200 dark:border-red-800",
+        stripeColor: "bg-orange-400/70 dark:bg-orange-500/70",
       };
     default:
       return {
-        badge: "bg-gray-500 hover:bg-gray-600 text-white",
+        badge:
+          "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600",
         icon: AlertCircle,
-        color: "text-gray-600",
-        bgColor: "bg-gray-50 dark:bg-gray-950",
-        borderColor: "border-gray-200 dark:border-gray-800",
+        stripeColor: "bg-slate-400 dark:bg-slate-500",
       };
   }
 };
@@ -136,54 +130,57 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
     now >= instructionsAccessTime.getTime() &&
     (quiz.status === "UPCOMING" || quiz.status === "ACTIVE");
 
-  const isLive = quiz.status === "ACTIVE";
+  // Allow instructions access for completed/missed quizzes for review
+  const canViewInstructions =
+    canAccessInstructions ||
+    quiz.status === "COMPLETED" ||
+    quiz.status === "MISSED";
+
+  // Check if quiz can be started (active and past start time)
+  const canStartQuiz = quiz.status === "ACTIVE" && now >= startDate.getTime();
 
   return (
-    <Card
-      className={`group relative overflow-hidden hover:shadow-xl transition-all duration-300 ${statusConfig.borderColor} hover:shadow-${statusConfig.color.split("-")[1]}-200/20 hover:-translate-y-2 ${statusConfig.bgColor} border-2`}
-    >
+    <Card className="group relative overflow-hidden hover:shadow-md transition-all duration-300 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 hover:border-slate-300/80 dark:hover:border-slate-600/80 hover:-translate-y-1">
       {/* Status indicator stripe */}
       <div
-        className={`absolute top-0 left-0 right-0 h-1 ${statusConfig.badge.split(" ")[0]}`}
+        className={`absolute top-0 left-0 right-0 h-1.5 ${statusConfig.stripeColor}`}
       />
 
-      <CardHeader className="pb-4 relative">
+      <CardHeader className="pb-3 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="font-bold text-xl truncate group-hover:text-primary transition-colors">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-50 truncate">
                 {quiz.name}
               </h3>
               {quiz.protected && (
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/50">
                   <Lock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+            <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
               {quiz.description}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <Badge
-              className={`${statusConfig.badge} px-3 py-1 text-xs font-medium shadow-sm`}
-            >
-              <StatusIcon className="h-3 w-3 mr-1.5" />
-              {quiz.status}
-            </Badge>
-          </div>
+          <Badge
+            className={`${statusConfig.badge} px-2 py-1 text-xs font-medium shrink-0`}
+          >
+            <StatusIcon className="h-3 w-3 mr-1" />
+            {quiz.status}
+          </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-3 px-4">
         {/* Quiz Tags */}
         {quiz.quizTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {quiz.quizTags.slice(0, 3).map((tag, index) => (
               <Badge
                 key={index}
                 variant="outline"
-                className="text-xs px-2 py-1 bg-secondary/50 hover:bg-secondary"
+                className="text-xs px-2 py-0.5 bg-slate-50/80 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200 border-slate-200/70 dark:border-slate-600/50"
               >
                 {tag}
               </Badge>
@@ -191,7 +188,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
             {quiz.quizTags.length > 3 && (
               <Badge
                 variant="outline"
-                className="text-xs px-2 py-1 bg-secondary/50"
+                className="text-xs px-2 py-0.5 bg-slate-50/80 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200 border-slate-200/70 dark:border-slate-600/50"
               >
                 +{quiz.quizTags.length - 3} more
               </Badge>
@@ -199,129 +196,73 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
           </div>
         )}
 
-        {/* Quiz Details Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Start
-                </div>
-                <div className="text-sm font-semibold truncate">
-                  {format(startDate, "MMM dd")}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {format(startDate, "hh:mm a")}
-                </div>
-              </div>
+        {/* Quiz Details */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between p-2 rounded bg-slate-50/60 dark:bg-slate-800/25">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
+              <span className="text-sm text-slate-700 dark:text-slate-200">
+                Start
+              </span>
             </div>
-
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30">
-                <Timer className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Duration
-                </div>
-                <div className="text-sm font-semibold">
-                  {formatDuration(quiz.duration)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {quiz.linearQuiz ? "Linear" : "Non-linear"}
-                </div>
-              </div>
+            <div className="text-sm font-medium text-slate-900 dark:text-slate-50">
+              {format(startDate, "MMM dd, hh:mm a")}
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30">
-                <Clock className="h-4 w-4 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  End
-                </div>
-                <div className="text-sm font-semibold truncate">
-                  {format(endDate, "MMM dd")}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {format(endDate, "hh:mm a")}
-                </div>
-              </div>
+          <div className="flex items-center justify-between p-2 rounded bg-slate-50/60 dark:bg-slate-800/25">
+            <div className="flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
+              <span className="text-sm text-slate-700 dark:text-slate-200">
+                End
+              </span>
             </div>
+            <div className="text-sm font-medium text-slate-900 dark:text-slate-50">
+              {format(endDate, "MMM dd, hh:mm a")}
+            </div>
+          </div>
 
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-card border">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30">
-                <FileText className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <div className="flex items-center justify-between p-2 rounded bg-slate-50/60 dark:bg-slate-800/25">
+            <div className="flex items-center gap-2">
+              <Timer className="h-3.5 w-3.5 text-purple-500 dark:text-purple-400" />
+              <span className="text-sm text-slate-700 dark:text-slate-200">
+                Duration
+              </span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-medium text-slate-900 dark:text-slate-50">
+                {formatDuration(quiz.duration)}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Type
-                </div>
-                <div className="text-sm font-semibold">Quiz</div>
-                <div className="text-xs text-muted-foreground">
-                  Instructions available
-                </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {quiz.linearQuiz ? "Linear" : "Non-linear"}
               </div>
             </div>
           </div>
         </div>
-
-        {/* Progress indicator for live quizzes */}
-        {isLive && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium text-green-600">
-                {Math.min(
-                  100,
-                  Math.max(
-                    0,
-                    ((now - startDate.getTime()) /
-                      (endDate.getTime() - startDate.getTime())) *
-                      100,
-                  ),
-                ).toFixed(0)}
-                %
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-1000 shadow-sm"
-                style={{
-                  width: `${Math.min(100, Math.max(0, ((now - startDate.getTime()) / (endDate.getTime() - startDate.getTime())) * 100))}%`,
-                }}
-              />
-            </div>
-          </div>
-        )}
       </CardContent>
 
-      <CardFooter className="pt-0 bg-gradient-to-r from-transparent via-muted/20 to-transparent">
-        <div className="w-full space-y-3">
-          {/* Instructions Button - 5 minutes before quiz */}
-          {canAccessInstructions && (
+      <CardFooter className="pt-3 pb-4 px-4 bg-slate-50/40 dark:bg-slate-800/15 border-t border-slate-200/50 dark:border-slate-700/50">
+        <div className="w-full space-y-2">
+          {/* Instructions Button - 5 minutes before quiz or for review, but not when Start Quiz is visible */}
+          {canViewInstructions && !canStartQuiz && (
             <Link href={`/quiz/${quiz.id}/instructions`} className="block">
               <Button
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+                className="w-full bg-indigo-500/90 hover:bg-indigo-600 dark:bg-indigo-600/90 dark:hover:bg-indigo-700 text-white border-0"
                 size="sm"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                View Instructions
+                {quiz.status === "COMPLETED" || quiz.status === "MISSED"
+                  ? "Review Instructions"
+                  : "View Instructions"}
               </Button>
             </Link>
           )}
 
           {/* Main Action Button */}
-          {quiz.status === "ACTIVE" && now >= startDate.getTime() ? (
+          {canStartQuiz ? (
             <Link href={`/quiz/${quiz.id}/instructions`} className="block">
               <Button
-                className="w-full bg-green-600 hover:bg-green-700 text-white transition-colors"
+                className="w-full bg-green-500/90 hover:bg-green-600 dark:bg-green-600/90 dark:hover:bg-green-700 text-white border-0"
                 size="sm"
               >
                 <Play className="w-4 h-4 mr-2" />
@@ -331,7 +272,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
           ) : quiz.status === "UPCOMING" ? (
             <Button
               disabled
-              className="w-full bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+              className="w-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50"
               size="sm"
               variant="outline"
             >
@@ -339,32 +280,51 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
               Quiz Not Started
             </Button>
           ) : quiz.status === "COMPLETED" ? (
-            <Link href={`/results/${quiz.id}`} className="block">
+            <div className="space-y-2">
+              <Link href={`/results/${quiz.id}`} className="block">
+                <Button
+                  className="w-full bg-purple-500/90 hover:bg-purple-600 dark:bg-purple-600/90 dark:hover:bg-purple-700 text-white border-0"
+                  size="sm"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  View Results
+                </Button>
+              </Link>
+              {!canViewInstructions && (
+                <Link href={`/quiz/${quiz.id}/instructions`} className="block">
+                  <Button variant="outline" className="w-full" size="sm">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Review Instructions
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : quiz.status === "MISSED" ? (
+            <div className="space-y-2">
               <Button
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                disabled
+                className="w-full bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200/50 dark:border-orange-800/50"
                 size="sm"
                 variant="outline"
               >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                View Results
+                <XCircle className="w-4 h-4 mr-2" />
+                Quiz Missed
               </Button>
-            </Link>
-          ) : quiz.status === "MISSED" ? (
-            <Button
-              disabled
-              className="w-full bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
-              size="sm"
-              variant="outline"
-            >
-              <XCircle className="w-4 h-4 mr-2" />
-              Quiz Missed
-            </Button>
+              {!canViewInstructions && (
+                <Link href={`/quiz/${quiz.id}/instructions`} className="block">
+                  <Button variant="outline" className="w-full" size="sm">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Review Instructions
+                  </Button>
+                </Link>
+              )}
+            </div>
           ) : null}
 
           {/* Time-based Messages */}
           {quiz.status === "UPCOMING" && canAccessInstructions && (
-            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-3 py-2 rounded-lg">
-              <AlertCircle className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30 px-2 py-1.5 rounded border border-amber-200/50 dark:border-amber-800/50">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               <span>
                 Instructions available! Quiz starts in{" "}
                 {formatTimeUntilStart(startDate, now)}
@@ -373,8 +333,8 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
           )}
 
           {quiz.status === "UPCOMING" && !canAccessInstructions && (
-            <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-300 px-3 py-2 rounded-lg">
-              <Clock className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 bg-blue-50/70 dark:bg-blue-950/30 px-2 py-1.5 rounded border border-blue-200/50 dark:border-blue-800/50">
+              <Clock className="w-3.5 h-3.5 shrink-0" />
               <span>
                 Instructions available in{" "}
                 {formatTimeUntilInstructions(instructionsAccessTime, now)}
@@ -383,8 +343,8 @@ const QuizCard: React.FC<QuizCardProps> = ({ quiz }) => {
           )}
 
           {quiz.status === "ACTIVE" && now < startDate.getTime() && (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-300 px-3 py-2 rounded-lg">
-              <Play className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300 bg-green-50/70 dark:bg-green-950/30 px-2 py-1.5 rounded border border-green-200/50 dark:border-green-800/50">
+              <Play className="w-3.5 h-3.5 shrink-0" />
               <span>Quiz starts in {formatTimeUntilStart(startDate, now)}</span>
             </div>
           )}

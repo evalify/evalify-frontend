@@ -18,7 +18,6 @@ import {
   Search,
   Filter,
   FileText,
-  X,
   Grid3X3,
   List,
   Clock,
@@ -89,14 +88,11 @@ const Page = () => {
     }
   }, [activeTab, isLoaded, preferences.selectedTab, setSelectedTab]);
 
-  // Function to clear all filters
-  const clearFilters = useCallback(() => {
-    setSearchQuery("");
-    setSelectedCourse("all");
-    setActiveTab("all");
-  }, []);
-
-  const { data: quizData, error } = useQuery({
+  const {
+    data: quizData,
+    error,
+    isLoading,
+  } = useQuery({
     queryKey: ["studentQuizzes"],
     queryFn: () => StudentQuiz.getAllStudentQuizzes(),
   });
@@ -109,10 +105,20 @@ const Page = () => {
 
     // Tab filter (status filter)
     if (activeTab !== "all") {
-      filtered = filtered.filter(
-        (quiz: QuizData) =>
-          quiz.status.toLowerCase() === activeTab.toLowerCase(),
-      );
+      const statusMapping = {
+        live: "ACTIVE",
+        upcoming: "UPCOMING",
+        completed: "COMPLETED",
+        missed: "MISSED",
+      };
+
+      const targetStatus =
+        statusMapping[activeTab as keyof typeof statusMapping];
+      if (targetStatus) {
+        filtered = filtered.filter(
+          (quiz: QuizData) => quiz.status === targetStatus,
+        );
+      }
     }
 
     // Search filter
@@ -166,13 +172,6 @@ const Page = () => {
         .length,
     };
   }, [quizData]);
-
-  const handleTakeQuiz = useCallback(
-    (quizId: string) => {
-      router.push(`/take-quiz/${quizId}`);
-    },
-    [router],
-  );
 
   const handleViewResults = useCallback(
     (quizId: string) => {
@@ -250,11 +249,33 @@ const Page = () => {
       <AuthGuard requiredGroups={[UserType.STUDENT]}>
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="text-destructive text-lg font-semibold mb-2">
+            <div className="text-center p-6 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800/50">
+              <div className="text-red-600 dark:text-red-400 text-lg font-semibold mb-2">
                 Error Loading Quizzes
               </div>
-              <p className="text-muted-foreground">{error.message}</p>
+              <p className="text-red-600/80 dark:text-red-400/80">
+                {error.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      </AuthGuard>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <AuthGuard requiredGroups={[UserType.STUDENT]}>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                Loading Quizzes...
+              </div>
+              <p className="text-slate-500 dark:text-slate-400">
+                Please wait while we fetch your quizzes
+              </p>
             </div>
           </div>
         </div>
@@ -288,62 +309,77 @@ const Page = () => {
         >
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <TabsList className="grid w-full grid-cols-5 h-12">
-                <TabsTrigger value="all" className="text-sm font-medium">
+              <TabsList className="grid w-full grid-cols-5 h-12 bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                <TabsTrigger
+                  value="all"
+                  className="text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-50 data-[state=active]:shadow-sm"
+                >
                   <span className="hidden sm:inline">All</span>
                   <span className="sm:hidden">All</span>
                   {quizCounts.all > 0 && (
                     <Badge
                       variant="secondary"
-                      className="ml-1 h-5 px-2 text-xs"
+                      className="ml-1.5 h-5 px-2 text-xs bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200"
                     >
                       {quizCounts.all}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="live" className="text-sm font-medium">
+                <TabsTrigger
+                  value="live"
+                  className="text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-50 data-[state=active]:shadow-sm"
+                >
                   <Play className="h-3 w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Live</span>
                   {quizCounts.live > 0 && (
                     <Badge
                       variant="secondary"
-                      className="ml-1 h-5 px-2 text-xs"
+                      className="ml-1.5 h-5 px-2 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
                     >
                       {quizCounts.live}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="upcoming" className="text-sm font-medium">
+                <TabsTrigger
+                  value="upcoming"
+                  className="text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-50 data-[state=active]:shadow-sm"
+                >
                   <Clock className="h-3 w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Upcoming</span>
                   {quizCounts.upcoming > 0 && (
                     <Badge
                       variant="secondary"
-                      className="ml-1 h-5 px-2 text-xs"
+                      className="ml-1.5 h-5 px-2 text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                     >
                       {quizCounts.upcoming}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="text-sm font-medium">
+                <TabsTrigger
+                  value="completed"
+                  className="text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-50 data-[state=active]:shadow-sm"
+                >
                   <CheckCircle className="h-3 w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Done</span>
                   {quizCounts.completed > 0 && (
                     <Badge
                       variant="secondary"
-                      className="ml-1 h-5 px-2 text-xs"
+                      className="ml-1.5 h-5 px-2 text-xs bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300"
                     >
                       {quizCounts.completed}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="missed" className="text-sm font-medium">
+                <TabsTrigger
+                  value="missed"
+                  className="text-sm font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-50 data-[state=active]:shadow-sm"
+                >
                   <XCircle className="h-3 w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Missed</span>
                   {quizCounts.missed > 0 && (
                     <Badge
                       variant="secondary"
-                      className="ml-1 h-5 px-2 text-xs"
+                      className="ml-1.5 h-5 px-2 text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                     >
                       {quizCounts.missed}
                     </Badge>
@@ -352,22 +388,32 @@ const Page = () => {
               </TabsList>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-1 ml-auto bg-slate-100/80 dark:bg-slate-800/60 rounded-lg p-1 border border-slate-200/60 dark:border-slate-700/60">
                 <Button
                   variant={
-                    preferences.viewMode === "grid" ? "default" : "outline"
+                    preferences.viewMode === "grid" ? "default" : "ghost"
                   }
                   size="sm"
                   onClick={() => handleViewModeChange("grid")}
+                  className={`h-8 w-8 p-0 ${
+                    preferences.viewMode === "grid"
+                      ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-50"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </Button>
                 <Button
                   variant={
-                    preferences.viewMode === "table" ? "default" : "outline"
+                    preferences.viewMode === "table" ? "default" : "ghost"
                   }
                   size="sm"
                   onClick={() => handleViewModeChange("table")}
+                  className={`h-8 w-8 p-0 ${
+                    preferences.viewMode === "table"
+                      ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-50"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  }`}
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -411,76 +457,41 @@ const Page = () => {
             </div>
           </div>
 
-          {/* Results Summary and Filters */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {filteredQuizzes.length} quiz
-                {filteredQuizzes.length !== 1 ? "es" : ""} found
-              </span>
-            </div>
-
-            {(debouncedSearchQuery || selectedCourse !== "all") && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Filters:</span>
-                {debouncedSearchQuery && (
-                  <Badge variant="secondary" className="text-xs">
-                    Search: {debouncedSearchQuery}
-                  </Badge>
-                )}
-                {selectedCourse !== "all" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Course: {selectedCourse}
-                  </Badge>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="h-6 px-2 text-xs"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Clear
-                </Button>
-              </div>
-            )}
-          </div>
-
           {/* Quiz Content - Dynamic TabsContent for each status */}
           {["all", "live", "upcoming", "completed", "missed"].map((status) => (
             <TabsContent key={status} value={status} className="space-y-6">
               {preferences.viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredQuizzes.map((quiz: QuizData) => (
                     <QuizCard
                       key={quiz.id}
                       quiz={quiz}
-                      onTakeQuiz={handleTakeQuiz}
                       onViewResults={handleViewResults}
                     />
                   ))}
                   {filteredQuizzes.length === 0 && (
-                    <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                      {status === "all" ? (
-                        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                      ) : status === "live" ? (
-                        <Play className="h-12 w-12 text-muted-foreground mb-4" />
-                      ) : status === "upcoming" ? (
-                        <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-                      ) : status === "completed" ? (
-                        <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                      ) : (
-                        <XCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                      )}
-                      <h3 className="text-lg font-semibold mb-2">
+                    <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                      <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
+                        {status === "all" ? (
+                          <AlertCircle className="h-8 w-8 text-slate-500 dark:text-slate-400" />
+                        ) : status === "live" ? (
+                          <Play className="h-8 w-8 text-emerald-500 dark:text-emerald-400" />
+                        ) : status === "upcoming" ? (
+                          <Clock className="h-8 w-8 text-blue-500 dark:text-blue-400" />
+                        ) : status === "completed" ? (
+                          <CheckCircle className="h-8 w-8 text-violet-500 dark:text-violet-400" />
+                        ) : (
+                          <XCircle className="h-8 w-8 text-amber-500 dark:text-amber-400" />
+                        )}
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
                         {status === "all"
                           ? "No quizzes found"
                           : `No ${status} quizzes`}
                       </h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-slate-600 dark:text-slate-400 max-w-md">
                         {status === "all"
-                          ? "Try adjusting your search or filters"
+                          ? "Try adjusting your search or filters to find quizzes"
                           : status === "live"
                             ? "Check back later for live quizzes"
                             : status === "upcoming"
@@ -495,7 +506,6 @@ const Page = () => {
               ) : (
                 <QuizTable
                   quizzes={filteredQuizzes}
-                  onTakeQuiz={handleTakeQuiz}
                   onViewResults={handleViewResults}
                 />
               )}
