@@ -156,7 +156,7 @@ export interface MatchPair {
 export interface MatchTheFollowingQuestion extends BaseQuestion {
   type: "MATCH_THE_FOLLOWING";
   keyValues: KeyValues;
-  matchPair: MatchPair[];
+  matchPair: MatchPair[] | null;
 }
 
 /**

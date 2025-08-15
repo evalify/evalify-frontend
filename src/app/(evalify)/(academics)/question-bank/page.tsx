@@ -63,10 +63,11 @@ import {
   Upload,
   Copy,
   Minus,
+  Share,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import Bank from "@/repo/bank/bank";
+import Bank, { BankSchema } from "@/repo/bank/bank";
 import { useRouter } from "next/navigation";
 import ShareDialog from "@/components/bank/ShareDialog";
 
@@ -75,7 +76,7 @@ interface QuestionBank {
   id: string;
   name: string;
   courseCode: string;
-  semester: string;
+  semester: string; // Keep as string to match API response (e.g., "S1", "S2")
   topics: number;
   questionCount: number;
   lastUpdated: string;
@@ -86,35 +87,48 @@ interface BankApiResponse {
   bankId?: string;
   name?: string;
   courseCode?: string;
-  semester?: string;
-  questions?: number;
+  semester?: string; // API returns semester as string (e.g., "S1", "S2")
+  questions?: number; // API field for question count
   created_at?: string;
   topics?: number;
+  access?: Array<{
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      profileId: string | null;
+    };
+    tag: string;
+  }>;
 }
 
 // Constants
-const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const SEMESTERS = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"] as const;
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_SORT_FIELD = "name" as const;
 const DEFAULT_SORT_DIRECTION = "asc" as const;
 
 // Utility functions
 const transformApiResponseToQuestionBank = (
-  bank: BankApiResponse,
+  bank: BankApiResponse | BankSchema,
 ): QuestionBank => ({
-  id: bank.id || bank.bankId || "",
+  id: bank.id || (bank as BankApiResponse).bankId || "",
   name: bank.name || "",
   courseCode: bank.courseCode || "",
-  semester: bank.semester || "1", // Default to "1" instead of "S1"
+  semester: bank.semester || "S1",
   topics: bank?.topics || 0,
-  questionCount: bank.questions || 0,
-  lastUpdated: bank.created_at || new Date().toISOString(),
+  questionCount:
+    (bank as BankApiResponse).questions || (bank as BankSchema).questions || 0,
+  lastUpdated:
+    (bank as BankApiResponse).created_at ||
+    (bank as BankSchema).created_at ||
+    new Date().toISOString(),
 });
 
 const filterBanks = (
   banks: QuestionBank[],
   searchTerm: string,
-  semesterFilter: number | null,
+  semesterFilter: string | null,
 ): QuestionBank[] => {
   let filtered = banks;
 
@@ -128,9 +142,7 @@ const filterBanks = (
   }
 
   if (semesterFilter !== null) {
-    filtered = filtered.filter(
-      (bank) => parseInt(bank.semester) === semesterFilter,
-    );
+    filtered = filtered.filter((bank) => bank.semester === semesterFilter);
   }
 
   return filtered;
@@ -175,30 +187,27 @@ const BankDialog = ({
   const [formData, setFormData] = useState({
     name: bank?.name || "",
     courseCode: bank?.courseCode || "",
-    semester: bank?.semester ? parseInt(bank.semester.toString()) : undefined,
+    semester: bank?.semester || ("" as string), // Keep as string for form
   });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const semesterOptions = semesters.map((semester) => ({
-    value: semester.toString(),
-    label: `Semester ${semester}`,
+    value: semester,
+    label: `Semester ${semester.substring(1)}`, // Convert "S1" to "Semester 1"
   }));
 
   const createBankMutation = useMutation({
     mutationFn: async (data: {
       name: string;
       courseCode: string;
-      semester: number;
+      semester: string;
     }) => {
       const payload = {
         name: data.name,
-        courseCode: data.courseCode,
-        semester: data.semester.toString(), // Convert to string for the API
-        topics: 0,
-        questions: 0,
-        access: [],
+        courseCode: data.courseCode || undefined,
+        semester: data.semester,
       };
       return await Bank.createBank(payload);
     },
@@ -220,12 +229,14 @@ const BankDialog = ({
       id: string;
       name: string;
       courseCode: string;
-      semester?: number;
+      semester?: string;
     }) => {
       const payload = {
         name: data.name,
-        courseCode: data.courseCode,
-        ...(data.semester ? { semester: data.semester.toString() } : {}), // Convert to string for the API
+        courseCode: data.courseCode || undefined,
+        ...(data.semester
+          ? { semester: parseInt(data.semester.substring(1)) }
+          : {}),
       };
       return await Bank.updateBank(data.id, payload);
     },
@@ -321,16 +332,9 @@ const BankDialog = ({
               <Label htmlFor="semester">Semester</Label>
               <SearchableSelect
                 options={semesterOptions}
-                value={formData.semester?.toString() || ""}
+                value={formData.semester || ""}
                 onValueChange={(val) => {
-                  if (val === "") {
-                    setFormData((prev) => ({ ...prev, semester: undefined }));
-                  } else {
-                    const parsed = parseInt(val);
-                    if (!isNaN(parsed)) {
-                      setFormData((prev) => ({ ...prev, semester: parsed }));
-                    }
-                  }
+                  setFormData((prev) => ({ ...prev, semester: val || "" }));
                 }}
                 placeholder="Select semester"
               />
@@ -434,22 +438,7 @@ const BankTableRow = React.memo(
           className="rounded-full"
           onClick={onShare(bank)}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-share"
-          >
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-            <polyline points="16 6 12 2 8 6" />
-            <line x1="12" x2="12" y1="2" y2="15" />
-          </svg>
+          <Share />
           <span className="sr-only">Share</span>
         </Button>
       </TableCell>
@@ -497,7 +486,7 @@ export default function QuestionBankPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [searchTerm, setSearchTerm] = useState("");
-  const [semesterFilter, setSemesterFilter] = useState<number | null>(null);
+  const [semesterFilter, setSemesterFilter] = useState<string | null>(null);
   const [sortField, setSortField] =
     useState<keyof QuestionBank>(DEFAULT_SORT_FIELD);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">(
@@ -647,8 +636,8 @@ export default function QuestionBankPage() {
   });
 
   const semesterOptions = semesters.map((semester) => ({
-    value: semester.toString(),
-    label: `Semester ${semester}`,
+    value: semester,
+    label: `Semester ${semester.substring(1)}`, // Convert "S1" to "Semester 1"
   }));
 
   const sortOptions = [
@@ -885,12 +874,9 @@ export default function QuestionBankPage() {
                   </Label>
                   <SearchableSelect
                     options={semesterOptions}
-                    value={
-                      semesterFilter !== null ? semesterFilter.toString() : ""
-                    }
+                    value={semesterFilter || ""}
                     onValueChange={(value) => {
-                      const parsed = parseInt(value);
-                      setSemesterFilter(!isNaN(parsed) ? parsed : null);
+                      setSemesterFilter(value || null);
                     }}
                     placeholder="All semesters"
                     className="w-[180px]"
@@ -1012,10 +998,7 @@ export default function QuestionBankPage() {
 
             <div className="flex items-center justify-between py-4">
               <div className="text-sm text-muted-foreground">
-                Showing
-                {Math.min((page - 1) * pageSize + 1, data?.totalBanks || 0)} to
-                {Math.min(page * pageSize, data?.totalBanks || 0)} of
-                {data?.totalBanks || 0} question banks
+                {`Showing ${Math.min((page - 1) * pageSize + 1, data?.totalBanks || 0)} to ${Math.min(page * pageSize, data?.totalBanks || 0)} of ${data?.totalBanks || 0} question banks`}
               </div>
 
               <Pagination>

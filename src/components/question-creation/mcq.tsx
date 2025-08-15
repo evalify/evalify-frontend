@@ -16,6 +16,7 @@ import {
 import { QuestionSettings } from "@/components/question-creation/settings-types/settings-types";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { generateOptionId } from "@/components/question-creation/utils/id-generator";
 
 interface CreateMCQQuestionProps {
   type: "MCQ" | "MMCQ";
@@ -51,7 +52,7 @@ export default function CreateMCQQuestion({
         difficulty: settings?.difficulty || "MEDIUM",
         bloomsTaxonomy: settings?.bloomsTaxonomy || "REMEMBER",
         co: settings?.co || 1,
-        negativeMarks: settings?.negativeMarks || 0,
+        negativeMark: settings?.negativeMark || 0,
         options: [],
       };
     },
@@ -88,7 +89,7 @@ export default function CreateMCQQuestion({
           difficulty: settings.difficulty,
           bloomsTaxonomy: settings.bloomsTaxonomy,
           co: settings.co,
-          negativeMarks: settings.negativeMarks,
+          negativeMark: settings.negativeMark,
           topicIds: settings.topicIds,
         };
       });
@@ -147,7 +148,7 @@ export default function CreateMCQQuestion({
       });
     } else {
       const newOption = {
-        id: crypto.randomUUID(),
+        id: generateOptionId(),
         text: editor,
         isCorrect: false,
       };

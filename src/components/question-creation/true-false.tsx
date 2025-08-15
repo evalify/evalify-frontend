@@ -2,7 +2,6 @@ import { TrueFalseQuestion } from "@/components/question-creation/question-types
 import { useEffect, useState, useCallback } from "react";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { FileText, Check, X } from "lucide-react";
 import { QuestionSettings } from "@/components/question-creation/settings-types/settings-types";
 import { cn } from "@/lib/utils";
@@ -34,7 +33,7 @@ export default function CreateTrueFalseQuestion({
         difficulty: settings?.difficulty || "MEDIUM",
         bloomsTaxonomy: settings?.bloomsTaxonomy || "REMEMBER",
         co: settings?.co || 1,
-        negativeMarks: settings?.negativeMarks || 0,
+        negativeMark: settings?.negativeMark || 0,
         answer: false,
       };
     },
@@ -65,7 +64,7 @@ export default function CreateTrueFalseQuestion({
           difficulty: settings.difficulty,
           bloomsTaxonomy: settings.bloomsTaxonomy,
           co: settings.co,
-          negativeMarks: settings.negativeMarks,
+          negativeMark: settings.negativeMark,
           topicIds: settings.topicIds,
         };
       });
@@ -129,48 +128,110 @@ export default function CreateTrueFalseQuestion({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <Button
-              variant={question?.answer === true ? "default" : "outline"}
+          <div className="flex gap-3">
+            {/* True Button */}
+            <div
               onClick={() => handleAnswerChange(true)}
               className={cn(
-                "flex-1 h-16 text-lg font-medium transition-all duration-200",
+                "flex-1 cursor-pointer rounded-lg p-4 transition-all duration-200 hover:shadow-sm",
                 question?.answer === true
-                  ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
-                  : "hover:border-green-300 hover:bg-green-50 dark:hover:bg-green-950/20",
+                  ? "bg-green-50 border-2 border-green-600 shadow-sm dark:bg-green-950/20 dark:border-green-500"
+                  : "bg-green-50/30 hover:bg-green-50 dark:bg-green-950/10",
               )}
             >
-              <Check className="h-5 w-5 mr-2" />
-              True
-            </Button>
-            <Button
-              variant={question?.answer === false ? "default" : "outline"}
+              <div className="flex items-center justify-center gap-2">
+                <div
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200",
+                    question?.answer === true
+                      ? "bg-green-600 text-white dark:bg-green-500"
+                      : "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
+                  )}
+                >
+                  <Check className="h-4 w-4" />
+                </div>
+                <span
+                  className={cn(
+                    "font-medium transition-colors duration-200",
+                    question?.answer === true
+                      ? "text-green-800 dark:text-green-200"
+                      : "text-green-700 dark:text-green-400",
+                  )}
+                >
+                  True
+                </span>
+              </div>
+            </div>
+
+            {/* False Button */}
+            <div
               onClick={() => handleAnswerChange(false)}
               className={cn(
-                "flex-1 h-16 text-lg font-medium transition-all duration-200",
+                "flex-1 cursor-pointer rounded-lg p-4 transition-all duration-200 hover:shadow-sm",
                 question?.answer === false
-                  ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
-                  : "hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20",
+                  ? "bg-red-50 border-2 border-red-600 shadow-sm dark:bg-red-950/20 dark:border-red-500"
+                  : "bg-red-50/30 hover:bg-red-50 dark:bg-red-950/10",
               )}
             >
-              <X className="h-5 w-5 mr-2" />
-              False
-            </Button>
-          </div>
-          {question?.answer !== null && question?.answer !== undefined && (
-            <div className="p-3 rounded-lg bg-muted/50 border">
-              <div className="text-sm font-medium text-muted-foreground">
-                Selected Answer:
+              <div className="flex items-center justify-center gap-2">
+                <div
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200",
+                    question?.answer === false
+                      ? "bg-red-600 text-white dark:bg-red-500"
+                      : "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
+                  )}
+                >
+                  <X className="h-4 w-4" />
+                </div>
+                <span
+                  className={cn(
+                    "font-medium transition-colors duration-200",
+                    question?.answer === false
+                      ? "text-red-800 dark:text-red-200"
+                      : "text-red-700 dark:text-red-400",
+                  )}
+                >
+                  False
+                </span>
               </div>
-              <div
-                className={cn(
-                  "text-lg font-semibold mt-1",
-                  question.answer
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400",
-                )}
-              >
-                {question.answer ? "True" : "False"}
+            </div>
+          </div>
+
+          {/* Selected Answer Summary */}
+          {question?.answer !== null && question?.answer !== undefined && (
+            <div
+              className={cn(
+                "p-3 rounded-lg border transition-colors duration-200",
+                question.answer
+                  ? "bg-green-50/50 border-green-200 dark:bg-green-950/10 dark:border-green-800"
+                  : "bg-red-50/50 border-red-200 dark:bg-red-950/10 dark:border-red-800",
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Selected Answer:
+                </span>
+                <div
+                  className={cn(
+                    "flex items-center gap-1 font-medium",
+                    question.answer
+                      ? "text-green-700 dark:text-green-300"
+                      : "text-red-700 dark:text-red-300",
+                  )}
+                >
+                  {question.answer ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      True
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-4 w-4" />
+                      False
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}

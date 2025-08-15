@@ -4,6 +4,6 @@ export interface QuestionSettings {
   difficulty: string;
   bloomsTaxonomy: string;
   co: number;
-  negativeMarks: number;
+  negativeMark: number;
   topicIds: string[];
 }

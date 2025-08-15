@@ -74,6 +74,8 @@ export const MatchTheFollowingRenderer: React.FC<
     const userMatch = matches[leftPairId];
     if (!userMatch || userMatch.length === 0) return false;
 
+    if (!question.matchPair || question.matchPair.length === 0) return false;
+
     const correctMatch = question.matchPair.find(
       (pair) => pair.leftPair === leftPairId,
     );
@@ -104,7 +106,9 @@ export const MatchTheFollowingRenderer: React.FC<
       </div>
 
       {/* Display mode with correct answers shown directly */}
-      {config.showCorrectAnswers ? (
+      {config.showCorrectAnswers &&
+      question.matchPair &&
+      question.matchPair.length > 0 ? (
         <div className="space-y-6">
           {/* Correct Matches Display */}
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -224,6 +228,13 @@ export const MatchTheFollowingRenderer: React.FC<
               </div>
             </div>
           )}
+        </div>
+      ) : config.showCorrectAnswers &&
+        (!question.matchPair || question.matchPair.length === 0) ? (
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <p className="text-yellow-800 dark:text-yellow-100 text-sm">
+            No correct answers are defined for this question yet.
+          </p>
         </div>
       ) : (
         /* Interactive matching interface for edit mode */

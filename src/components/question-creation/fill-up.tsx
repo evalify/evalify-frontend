@@ -135,7 +135,7 @@ export default function CreateFillUpQuestion({
         difficulty: settings?.difficulty || "MEDIUM",
         bloomsTaxonomy: settings?.bloomsTaxonomy || "REMEMBER",
         co: settings?.co || 1,
-        negativeMarks: settings?.negativeMarks || 0,
+        negativeMark: settings?.negativeMark || 0,
         blanks: [],
         strictMatch: true,
         llmEval: false,
@@ -224,7 +224,7 @@ export default function CreateFillUpQuestion({
           difficulty: settings.difficulty,
           bloomsTaxonomy: settings.bloomsTaxonomy,
           co: settings.co,
-          negativeMarks: settings.negativeMarks,
+          negativeMark: settings.negativeMark,
           topicIds: settings.topicIds,
         };
         return syncQuestionWithBlanks(updatedQuestion);

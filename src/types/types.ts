@@ -43,10 +43,15 @@ export interface Course extends Record<string, unknown> {
   };
 }
 
+export type CreateCourseRequest = Omit<
+  Course,
+  "id" | "createdAt" | "updatedAt" | "_links"
+>;
+
 export enum CourseType {
-  CORE,
-  ELECTIVE,
-  MICRO_CREDENTIAL,
+  CORE = "CORE",
+  ELECTIVE = "ELECTIVE",
+  MICRO_CREDENTIAL = "MICRO_CREDENTIAL",
 }
 
 export interface CreateTaskRequest {

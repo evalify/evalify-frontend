@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TiptapEditor } from "@/components/rich-text-editor/editor";
+import { generateMatchItemId } from "@/components/question-creation/utils/id-generator";
 
 interface CreateMatchTheFollowingProps {
   type: "MATCH_THE_FOLLOWING";
@@ -70,7 +71,7 @@ export default function CreateMatchTheFollowing({
         bloomsTaxonomy: settings?.bloomsTaxonomy || "REMEMBER",
         co: settings?.co || 1,
         difficulty: settings?.difficulty || "MEDIUM",
-        negativeMarks: settings?.negativeMarks || 0,
+        negativeMark: settings?.negativeMark || 0,
         keys: [],
         values: [],
         matchPair: [],
@@ -104,7 +105,7 @@ export default function CreateMatchTheFollowing({
           difficulty: settings.difficulty,
           bloomsTaxonomy: settings.bloomsTaxonomy,
           co: settings.co,
-          negativeMarks: settings.negativeMarks,
+          negativeMark: settings.negativeMark,
           topicIds: settings.topicIds,
         };
       });
@@ -117,8 +118,6 @@ export default function CreateMatchTheFollowing({
       return { ...prev, ...updates };
     });
   }, []);
-
-  const generateId = () => crypto.randomUUID();
 
   const addLeftItem = () => {
     setIsCreatingNewLeftItem(true);
@@ -134,28 +133,28 @@ export default function CreateMatchTheFollowing({
 
     if (isCreatingNewLeftItem) {
       const newItem: MatchItem = {
-        id: generateId(),
+        id: generateMatchItemId(),
         text: editorContent,
       };
-      const updatedKeys = [...question.keys, newItem];
+      const updatedKeys = [...(question.keys || []), newItem];
       updateQuestion({ keys: updatedKeys });
       setIsCreatingNewLeftItem(false);
     } else if (isCreatingNewRightItem) {
       const newItem: MatchItem = {
-        id: generateId(),
+        id: generateMatchItemId(),
         text: editorContent,
       };
-      const updatedValues = [...question.values, newItem];
+      const updatedValues = [...(question.values || []), newItem];
       updateQuestion({ values: updatedValues });
       setIsCreatingNewRightItem(false);
     } else if (editingLeftItemId) {
-      const updatedKeys = question.keys.map((item) =>
+      const updatedKeys = (question.keys || []).map((item) =>
         item.id === editingLeftItemId ? { ...item, text: editorContent } : item,
       );
       updateQuestion({ keys: updatedKeys });
       setEditingLeftItemId(null);
     } else if (editingRightItemId) {
-      const updatedValues = question.values.map((item) =>
+      const updatedValues = (question.values || []).map((item) =>
         item.id === editingRightItemId
           ? { ...item, text: editorContent }
           : item,
@@ -176,7 +175,7 @@ export default function CreateMatchTheFollowing({
   };
 
   const handleEditLeftItem = (id: string) => {
-    const item = question?.keys.find((k) => k.id === id);
+    const item = question?.keys?.find((k) => k.id === id);
     if (item) {
       setEditingLeftItemId(id);
       setEditorContent(item.text);
@@ -184,7 +183,7 @@ export default function CreateMatchTheFollowing({
   };
 
   const handleEditRightItem = (id: string) => {
-    const item = question?.values.find((v) => v.id === id);
+    const item = question?.values?.find((v) => v.id === id);
     if (item) {
       setEditingRightItemId(id);
       setEditorContent(item.text);
@@ -193,8 +192,8 @@ export default function CreateMatchTheFollowing({
 
   const removeLeftItem = (id: string) => {
     if (!question) return;
-    const updatedKeys = question.keys.filter((item) => item.id !== id);
-    const updatedMatchPairs = question.matchPair.filter(
+    const updatedKeys = (question.keys || []).filter((item) => item.id !== id);
+    const updatedMatchPairs = (question.matchPair || []).filter(
       (pair) => pair.leftPair !== id,
     );
     updateQuestion({ keys: updatedKeys, matchPair: updatedMatchPairs });
@@ -202,8 +201,10 @@ export default function CreateMatchTheFollowing({
 
   const removeRightItem = (id: string) => {
     if (!question) return;
-    const updatedValues = question.values.filter((item) => item.id !== id);
-    const updatedMatchPairs = question.matchPair
+    const updatedValues = (question.values || []).filter(
+      (item) => item.id !== id,
+    );
+    const updatedMatchPairs = (question.matchPair || [])
       .map((pair) => ({
         ...pair,
         rightPair: pair.rightPair.filter((rightId) => rightId !== id),
@@ -247,7 +248,7 @@ export default function CreateMatchTheFollowing({
     if (!draggedItem || !question) return;
 
     if (draggedItem.type === "right") {
-      const isRightItemUsed = question.matchPair.some((pair) =>
+      const isRightItemUsed = (question.matchPair || []).some((pair) =>
         pair.rightPair.includes(draggedItem.id),
       );
 
@@ -260,11 +261,11 @@ export default function CreateMatchTheFollowing({
         return;
       }
 
-      const existingPairIndex = question.matchPair.findIndex(
+      const existingPairIndex = (question.matchPair || []).findIndex(
         (pair) => pair.leftPair === targetId,
       );
 
-      const updatedMatchPairs = [...question.matchPair];
+      const updatedMatchPairs = [...(question.matchPair || [])];
 
       if (existingPairIndex >= 0) {
         updatedMatchPairs[existingPairIndex] = {
@@ -295,7 +296,7 @@ export default function CreateMatchTheFollowing({
     if (!question) return;
 
     if (rightId) {
-      const updatedMatchPairs = question.matchPair
+      const updatedMatchPairs = (question.matchPair || [])
         .map((pair) => {
           if (pair.leftPair === leftId) {
             return {
@@ -309,7 +310,7 @@ export default function CreateMatchTheFollowing({
 
       updateQuestion({ matchPair: updatedMatchPairs });
     } else {
-      const updatedMatchPairs = question.matchPair.filter(
+      const updatedMatchPairs = (question.matchPair || []).filter(
         (pair) => pair.leftPair !== leftId,
       );
       updateQuestion({ matchPair: updatedMatchPairs });
@@ -318,18 +319,20 @@ export default function CreateMatchTheFollowing({
 
   const getMatchesForLeftItem = (leftId: string): string[] => {
     if (!question) return [];
-    const pair = question.matchPair.find((p) => p.leftPair === leftId);
+    const pair = (question.matchPair || []).find((p) => p.leftPair === leftId);
     return pair ? pair.rightPair : [];
   };
 
   const isRightItemUsed = (rightId: string): boolean => {
     if (!question) return false;
-    return question.matchPair.some((pair) => pair.rightPair.includes(rightId));
+    return (question.matchPair || []).some((pair) =>
+      pair.rightPair.includes(rightId),
+    );
   };
 
   const getRightItemById = (id: string): MatchItem | undefined => {
     if (!question) return undefined;
-    return question.values.find((item) => item.id === id);
+    return (question.values || []).find((item) => item.id === id);
   };
 
   if (!question) return null;
@@ -361,7 +364,7 @@ export default function CreateMatchTheFollowing({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {question.keys.map((item, index) => (
+          {question?.keys?.map((item, index) => (
             <div key={item.id} className="border rounded-lg p-4">
               {editingLeftItemId === item.id ? (
                 <>
@@ -445,7 +448,7 @@ export default function CreateMatchTheFollowing({
             <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
               <div className="flex items-start justify-between mb-3">
                 <Label className="text-sm font-medium">
-                  Left Item {question.keys.length + 1}
+                  Left Item {(question?.keys?.length || 0) + 1}
                 </Label>
                 <div className="flex gap-2">
                   <Button
@@ -473,7 +476,7 @@ export default function CreateMatchTheFollowing({
             </div>
           )}
 
-          {question.keys.length === 0 && !isCreatingNewLeftItem && (
+          {(question?.keys?.length || 0) === 0 && !isCreatingNewLeftItem && (
             <div className="text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-lg">
               <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
               <p className="text-lg font-medium">No left items added yet</p>
@@ -508,7 +511,7 @@ export default function CreateMatchTheFollowing({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {question.values.map((item, index) => (
+          {question?.values?.map((item, index) => (
             <div key={item.id} className="border rounded-lg p-4">
               {editingRightItemId === item.id ? (
                 <>
@@ -600,7 +603,7 @@ export default function CreateMatchTheFollowing({
                 <div className="flex items-center gap-2">
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
                   <Label className="text-sm font-medium">
-                    Right Item {question.values.length + 1}
+                    Right Item {(question?.values?.length || 0) + 1}
                   </Label>
                 </div>
                 <div className="flex gap-2">
@@ -629,7 +632,7 @@ export default function CreateMatchTheFollowing({
             </div>
           )}
 
-          {question.values.length === 0 && !isCreatingNewRightItem && (
+          {(question?.values?.length || 0) === 0 && !isCreatingNewRightItem && (
             <div className="text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-lg">
               <GripVertical className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
               <p className="text-lg font-medium">No right items added yet</p>
@@ -657,172 +660,173 @@ export default function CreateMatchTheFollowing({
         </CardContent>
       </Card>
 
-      {question.keys.length > 0 && question.values.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Link2 className="h-5 w-5" />
-              Create Matches
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Drop right items here to create matches
-                </Label>
-                {question.keys.map((leftItem, index) => {
-                  const matchedRightIds = getMatchesForLeftItem(leftItem.id);
-                  const matchedRightItems = matchedRightIds
-                    .map((id) => getRightItemById(id))
-                    .filter((item): item is MatchItem => item !== undefined);
+      {(question?.keys?.length || 0) > 0 &&
+        (question?.values?.length || 0) > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="h-5 w-5" />
+                Create Matches
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Drop right items here to create matches
+                  </Label>
+                  {(question?.keys || []).map((leftItem, index) => {
+                    const matchedRightIds = getMatchesForLeftItem(leftItem.id);
+                    const matchedRightItems = matchedRightIds
+                      .map((id) => getRightItemById(id))
+                      .filter((item): item is MatchItem => item !== undefined);
 
-                  return (
-                    <div
-                      key={leftItem.id}
-                      className={`border-2 rounded-lg p-4 transition-colors min-h-[100px] ${
-                        dragOverTarget === leftItem.id &&
-                        draggedItem?.type === "right"
-                          ? "border-primary bg-primary/10"
-                          : matchedRightItems.length > 0
-                            ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                            : "border-dashed border-gray-300 dark:border-gray-600"
-                      }`}
-                      onDragOver={(e) => handleDragOver(e, leftItem.id)}
-                      onDragEnter={(e) => handleDragEnter(e, leftItem.id)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, leftItem.id)}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge variant="outline" className="text-xs">
-                          Left {index + 1}
-                        </Badge>
-                        {matchedRightItems.length > 0 && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeMatch(leftItem.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                    return (
+                      <div
+                        key={leftItem.id}
+                        className={`border-2 rounded-lg p-4 transition-colors min-h-[100px] ${
+                          dragOverTarget === leftItem.id &&
+                          draggedItem?.type === "right"
+                            ? "border-primary bg-primary/10"
+                            : matchedRightItems.length > 0
+                              ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                              : "border-dashed border-gray-300 dark:border-gray-600"
+                        }`}
+                        onDragOver={(e) => handleDragOver(e, leftItem.id)}
+                        onDragEnter={(e) => handleDragEnter(e, leftItem.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, leftItem.id)}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <Badge variant="outline" className="text-xs">
+                            Left {index + 1}
+                          </Badge>
+                          {matchedRightItems.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeMatch(leftItem.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+
+                        <div
+                          className="prose prose-sm dark:prose-invert text-sm mb-3"
+                          dangerouslySetInnerHTML={{ __html: leftItem.text }}
+                        />
+
+                        {matchedRightItems.length > 0 ? (
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Link2 className="h-3 w-3 text-green-600" />
+                              <span className="text-xs text-green-600 font-medium">
+                                Matched with:
+                              </span>
+                            </div>
+                            {matchedRightItems.map((matchedItem) => (
+                              <div
+                                key={matchedItem.id}
+                                className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div
+                                    className="prose prose-sm dark:prose-invert text-sm text-green-800 dark:text-green-200 flex-1"
+                                    dangerouslySetInnerHTML={{
+                                      __html: matchedItem.text,
+                                    }}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      removeMatch(leftItem.id, matchedItem.id)
+                                    }
+                                    className="text-destructive hover:text-destructive ml-2 flex-shrink-0"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-dashed border border-gray-300 dark:border-gray-600">
+                            <p className="text-xs text-muted-foreground text-center">
+                              Drop right items here to create matches
+                            </p>
+                          </div>
                         )}
                       </div>
+                    );
+                  })}
+                </div>
 
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Drag these items to the left side
+                  </Label>
+                  {(question?.values || []).map((rightItem, index) => {
+                    const isUsed = isRightItemUsed(rightItem.id);
+
+                    return (
                       <div
-                        className="prose prose-sm dark:prose-invert text-sm mb-3"
-                        dangerouslySetInnerHTML={{ __html: leftItem.text }}
-                      />
-
-                      {matchedRightItems.length > 0 ? (
-                        <div className="mt-3 space-y-2">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Link2 className="h-3 w-3 text-green-600" />
-                            <span className="text-xs text-green-600 font-medium">
-                              Matched with:
-                            </span>
-                          </div>
-                          {matchedRightItems.map((matchedItem) => (
-                            <div
-                              key={matchedItem.id}
-                              className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800"
-                            >
-                              <div className="flex items-start justify-between">
-                                <div
-                                  className="prose prose-sm dark:prose-invert text-sm text-green-800 dark:text-green-200 flex-1"
-                                  dangerouslySetInnerHTML={{
-                                    __html: matchedItem.text,
-                                  }}
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() =>
-                                    removeMatch(leftItem.id, matchedItem.id)
-                                  }
-                                  className="text-destructive hover:text-destructive ml-2 flex-shrink-0"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                        key={rightItem.id}
+                        className={`border rounded-lg p-4 transition-colors ${
+                          isUsed
+                            ? "border-gray-300 bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed"
+                            : "border-border cursor-move hover:border-primary/50 hover:shadow-md"
+                        }`}
+                        draggable={
+                          !isUsed &&
+                          editingLeftItemId === null &&
+                          editingRightItemId === null &&
+                          !isCreatingNewLeftItem &&
+                          !isCreatingNewRightItem
+                        }
+                        onDragStart={(e) =>
+                          !isUsed &&
+                          handleDragStart(e, {
+                            type: "right",
+                            id: rightItem.id,
+                            index,
+                          })
+                        }
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <Badge
+                            variant={isUsed ? "secondary" : "outline"}
+                            className="text-xs"
+                          >
+                            Right {index + 1} {isUsed && "• Used"}
+                          </Badge>
+                          <GripVertical
+                            className={`h-4 w-4 ${isUsed ? "text-gray-400" : "text-muted-foreground"}`}
+                          />
                         </div>
-                      ) : (
-                        <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-dashed border border-gray-300 dark:border-gray-600">
-                          <p className="text-xs text-muted-foreground text-center">
-                            Drop right items here to create matches
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
 
-              <div className="space-y-4">
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Drag these items to the left side
-                </Label>
-                {question.values.map((rightItem, index) => {
-                  const isUsed = isRightItemUsed(rightItem.id);
-
-                  return (
-                    <div
-                      key={rightItem.id}
-                      className={`border rounded-lg p-4 transition-colors ${
-                        isUsed
-                          ? "border-gray-300 bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed"
-                          : "border-border cursor-move hover:border-primary/50 hover:shadow-md"
-                      }`}
-                      draggable={
-                        !isUsed &&
-                        editingLeftItemId === null &&
-                        editingRightItemId === null &&
-                        !isCreatingNewLeftItem &&
-                        !isCreatingNewRightItem
-                      }
-                      onDragStart={(e) =>
-                        !isUsed &&
-                        handleDragStart(e, {
-                          type: "right",
-                          id: rightItem.id,
-                          index,
-                        })
-                      }
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge
-                          variant={isUsed ? "secondary" : "outline"}
-                          className="text-xs"
-                        >
-                          Right {index + 1} {isUsed && "• Used"}
-                        </Badge>
-                        <GripVertical
-                          className={`h-4 w-4 ${isUsed ? "text-gray-400" : "text-muted-foreground"}`}
+                        <div
+                          className={`prose prose-sm dark:prose-invert text-sm ${isUsed ? "text-gray-500" : ""}`}
+                          dangerouslySetInnerHTML={{ __html: rightItem.text }}
                         />
+
+                        {isUsed && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            This item is already matched
+                          </div>
+                        )}
                       </div>
-
-                      <div
-                        className={`prose prose-sm dark:prose-invert text-sm ${isUsed ? "text-gray-500" : ""}`}
-                        dangerouslySetInnerHTML={{ __html: rightItem.text }}
-                      />
-
-                      {isUsed && (
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          This item is already matched
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      {question.matchPair.length > 0 && (
+      {(question?.matchPair?.length || 0) > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -832,8 +836,8 @@ export default function CreateMatchTheFollowing({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {question.matchPair.map((pair, index) => {
-                const leftItem = question.keys.find(
+              {(question?.matchPair || []).map((pair, index) => {
+                const leftItem = (question?.keys || []).find(
                   (k) => k.id === pair.leftPair,
                 );
 
