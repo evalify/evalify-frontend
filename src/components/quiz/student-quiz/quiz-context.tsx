@@ -106,12 +106,18 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({
   );
 
   // Initialize managers
-  const [stateManager] = useState(
-    () => new QuizStateManager(quizData.quizInfo.quizId),
-  );
-  const [navigationManager] = useState(
-    () => new QuizNavigationManager(quizData),
-  );
+  const [stateManager] = useState(() => {
+    if (!quizData?.quizInfo?.quizId) {
+      throw new Error("Quiz data is incomplete. Missing quizId.");
+    }
+    return new QuizStateManager(quizData.quizInfo.quizId);
+  });
+  const [navigationManager] = useState(() => {
+    if (!quizData) {
+      throw new Error("Quiz data is required for navigation manager.");
+    }
+    return new QuizNavigationManager(quizData);
+  });
   const [timeManager] = useState(() => new QuestionTimeManager());
 
   // Create navigation state

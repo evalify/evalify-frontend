@@ -28,7 +28,7 @@ interface QuestionSettingsProps {
   difficulty: string;
   bloomsTaxonomy: string;
   co: number;
-  negativeMarks: number;
+  negativeMark: number;
   topicIds: string[];
   bankId?: string;
   showTopics?: boolean;
@@ -36,7 +36,7 @@ interface QuestionSettingsProps {
   onDifficultyChange: (difficulty: string) => void;
   onBloomsTaxonomyChange: (bloomsTaxonomy: string) => void;
   onCourseOutcomeChange: (courseOutcome: number) => void;
-  onNegativeMarksChange: (negativeMarks: number) => void;
+  onNegativeMarksChange: (negativeMark: number) => void;
   onTopicsChange: (topicIds: string[]) => void;
 }
 
@@ -69,7 +69,7 @@ export default function QuestionSettings({
   difficulty,
   bloomsTaxonomy,
   co,
-  negativeMarks,
+  negativeMark,
   topicIds,
   bankId,
   showTopics = true,
@@ -124,7 +124,7 @@ export default function QuestionSettings({
             type="number"
             min="0"
             max="100"
-            value={negativeMarks}
+            value={negativeMark}
             onChange={(e) => onNegativeMarksChange(Number(e.target.value))}
             className="w-full"
           />

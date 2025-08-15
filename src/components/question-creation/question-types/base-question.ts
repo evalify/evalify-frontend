@@ -29,7 +29,7 @@ export interface UpdatePayload extends Record<string, unknown> {
   difficulty?: string;
   bloomsTaxonomy?: string;
   co?: number;
-  negativeMarks?: number;
+  negativeMark?: number;
   topicIds?: string[];
   options?: MCQOption[];
   expectedAnswer?: string;

@@ -1,4 +1,4 @@
-import { Course, Semester, User } from "@/types/types";
+import { Course, Semester, User, CreateCourseRequest } from "@/types/types";
 import axiosInstance from "@/lib/axios/axios-client";
 
 export interface DataTableResponse {
@@ -115,7 +115,10 @@ const semesterQueries = {
     return response.data;
   },
 
-  createCourseForSemester: async (semesterId: string, course: Course) => {
+  createCourseForSemester: async (
+    semesterId: string,
+    course: CreateCourseRequest,
+  ) => {
     const response = await axiosInstance.post(
       `/api/semester/${semesterId}/courses`,
       course,

@@ -11,11 +11,19 @@ export type BankSchema = {
   id: string;
   name: string;
   courseCode: string;
-  semester: string;
+  semester: string; // Changed from number to string to match API response (e.g., "S1", "S2")
   questions: number;
   topics: number;
   created_at: string;
-  access: User[];
+  access: Array<{
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      profileId: string | null;
+    };
+    tag: string;
+  }>;
 };
 
 type BankQuestion = {
@@ -172,12 +180,18 @@ class Bank {
     return response.data;
   }
 
-  static async createBank(
-    bankData: Omit<BankSchema, "id" | "created_at">,
-  ): Promise<BankSchema> {
+  static async createBank(bankData: {
+    name: string;
+    courseCode?: string;
+    semester: string;
+  }): Promise<BankSchema> {
+    // Convert semester string (e.g., "S1") to integer (e.g., 1) for API
+    const semesterNumber = parseInt(bankData.semester.substring(1));
+
     const payload = {
-      ...bankData,
-      createdAt: new Date().toISOString(), // Adds "2025-06-07T09:02:11.036Z"
+      name: bankData.name,
+      courseCode: bankData.courseCode || null,
+      semester: semesterNumber,
     };
 
     const response = await axiosInstance.post("/api/bank", payload);
@@ -191,7 +205,7 @@ class Bank {
 
   static async updateBank(
     bankId: string,
-    bankData: Partial<BankSchema>,
+    bankData: Partial<Omit<BankSchema, "semester">> & { semester?: number },
   ): Promise<BankSchema> {
     const response = await axiosInstance.patch(`/api/bank/${bankId}`, bankData);
     return response.data;

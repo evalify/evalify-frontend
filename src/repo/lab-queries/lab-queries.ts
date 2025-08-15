@@ -25,7 +25,7 @@ interface LabsResponse {
 
 const labQueries = {
   getLabs: async (): Promise<LabsResponse> => {
-    const response = await axiosInstance.get("/lab");
+    const response = await axiosInstance.get("/api/lab");
     return response.data;
   },
 
@@ -40,26 +40,26 @@ const labQueries = {
     if (block) params.block = block;
     if (ipSubnet) params.ipSubnet = ipSubnet;
 
-    const response = await axiosInstance.get("/lab/search", { params });
+    const response = await axiosInstance.get("/api/lab/search", { params });
     return response.data;
   },
 
   createLab: async (data: CreateLabData): Promise<Lab> => {
-    const response = await axiosInstance.post("/lab", data);
+    const response = await axiosInstance.post("/api/lab", data);
     return response.data;
   },
 
   updateLab: async (id: string, data: UpdateLabData): Promise<Lab> => {
-    const response = await axiosInstance.put(`/lab/${id}`, data);
+    const response = await axiosInstance.put(`/api/lab/${id}`, data);
     return response.data;
   },
 
   deleteLab: async (id: string): Promise<void> => {
-    await axiosInstance.delete(`/lab/${id}`);
+    await axiosInstance.delete(`/api/lab/${id}`);
   },
 
   deleteMultipleLabs: async (ids: string[]): Promise<void> => {
-    await axiosInstance.delete("/lab/batch", { data: { ids } });
+    await axiosInstance.delete("/api/lab/batch", { data: { ids } });
   },
 };
 

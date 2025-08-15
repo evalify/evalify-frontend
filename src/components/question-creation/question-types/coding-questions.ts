@@ -1,6 +1,7 @@
 import { BaseQuestion } from "./base-question";
 
 export interface TestCase {
+  id: string;
   code: string;
   tags: "HIDDEN" | "SAMPLE";
   isMinimal: boolean;

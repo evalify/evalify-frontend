@@ -71,7 +71,7 @@ export default function QuestionCreation({
     difficulty: "MEDIUM",
     bloomsTaxonomy: "REMEMBER",
     co: 1,
-    negativeMarks: 1,
+    negativeMark: 1,
     topicIds: config.isQuiz ? [] : [], // For quiz, topics are handled differently
   });
   const [hasChanges, setHasChanges] = useState(false);
@@ -190,7 +190,7 @@ export default function QuestionCreation({
         difficulty: questionData.difficulty || prev.difficulty,
         bloomsTaxonomy: questionData.bloomsTaxonomy || prev.bloomsTaxonomy,
         co: questionData.co || prev.co,
-        negativeMarks: questionData.negativeMarks || prev.negativeMarks,
+        negativeMark: questionData.negativeMark || prev.negativeMark,
         topicIds: questionTopics,
       }));
 
@@ -365,10 +365,7 @@ export default function QuestionCreation({
                 <CardContent className="flex items-center justify-center h-64">
                   <div className="text-center">
                     <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      Question type &ldquo;{selectedType}&rdquo; is not yet
-                      implemented.
-                    </p>
+                    <p className="text-muted-foreground">Coming Soon</p>
                   </div>
                 </CardContent>
               </Card>
@@ -379,7 +376,7 @@ export default function QuestionCreation({
                 difficulty={settings.difficulty}
                 bloomsTaxonomy={settings.bloomsTaxonomy}
                 co={settings.co}
-                negativeMarks={settings.negativeMarks}
+                negativeMark={settings.negativeMark}
                 topicIds={settings.topicIds}
                 bankId={bankId}
                 showTopics={!config.isQuiz}
@@ -394,7 +391,7 @@ export default function QuestionCreation({
                   handleSettingsChange("co", value)
                 }
                 onNegativeMarksChange={(value) =>
-                  handleSettingsChange("negativeMarks", value)
+                  handleSettingsChange("negativeMark", value)
                 }
                 onTopicsChange={(value) =>
                   handleSettingsChange("topicIds", value)
@@ -423,7 +420,7 @@ export default function QuestionCreation({
                 difficulty={settings.difficulty}
                 bloomsTaxonomy={settings.bloomsTaxonomy}
                 co={settings.co}
-                negativeMarks={settings.negativeMarks}
+                negativeMark={settings.negativeMark}
                 topicIds={settings.topicIds}
                 bankId={bankId}
                 showTopics={!config.isQuiz}
@@ -438,7 +435,7 @@ export default function QuestionCreation({
                   handleSettingsChange("co", value)
                 }
                 onNegativeMarksChange={(value) =>
-                  handleSettingsChange("negativeMarks", value)
+                  handleSettingsChange("negativeMark", value)
                 }
                 onTopicsChange={(value) =>
                   handleSettingsChange("topicIds", value)
