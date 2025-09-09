@@ -10,6 +10,7 @@ import {
   Code,
   Upload,
   ArrowLeft,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ interface QuestionTypeSelectorProps {
   onTypeSelect: (type: QuestionType) => void;
   onSaveAndBack?: () => void;
   onSave?: () => void;
+  onSaveAndNew?: () => void;
   isLoading?: boolean;
   isEdit?: boolean;
   hasChanges?: boolean;
@@ -41,55 +43,56 @@ const questionTypes: {
   icon: React.ReactNode;
   description: string;
 }[] = [
-  {
-    type: "MCQ",
-    label: "Multiple Choice",
-    icon: <CircleDot className="h-4 w-4" />,
-    description: "Single correct answer",
-  },
-  {
-    type: "TRUEFALSE",
-    label: "True or False",
-    icon: <ToggleLeft className="h-4 w-4" />,
-    description: "Binary choice question",
-  },
-  {
-    type: "FILL_UP",
-    label: "Fill in Blanks",
-    icon: <FileInput className="h-4 w-4" />,
-    description: "Complete the sentence",
-  },
-  {
-    type: "MATCH_THE_FOLLOWING",
-    label: "Match Following",
-    icon: <Network className="h-4 w-4" />,
-    description: "Connect related items",
-  },
-  {
-    type: "CODING",
-    label: "Coding",
-    icon: <Code className="h-4 w-4" />,
-    description: "Programming challenge",
-  },
-  {
-    type: "file-upload",
-    label: "File Upload",
-    icon: <Upload className="h-4 w-4" />,
-    description: "Submit a file",
-  },
-  {
-    type: "DESCRIPTIVE",
-    label: "Descriptive",
-    icon: <FileText className="h-4 w-4" />,
-    description: "Long form answer",
-  },
-];
+    {
+      type: "MCQ",
+      label: "Multiple Choice",
+      icon: <CircleDot className="h-4 w-4" />,
+      description: "Single correct answer",
+    },
+    {
+      type: "TRUEFALSE",
+      label: "True or False",
+      icon: <ToggleLeft className="h-4 w-4" />,
+      description: "Binary choice question",
+    },
+    {
+      type: "FILL_UP",
+      label: "Fill in Blanks",
+      icon: <FileInput className="h-4 w-4" />,
+      description: "Complete the sentence",
+    },
+    {
+      type: "MATCH_THE_FOLLOWING",
+      label: "Match Following",
+      icon: <Network className="h-4 w-4" />,
+      description: "Connect related items",
+    },
+    {
+      type: "CODING",
+      label: "Coding",
+      icon: <Code className="h-4 w-4" />,
+      description: "Programming challenge",
+    },
+    {
+      type: "file-upload",
+      label: "File Upload",
+      icon: <Upload className="h-4 w-4" />,
+      description: "Submit a file",
+    },
+    {
+      type: "DESCRIPTIVE",
+      label: "Descriptive",
+      icon: <FileText className="h-4 w-4" />,
+      description: "Long form answer",
+    },
+  ];
 
 const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
   selectedType,
   onTypeSelect,
   onSaveAndBack,
   onSave,
+  onSaveAndNew,
   isLoading = false,
   isEdit = false,
   hasChanges = false,
@@ -136,7 +139,7 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
 
       {/* Action Buttons */}
       <div className="flex gap-2 shrink-0">
-        {onSaveAndBack && (
+        {(onSaveAndBack && !isEdit) && (
           <Button
             variant="outline"
             onClick={onSaveAndBack}
@@ -145,6 +148,28 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
           >
             <ArrowLeft className="h-4 w-4" />
             Save & Back
+          </Button>
+        )}
+
+        {(onSaveAndNew) && (
+          <Button
+            variant="outline"
+            onClick={onSaveAndNew}
+            disabled={!onSaveAndNew || !canSave || isLoading}
+            className={cn(
+              "flex items-center gap-2 min-w-[160px]",
+              isLoading && "cursor-wait",
+            )}
+          >
+            <Plus
+              className={cn(
+                "h-4 w-4 transition-transform",
+                isLoading && "animate-pulse",
+              )}
+            />
+            <span>
+              {isLoading ? "Saving..." : "Save & Create New"}
+            </span>
           </Button>
         )}
 

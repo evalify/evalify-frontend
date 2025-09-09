@@ -396,12 +396,8 @@ function CoursesSection({
   courses: CourseData[];
   coursesLoading: boolean;
 }) {
-  const { info } = useToast();
 
   const handleCourseClick = (courseId: string, courseName: string) => {
-    info("Course Access", {
-      description: `Opening ${courseName}. Course details will be available soon.`,
-    });
     // TODO: Navigate to course details when route is available
     // router.push(`/courses/${courseId}`);
   };
@@ -528,7 +524,7 @@ function DashboardContent({
         router.push(`/quiz/${id}/instructions`);
       }
     },
-    [info, router],
+    [router],
   );
 
   const formatTimeRemaining = (startTime: string) => {

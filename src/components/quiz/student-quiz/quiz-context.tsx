@@ -14,11 +14,10 @@ import React, {
 } from "react";
 import { useSession } from "next-auth/react";
 import { useMutation } from "@tanstack/react-query";
-import StudentQuiz from "@/repo/student/quiz/student-quiz";
+import StudentQuiz, { QuizAnswerUpdate, StringAnswerUpdate } from "@/repo/student/quiz/student-quiz";
 import {
   QuizInterface,
   QuizAnswerData,
-  QuizAnswerUpdate,
   QuizNavigationState,
   SectionNavigation,
   QuestionNavigation,
@@ -34,6 +33,8 @@ import {
   ViolationLog,
 } from "./hooks/use-fullscreen-tracking";
 import { QuizEventType } from "./interfaces/quiz-interfaces";
+import { createTypedAnswerUpdate } from "./utils/answer-utils";
+import { processQuizStartResponses, createResponseSummary } from "./utils/response-utils";
 
 interface QuizContextType {
   // Quiz data
@@ -110,7 +111,33 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({
     if (!quizData?.quizInfo?.quizId) {
       throw new Error("Quiz data is incomplete. Missing quizId.");
     }
-    return new QuizStateManager(quizData.quizInfo.quizId);
+    const manager = new QuizStateManager(quizData.quizInfo.quizId, session?.user.id);
+
+    // Process existing responses from the quiz start API
+    const existingResponses = processQuizStartResponses(quizData);
+
+    if (existingResponses.size > 0) {
+      // Initialize with existing responses if they exist
+      manager.initializeWithExistingResponses(existingResponses);
+
+      // Log summary of loaded responses
+      const summary = createResponseSummary(existingResponses);
+      console.log("Loaded existing responses:", summary);
+
+      QuizLogger.getInstance().log({
+        type: QuizEventType.QUIZ_STARTED,
+        timestamp: new Date(),
+        quizId: quizData.quizInfo.quizId,
+        data: {
+          resumedFromExisting: true,
+          existingResponsesCount: existingResponses.size,
+          totalTimeSpent: summary.totalTimeSpent,
+          questionTypes: summary.questionTypes,
+        },
+      });
+    }
+
+    return manager;
   });
   const [navigationManager] = useState(() => {
     if (!quizData) {
@@ -230,6 +257,23 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({
     },
     onError: (error) => {
       setError(`Failed to submit quiz: ${error}`);
+    },
+  });
+
+  // Navigation update mutation for tracking question changes
+  const navigationUpdateMutation = useMutation({
+    mutationFn: async (questionData: { questionId: string; duration: number }) => {
+      // Create a minimal update to track question navigation
+      const updateData: QuizAnswerUpdate = {
+        questionId: questionData.questionId,
+        duration: questionData.duration,
+        stringAnswer: "", // Empty answer just to track navigation
+      } as StringAnswerUpdate;
+
+      return StudentQuiz.updateQuiz(quizData.quizInfo.quizId, updateData);
+    },
+    onError: (error) => {
+      console.error("Failed to update question navigation:", error);
     },
   });
 
@@ -381,6 +425,12 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({
           currentQuestion.question.questions.questionId,
           timeSpent,
         );
+
+        // Send navigation update to server
+        navigationUpdateMutation.mutate({
+          questionId: currentQuestion.question.questions.questionId,
+          duration: timeSpent,
+        });
       }
 
       const success = navigationManager.goToQuestion(index);
@@ -409,6 +459,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({
       navigationManager,
       timeManager,
       stateManager,
+      navigationUpdateMutation,
     ],
   );
 
@@ -456,18 +507,51 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({
     (questionId: string, answer: QuizAnswerData) => {
       stateManager.setAnswer(questionId, answer);
 
-      // Auto-save the answer
+      // Find the question to get its type
+      const questionWrapper = quizData.questions.find(
+        q => q.question.questions.questionId === questionId
+      );
+
+      if (!questionWrapper) {
+        console.error("Question not found for ID:", questionId);
+        return;
+      }
+
+      // Get question type from the wrapper, not from the question object
+      const questionType = questionWrapper.question.type;
       const timeSpent = timeManager.getCurrentTimeSpent(questionId);
-      const updateData: QuizAnswerUpdate = {
+
+      // Create properly typed update data
+      const updateData: QuizAnswerUpdate = createTypedAnswerUpdate(
         questionId,
-        duration: timeSpent,
         answer,
-      };
+        timeSpent,
+        questionType
+      );
+
+      // Log the answer change event
+      QuizLogger.getInstance().log({
+        type: QuizEventType.ANSWER_CHANGED,
+        timestamp: new Date(),
+        quizId: quizData.quizInfo.quizId,
+        questionId,
+        data: {
+          questionType,
+          timeSpent,
+          answerType: typeof answer,
+        },
+      });
+
+      console.log({
+        questionId,
+        answer,
+        timeSpent,
+        questionType
+      })
 
       updateMutation.mutate(updateData);
     },
-    [stateManager, timeManager, updateMutation],
-  );
+    [stateManager, timeManager, updateMutation, quizData.questions, quizData.quizInfo.quizId],
 
   const getCurrentAnswer = useCallback(
     (questionId: string) => {
@@ -506,10 +590,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({
   // User info
   const userInfo = session?.user
     ? {
-        name: session.user.name || "",
-        profileId: session.user.email || "",
-        image: session.user.image || undefined,
-      }
+      name: session.user.name || "",
+      profileId: session.user.email || "",
+      image: session.user.image || undefined,
+    }
     : null;
 
   const contextValue: QuizContextType = {

@@ -5,7 +5,8 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,6 +22,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTheme } from "next-themes";
 import { useQuiz } from "./quiz-context";
+import { useQuizInitialization } from "./hooks/use-quiz-initialization";
+import { useToast } from "@/hooks/use-toast";
 import ViolationLogsDisplay from "./components/violation-logs-display";
 import { QuestionTypeDetector } from "./factories/question-factory";
 import { TrueFalseRenderer } from "./renderers/true-false-renderer";
@@ -53,8 +56,61 @@ export const StudentQuizMain: React.FC<StudentQuizMainProps> = ({
   className = "",
 }) => {
   const quiz = useQuiz();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
   const [timeLeft, setTimeLeft] = useState<string>("");
   const { theme, setTheme } = useTheme();
+  const isUpdatingUrlRef = useRef(false);
+
+  const [hasShownResumeToast, setHasShownResumeToast] = useState(false);
+
+  // Initialize quiz data and check for existing responses
+  const initialization = useQuizInitialization({ quizData: quiz.quizData! });
+
+  // Handle URL params and navigation
+  useEffect(() => {
+    if (!quiz.quizData || isUpdatingUrlRef.current) return;
+
+    const questionParam = searchParams.get('question');
+    if (questionParam) {
+      const questionIndex = parseInt(questionParam, 10) - 1;
+      if (questionIndex >= 0 && questionIndex < quiz.totalQuestions && questionIndex !== quiz.currentQuestionIndex) {
+        quiz.goToQuestion(questionIndex);
+      }
+    }
+  }, [searchParams, quiz.quizData, quiz.totalQuestions, quiz.currentQuestionIndex, quiz.goToQuestion]); // Remove quiz dependency to prevent loop
+
+  // Update URL when question changes (but avoid loops)
+  useEffect(() => {
+    if (!quiz.quizData || isUpdatingUrlRef.current) return;
+
+    const questionParam = searchParams.get('question');
+    const expectedParam = (quiz.currentQuestionIndex + 1).toString();
+
+    // Only update URL if it's different from current question
+    if (questionParam !== expectedParam) {
+      isUpdatingUrlRef.current = true;
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('question', expectedParam);
+      router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
+
+      // Reset the flag after a brief delay
+      setTimeout(() => {
+        isUpdatingUrlRef.current = false;
+      }, 100);
+    }
+  }, [quiz.currentQuestionIndex, router, searchParams, quiz.quizData]);
+
+  // Show toast when resuming quiz with existing responses (only once)
+  useEffect(() => {
+    if (!hasShownResumeToast && initialization.shouldShowResumeBanner && initialization.initializationState.existingResponsesCount > 0) {
+      toast("Quiz Resumed", {
+        description: `Continuing from where you left off. You have answered ${initialization.initializationState.existingResponsesCount} out of ${quiz.totalQuestions} questions.`,
+      });
+      setHasShownResumeToast(true);
+    }
+  }, [initialization.shouldShowResumeBanner, initialization.initializationState.existingResponsesCount, quiz.totalQuestions, toast, hasShownResumeToast]);
 
   // Timer effect
   useEffect(() => {
@@ -72,7 +128,7 @@ export const StudentQuizMain: React.FC<StudentQuizMainProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [quiz]);
+  }, [quiz.getTimeRemaining]);
 
   if (!quiz.quizData) {
     return (
@@ -383,14 +439,13 @@ export const StudentQuizMain: React.FC<StudentQuizMainProps> = ({
                   className="gap-2"
                 >
                   <Flag
-                    className={`w-4 h-4 ${
-                      quiz.navigationState.sections
-                        .flatMap((s) => s.questions)
-                        .find((q) => q.questionId === questionData.questionId)
-                        ?.status.isMarkedForReview
-                        ? "text-orange-500"
-                        : "text-gray-400"
-                    }`}
+                    className={`w-4 h-4 ${quiz.navigationState.sections
+                      .flatMap((s) => s.questions)
+                      .find((q) => q.questionId === questionData.questionId)
+                      ?.status.isMarkedForReview
+                      ? "text-orange-500"
+                      : "text-gray-400"
+                      }`}
                   />
                   {quiz.navigationState.sections
                     .flatMap((s) => s.questions)

@@ -139,7 +139,7 @@ export interface ViolationLog {
 // Quiz question structure
 export interface QuizQuestion {
   question: QuestionWrapper;
-  response: QuizAnswerData | null;
+  response: QuizStartResponse | null;
 }
 
 // Quiz student info
@@ -180,11 +180,16 @@ export type QuizAnswerData =
   | FillUpAnswer[] // Fill up
   | MatchAnswer[]; // Match the following
 
-// Quiz answer update structure for API
-export interface QuizAnswerUpdate {
+// API response structure from quiz start endpoint
+export interface QuizStartResponse {
   questionId: string;
-  duration: number; // Duration spent on this question in milliseconds
-  answer: QuizAnswerData;
+  duration: number;
+  stringAnswer: string | null;
+  uuidAnswer: string | null;
+  listUUIDAnswer: string[] | null;
+  booleanAnswer: boolean | null;
+  fillupAnswer: FillUpAnswer[] | null;
+  matchAnswer: MatchAnswer[] | null;
 }
 
 // Local storage structure for quiz responses

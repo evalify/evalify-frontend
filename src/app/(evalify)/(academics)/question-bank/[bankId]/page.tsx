@@ -81,7 +81,7 @@ function TopicSidebar({
     if (open) {
       toggleSidebar();
     }
-  }, []);
+  }, [open, toggleSidebar]);
 
   const [newTopicName, setNewTopicName] = useState("");
   const [editingTopic, setEditingTopic] = useState<{

@@ -27,10 +27,54 @@ export class QuizStateManager implements IQuizStateManager {
   private responses: Map<string, QuizResponse> = new Map();
   private storageKey: string;
 
-  constructor(quizId: string) {
+  constructor(quizId: string, userId: string | undefined) {
     this.quizId = quizId;
-    this.storageKey = `evalify_quiz_${quizId}`;
+    this.storageKey = `evalify_quiz_${quizId}_${userId || "guest"}`;
     this.loadFromLocalStorage();
+  }
+
+  /**
+   * Initialize state manager with existing responses from quiz start API
+   * @param existingResponses - Map of questionId to answer and time data
+   */
+  initializeWithExistingResponses(existingResponses: Map<string, {
+    answer: QuizAnswerData;
+    timeSpent: number;
+  }>): void {
+    const now = new Date();
+
+    existingResponses.forEach(({ answer, timeSpent }, questionId) => {
+      const response: QuizResponse = {
+        questionId,
+        answer,
+        timeSpent,
+        lastUpdated: now,
+      };
+
+      this.responses.set(questionId, response);
+    });
+
+    // Save to local storage
+    this.saveToLocalStorage();
+
+    console.log(`Initialized state manager with ${existingResponses.size} existing responses`);
+  }
+
+  /**
+   * Check if there are any responses from a previous session (local storage)
+   * @returns True if local storage contains responses
+   */
+  hasPreviousSession(): boolean {
+    try {
+      const storedData = localStorage.getItem(this.storageKey);
+      if (storedData) {
+        const parsedData: QuizLocalStorage = JSON.parse(storedData);
+        return Object.keys(parsedData.responses).length > 0;
+      }
+    } catch (error) {
+      console.error("Failed to check previous session:", error);
+    }
+    return false;
   }
 
   getCurrentAnswer(questionId: string): QuizAnswerData | null {
@@ -283,7 +327,7 @@ export class QuizLogger implements IQuizLogger {
   private events: QuizEvent[] = [];
   private maxEvents: number = 1000; // Limit to prevent memory issues
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): QuizLogger {
     if (!QuizLogger.instance) {

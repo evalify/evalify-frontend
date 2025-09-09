@@ -40,6 +40,12 @@ export default function CreateQuizQuestionPage({ params }: Props) {
     courseId: courseId, // Include courseId in config
   };
 
+  const handleSaveAndNew = () => {
+    // Simply refresh the current page to create a new question
+    // This will reset the form while keeping the same route and parameters
+    window.location.reload();
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="mb-6">
@@ -50,7 +56,10 @@ export default function CreateQuizQuestionPage({ params }: Props) {
           Create a new question for this quiz section.
         </p>
       </div>
-      <QuestionCreation config={config} />
+      <QuestionCreation
+        config={config}
+        onSaveAndNew={handleSaveAndNew}
+      />
     </div>
   );
 }

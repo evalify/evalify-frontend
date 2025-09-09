@@ -48,6 +48,7 @@ interface QuestionCreationConfig {
 
 interface QuestionCreationProps {
   onSaveAndBack?: () => void;
+  onSaveAndNew?: () => void;
   isEditing?: boolean;
   questionId?: string;
   bankId?: string;
@@ -56,6 +57,7 @@ interface QuestionCreationProps {
 
 export default function QuestionCreation({
   onSaveAndBack,
+  onSaveAndNew,
   isEditing = false,
   questionId,
   bankId,
@@ -201,7 +203,7 @@ export default function QuestionCreation({
     }
   }, [questionData, isEditing, config.isQuiz, updateUrlWithTopics]);
 
-  const handleSave = async () => {
+  const handleSave = async (shouldCreateNew = false) => {
     if (!currentQuestion) {
       error("Question data is missing");
       return;
@@ -268,6 +270,21 @@ export default function QuestionCreation({
       }
 
       setHasChanges(false);
+
+      // Handle post-save actions
+      if (shouldCreateNew && !isEditing) {
+        // Reset form for new question
+        setCurrentQuestion(null);
+        setSelectedType("MCQ");
+        setHasChanges(false);
+
+        // Wait a bit for the UI to update, then call the callback
+        setTimeout(() => {
+          if (onSaveAndNew) {
+            onSaveAndNew();
+          }
+        }, 100);
+      }
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : "An unexpected error occurred";
@@ -286,6 +303,10 @@ export default function QuestionCreation({
 
   const handleSaveFromHeader = async () => {
     await handleSave();
+  };
+
+  const handleSaveAndNew = async () => {
+    await handleSave(true);
   };
 
   const handleQuestionChange = (question: Question) => {
@@ -322,18 +343,18 @@ export default function QuestionCreation({
 
   const canSave = currentQuestion
     ? Boolean(currentQuestion.question?.trim()) &&
-      (selectedType === "MCQ" || selectedType === "MMCQ"
-        ? Boolean(
-            (currentQuestion as MCQ).options?.some((opt) => opt.isCorrect),
+    (selectedType === "MCQ" || selectedType === "MMCQ"
+      ? Boolean(
+        (currentQuestion as MCQ).options?.some((opt) => opt.isCorrect),
+      )
+      : selectedType === "TRUEFALSE"
+        ? (currentQuestion as TrueFalseQuestion).answer !== null &&
+        (currentQuestion as TrueFalseQuestion).answer !== undefined
+        : selectedType === "DESCRIPTIVE"
+          ? Boolean(
+            (currentQuestion as DescriptiveQuestion).expectedAnswer?.trim(),
           )
-        : selectedType === "TRUEFALSE"
-          ? (currentQuestion as TrueFalseQuestion).answer !== null &&
-            (currentQuestion as TrueFalseQuestion).answer !== undefined
-          : selectedType === "DESCRIPTIVE"
-            ? Boolean(
-                (currentQuestion as DescriptiveQuestion).expectedAnswer?.trim(),
-              )
-            : true)
+          : true)
     : false;
 
   if (isLoading && isEditing) {
@@ -350,6 +371,7 @@ export default function QuestionCreation({
         selectedType={selectedType}
         onTypeSelect={handleTypeSelect}
         onSave={handleSaveFromHeader}
+        onSaveAndNew={!isEditing ? handleSaveAndNew : undefined}
         onSaveAndBack={onSaveAndBack ? handleSaveAndBack : undefined}
         isLoading={isSaving}
         isEdit={isEditing}
